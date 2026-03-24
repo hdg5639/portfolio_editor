@@ -23,21 +23,13 @@ function StyleControls({ value, onChange, compact = false }) {
         <div className={`style-grid ${compact ? 'compact' : ''}`}>
             {!compact ? (
                 <>
-                    <Field label="페이지 베이스 배경색">
-                        <input
-                            type="color"
-                            value={current.baseBackgroundColor || '#ece7dc'}
-                            onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
-                        />
-                    </Field>
-
                     <Field label="페이지 너비 모드">
                         <select
                             value={current.widthMode || 'fixed'}
                             onChange={(e) => onChange('widthMode', e.target.value)}
                         >
-                            <option value="fixed">고정 비율</option>
-                            <option value="custom">자유 선택</option>
+                            <option value="fixed">고정 폭</option>
+                            <option value="custom">너비 자동 맞춤</option>
                         </select>
                     </Field>
 
@@ -53,7 +45,7 @@ function StyleControls({ value, onChange, compact = false }) {
                             />
                         </Field>
                     ) : (
-                        <Field label="자유 페이지 너비(px)">
+                        <Field label="기준 페이지 너비(px)">
                             <input
                                 type="number"
                                 min="720"
@@ -64,6 +56,14 @@ function StyleControls({ value, onChange, compact = false }) {
                             />
                         </Field>
                     )}
+
+                    <Field label="페이지 베이스 배경색">
+                        <input
+                            type="color"
+                            value={current.baseBackgroundColor || '#ece7dc'}
+                            onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
+                        />
+                    </Field>
                 </>
             ) : null}
 
