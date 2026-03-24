@@ -30,13 +30,6 @@
     padding: 12px 14px;
 }
 
-.style-panel-shell {
-    position: sticky;
-    top: 96px;
-    align-self: start;
-    min-width: 0;
-}
-
 .panel-section-accordion summary {
     cursor: pointer;
     list-style: none;
@@ -53,11 +46,76 @@
     gap: 8px;
 }
 
-.side-panel-shell {
-    position: sticky;
-    top: 96px;
-    align-self: start;
+.side-panel-shell,
+.style-panel-shell {
     min-width: 0;
+    height: 100%;
+}
+
+.sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    background: rgba(255, 255, 255, 0.56);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 24px;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.sidebar-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.78);
+    flex-shrink: 0;
+}
+
+.sidebar-panel-header-text {
+    min-width: 0;
+}
+
+.sidebar-panel-header-text strong {
+    display: block;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 800;
+}
+
+.sidebar-panel-header-text p {
+    margin: 6px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted);
+}
+
+.sidebar-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    scrollbar-gutter: stable;
+}
+
+.sidebar-panel-body::-webkit-scrollbar {
+    width: 10px;
+}
+
+.sidebar-panel-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-panel-body::-webkit-scrollbar-thumb {
+    background: rgba(29, 29, 27, 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
 .toggle-grid {
@@ -107,6 +165,7 @@
     justify-content: space-between;
     gap: 10px;
     align-items: center;
+    background: #fff;
 }
 
 .mini-card.column {
@@ -138,27 +197,12 @@
     border: 1px dashed var(--line);
     border-radius: 12px;
     align-items: center;
+    background: #fff;
 }
 
 .style-panel-summary-body {
     display: grid;
     gap: 18px;
-}
-
-.style-panel-head {
-    padding: 0;
-}
-
-.style-panel-head strong {
-    display: block;
-    font-size: 28px;
-    font-weight: 800;
-}
-
-.style-panel-head p {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 14px;
 }
 
 .style-quick-grid {

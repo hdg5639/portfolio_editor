@@ -7,7 +7,7 @@ function Field({ label, children }) {
     );
 }
 
-function AccordionItem({ title, defaultOpen = false, children }) {
+function AccordionItem({ title, children, defaultOpen = false }) {
     return (
         <details className="style-accordion" open={defaultOpen}>
             <summary>{title}</summary>
@@ -16,61 +16,19 @@ function AccordionItem({ title, defaultOpen = false, children }) {
     );
 }
 
-function StyleControls({ value, onChange, compact = false }) {
+function StyleControls({ value, onChange }) {
     const current = value || {};
 
     return (
-        <div className={`style-grid ${compact ? 'compact' : ''}`}>
-            {!compact ? (
-                <>
-                    <Field label="페이지 너비 모드">
-                        <select
-                            value={current.widthMode || 'fixed'}
-                            onChange={(e) => onChange('widthMode', e.target.value)}
-                        >
-                            <option value="fixed">고정 폭</option>
-                            <option value="custom">너비 자동 맞춤</option>
-                        </select>
-                    </Field>
-
-                    {(current.widthMode || 'fixed') === 'fixed' ? (
-                        <Field label="고정 페이지 너비(px)">
-                            <input
-                                type="number"
-                                min="720"
-                                max="1600"
-                                step="10"
-                                value={current.fixedWidth ?? 980}
-                                onChange={(e) => onChange('fixedWidth', Number(e.target.value))}
-                            />
-                        </Field>
-                    ) : (
-                        <Field label="기준 페이지 너비(px)">
-                            <input
-                                type="number"
-                                min="720"
-                                max="2200"
-                                step="10"
-                                value={current.customWidth ?? 1280}
-                                onChange={(e) => onChange('customWidth', Number(e.target.value))}
-                            />
-                        </Field>
-                    )}
-
-                    <Field label="페이지 베이스 배경색">
-                        <input
-                            type="color"
-                            value={current.baseBackgroundColor || '#ece7dc'}
-                            onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
-                        />
-                    </Field>
-                </>
-            ) : null}
-
+        <div className="style-grid compact">
             <Field label="글자색">
                 <input
                     type="color"
-                    value={current.color || '#1d1d1b'}
+                    value={
+                        current.color && current.color !== 'transparent'
+                            ? current.color
+                            : '#1d1d1b'
+                    }
                     onChange={(e) => onChange('color', e.target.value)}
                 />
             </Field>
@@ -87,16 +45,7 @@ function StyleControls({ value, onChange, compact = false }) {
                 />
             </Field>
 
-            <Field label="폰트">
-                <input
-                    type="text"
-                    value={current.fontFamily || 'inherit'}
-                    onChange={(e) => onChange('fontFamily', e.target.value)}
-                    placeholder="예: Noto Sans KR"
-                />
-            </Field>
-
-            <Field label="크기">
+            <Field label="글자 크기">
                 <input
                     type="number"
                     value={current.fontSize ?? 16}
@@ -183,88 +132,109 @@ export default function StylePanel({ store }) {
     const current = actions.getSelectedStyle();
 
     return (
-        <div className="panel-stack style-panel-shell">
-            <section className="panel-section style-panel-summary">
-                <div className="panel-section-body style-panel-summary-body">
-                    <div className="style-panel-head">
-                        <strong>스타일 편집</strong>
-                        <p>선택 대상: {selected?.label || '없음'}</p>
-                    </div>
-
-                    <div className="style-quick-grid">
-                        <Field label="빠른 글자색">
-                            <input
-                                type="color"
-                                value={
-                                    current?.color && current.color !== 'transparent'
-                                        ? current.color
-                                        : '#1d1d1b'
-                                }
-                                onChange={(e) => actions.updateSelectedStyle('color', e.target.value)}
-                            />
-                        </Field>
-
-                        <Field label="빠른 배경색">
-                            <input
-                                type="color"
-                                value={
-                                    current?.backgroundColor && current.backgroundColor !== 'transparent'
-                                        ? current.backgroundColor
-                                        : '#ffffff'
-                                }
-                                onChange={(e) =>
-                                    actions.updateSelectedStyle('backgroundColor', e.target.value)
-                                }
-                            />
-                        </Field>
-
-                        <Field label="빠른 크기">
-                            <input
-                                type="number"
-                                value={current?.fontSize ?? 16}
-                                onChange={(e) =>
-                                    actions.updateSelectedStyle('fontSize', Number(e.target.value))
-                                }
-                            />
-                        </Field>
-
-                        <Field label="빠른 굵기">
-                            <select
-                                value={String(current?.fontWeight ?? 400)}
-                                onChange={(e) => actions.updateSelectedStyle('fontWeight', e.target.value)}
-                            >
-                                <option value="300">300</option>
-                                <option value="400">400</option>
-                                <option value="500">500</option>
-                                <option value="600">600</option>
-                                <option value="700">700</option>
-                                <option value="800">800</option>
-                            </select>
-                        </Field>
-                    </div>
+        <div className="sidebar-panel style-panel-shell">
+            <div className="sidebar-panel-header">
+                <div className="sidebar-panel-header-text">
+                    <strong>스타일 편집</strong>
+                    <p>선택 대상: {selected?.label || '없음'}</p>
                 </div>
-            </section>
+            </div>
 
-            <AccordionItem title="전역 스타일" defaultOpen>
-                <StyleControls
-                    value={store.portfolio.styles.page}
-                    onChange={(field, value) => actions.updateGlobalStyle('page', field, value)}
-                />
-            </AccordionItem>
+            <div className="sidebar-panel-body">
+                <div className="panel-stack">
+                    <section className="panel-section style-panel-summary">
+                        <div className="panel-section-body style-panel-summary-body">
+                            <div className="style-quick-grid">
+                                <Field label="빠른 글자색">
+                                    <input
+                                        type="color"
+                                        value={
+                                            current?.color && current.color !== 'transparent'
+                                                ? current.color
+                                                : '#1d1d1b'
+                                        }
+                                        onChange={(e) =>
+                                            actions.updateSelectedStyle('color', e.target.value)
+                                        }
+                                    />
+                                </Field>
 
-            <AccordionItem title="공통 카드 스타일" defaultOpen>
-                <StyleControls
-                    value={store.portfolio.styles.card}
-                    onChange={(field, value) => actions.updateGlobalStyle('card', field, value)}
-                />
-            </AccordionItem>
+                                <Field label="빠른 배경색">
+                                    <input
+                                        type="color"
+                                        value={
+                                            current?.backgroundColor &&
+                                            current.backgroundColor !== 'transparent'
+                                                ? current.backgroundColor
+                                                : '#ffffff'
+                                        }
+                                        onChange={(e) =>
+                                            actions.updateSelectedStyle(
+                                                'backgroundColor',
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                </Field>
 
-            <AccordionItem title="선택 요소 스타일" defaultOpen>
-                <StyleControls
-                    value={current}
-                    onChange={(field, value) => actions.updateSelectedStyle(field, value)}
-                />
-            </AccordionItem>
+                                <Field label="빠른 크기">
+                                    <input
+                                        type="number"
+                                        value={current?.fontSize ?? 16}
+                                        onChange={(e) =>
+                                            actions.updateSelectedStyle(
+                                                'fontSize',
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                    />
+                                </Field>
+
+                                <Field label="빠른 굵기">
+                                    <select
+                                        value={String(current?.fontWeight ?? 400)}
+                                        onChange={(e) =>
+                                            actions.updateSelectedStyle('fontWeight', e.target.value)
+                                        }
+                                    >
+                                        <option value="300">300</option>
+                                        <option value="400">400</option>
+                                        <option value="500">500</option>
+                                        <option value="600">600</option>
+                                        <option value="700">700</option>
+                                        <option value="800">800</option>
+                                    </select>
+                                </Field>
+                            </div>
+                        </div>
+                    </section>
+
+                    <AccordionItem title="전역 스타일" defaultOpen>
+                        <StyleControls
+                            value={store.portfolio.styles.page}
+                            onChange={(field, value) =>
+                                actions.updateGlobalStyle('page', field, value)
+                            }
+                        />
+                    </AccordionItem>
+
+                    <AccordionItem title="공통 카드 스타일" defaultOpen>
+                        <StyleControls
+                            value={store.portfolio.styles.card}
+                            onChange={(field, value) =>
+                                actions.updateGlobalStyle('card', field, value)
+                            }
+                        />
+                    </AccordionItem>
+
+                    <AccordionItem title="선택 요소 스타일" defaultOpen>
+                        <StyleControls
+                            value={current}
+                            onChange={(field, value) => actions.updateSelectedStyle(field, value)}
+                        />
+                    </AccordionItem>
+                </div>
+            </div>
         </div>
     );
 }

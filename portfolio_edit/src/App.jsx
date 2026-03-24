@@ -30,7 +30,7 @@ export default function App() {
 
             const A4_WIDTH_MM = 210;
             const A4_HEIGHT_MM = 297;
-            const EXPORT_WIDTH_PX = 1240; // A4 기준으로 비교적 선명한 고정 폭
+            const EXPORT_WIDTH_PX = 1240;
             const EXPORT_PADDING = 0;
 
             const clone = target.cloneNode(true);
@@ -72,7 +72,6 @@ export default function App() {
 
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
-
             const pageHeightPx = Math.floor((canvasWidth * pdfHeight) / pdfWidth);
 
             let renderedHeight = 0;
@@ -179,18 +178,25 @@ export default function App() {
             </header>
 
             <main
-                className="layout-shell"
-                style={{
-                    gridTemplateColumns: `${
-                        ui.showContentPanel ? '280px' : '0px'
-                    } minmax(980px, 1fr) ${
-                        ui.showStylePanel ? '300px' : '0px'
-                    }`,
-                }}
+                className={`layout-shell ${ui.showContentPanel ? 'has-left-panel' : 'left-panel-closed'} ${
+                    ui.showStylePanel ? 'has-right-panel' : 'right-panel-closed'
+                }`}
             >
-                {ui.showContentPanel ? <SidePanel store={store}/> : <div/>}
-                <EditablePortfolioCanvas ref={exportRef} store={store}/>
-                {ui.showStylePanel ? <StylePanel store={store}/> : <div/>}
+                {ui.showContentPanel ? (
+                    <aside className="sidebar-rail left-rail is-open">
+                        <SidePanel store={store} />
+                    </aside>
+                ) : null}
+
+                <section className="layout-main">
+                    <EditablePortfolioCanvas ref={exportRef} store={store} />
+                </section>
+
+                {ui.showStylePanel ? (
+                    <aside className="sidebar-rail right-rail is-open">
+                        <StylePanel store={store} />
+                    </aside>
+                ) : null}
             </main>
         </div>
     );
