@@ -1,0 +1,198 @@
+.canvas-wrap {
+    min-height: calc(100vh - 120px);
+    border-radius: 30px;
+    min-width: 0;
+}
+
+.portfolio-page {
+    width: 100%;
+    min-height: 1200px;
+    border-radius: 30px;
+    padding: 28px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.preview-page {
+    box-shadow: var(--shadow);
+}
+
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: minmax(110px, auto);
+    grid-auto-flow: row dense;
+    gap: 18px;
+    align-items: start;
+}
+
+.profile-layout-grid,
+.project-block-grid,
+.custom-section-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: minmax(90px, auto);
+    grid-auto-flow: row dense;
+    gap: 14px;
+    align-items: start;
+}
+
+.section-tile,
+.profile-layout-item,
+.project-block-shell,
+.custom-item-shell {
+    position: relative;
+    min-width: 0;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.section-tile > :last-child,
+.profile-layout-item > :last-child,
+.project-block-shell > :last-child,
+.custom-item-shell > :last-child {
+    min-width: 0;
+}
+
+.section-tile.dragging,
+.profile-layout-item.dragging,
+.project-block-shell.dragging,
+.custom-item-shell.dragging {
+    opacity: 0.42;
+    transform: scale(0.98);
+}
+
+.section-tile.drag-over::after,
+.profile-layout-item.drag-over::after,
+.project-block-shell.drag-over::after,
+.custom-item-shell.drag-over::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 2px dashed #5b8cff;
+    border-radius: 20px;
+    pointer-events: none;
+}
+
+.section-tile-toolbar,
+.profile-block-toolbar,
+.project-block-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    flex-wrap: wrap;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    letter-spacing: 2px;
+    user-select: none;
+}
+
+.span-switcher,
+.profile-block-actions {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.span-switcher button,
+.profile-block-actions button {
+    padding: 6px 10px;
+    font-size: 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: white;
+}
+
+.span-switcher button.active,
+.profile-block-actions button.active {
+    background: #1f1e1b;
+    color: white;
+    border-color: #1f1e1b;
+}
+
+.span-12 {
+    grid-column: span 12;
+}
+
+.span-8 {
+    grid-column: span 8;
+}
+
+.span-6 {
+    grid-column: span 6;
+}
+
+.span-4 {
+    grid-column: span 4;
+}
+
+.span-3 {
+    grid-column: span 3;
+}
+
+.span-r-1 {
+    grid-row: span 1;
+}
+
+.span-r-2 {
+    grid-row: span 2;
+}
+
+.span-r-3 {
+    grid-row: span 3;
+}
+
+.portfolio-card,
+.preview-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    padding: 24px;
+}
+
+.project-card-inner,
+.project-inner-card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 16px;
+    box-shadow: none;
+}
+
+.section-head,
+.section-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-title,
+.section-title-input {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 100%;
+}
+
+.section-title-input:focus {
+    outline: none;
+}
+
+.section-title-input {
+    box-shadow: none;
+}
