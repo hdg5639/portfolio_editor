@@ -117,6 +117,18 @@ function migratePortfolio(rawPortfolio) {
     }));
   }
 
+    next.styles = next.styles || {};
+    next.styles.page = {
+        backgroundColor: '#f4f1ea',
+        baseBackgroundColor: '#ece7dc',
+        color: '#1d1d1b',
+        fontFamily: 'Noto Sans KR, sans-serif',
+        widthMode: 'fixed',
+        fixedWidth: 980,
+        customWidth: 1280,
+        ...(next.styles.page || {}),
+    };
+
   next.projects = (next.projects || []).map((project) => ({
     ...project,
     blocks: (project.blocks || []).map((block) => ({

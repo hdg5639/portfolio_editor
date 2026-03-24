@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { forwardRef, useMemo, useState } from 'react';
 import ProfileSection from './ProfileSection';
 import SkillSection from './SkillSection';
 import ProjectsSection from './ProjectsSection';
@@ -17,32 +17,30 @@ function SectionTile({
                        setDragOverKey,
                        children,
                      }) {
-  const isEdit = store.mode === 'edit';
+  const editable = store.mode === 'edit';
   const isDragging = draggingKey === sectionKey;
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
 
   const handleDragStart = (event) => {
-    if (!isEdit) return;
-    setDraggingKey(sectionKey);
+    if (!editable) return;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', sectionKey);
+    setDraggingKey(sectionKey);
   };
 
   const handleDragOver = (event) => {
-    if (!isEdit || !draggingKey) return;
+    if (!editable || !draggingKey) return;
     event.preventDefault();
     if (dragOverKey !== sectionKey) setDragOverKey(sectionKey);
   };
 
   const handleDrop = (event) => {
-    if (!isEdit) return;
+    if (!editable) return;
     event.preventDefault();
-
     const dragged = event.dataTransfer.getData('text/plain') || draggingKey;
     if (dragged && dragged !== sectionKey) {
       store.actions.moveSection(dragged, sectionKey);
     }
-
     setDraggingKey(null);
     setDragOverKey(null);
   };
@@ -54,16 +52,21 @@ function SectionTile({
 
   return (
       <div
-          className={`section-tile span-${span} span-r-${rowSpan} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`.trim()}
-          draggable={isEdit}
-          onDragStart={handleDragStart}
+          className={`section-tile span-${span} span-r-${rowSpan || 1} ${
+              isDragging ? 'dragging' : ''
+          } ${isDragOver ? 'drag-over' : ''}`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragEnd={handleDragEnd}
       >
-        {isEdit ? (
+        {editable ? (
             <div className="section-tile-toolbar no-print">
-              <div className="drag-handle" title="드래그해서 위치 이동">
+              <div
+                  className="drag-handle"
+                  draggable
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+              >
                 ⋮⋮
               </div>
 
@@ -90,7 +93,7 @@ function SectionTile({
                     <button
                         key={value}
                         type="button"
-                        className={rowSpan === value ? 'active' : ''}
+                        className={(rowSpan || 1) === value ? 'active' : ''}
                         onClick={(event) => {
                           event.stopPropagation();
                           store.actions.setSectionRowSpan(sectionKey, value);
@@ -108,17 +111,25 @@ function SectionTile({
   );
 }
 
-export default function EditablePortfolioCanvas({ store }) {
+const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ store }, exportRef) {
   const { portfolio, actions } = store;
   const pageStyle = portfolio.styles.page;
 
   const [draggingKey, setDraggingKey] = useState(null);
   const [dragOverKey, setDragOverKey] = useState(null);
 
+  const resolvedPageWidth =
+      pageStyle.widthMode === 'custom'
+          ? `${pageStyle.customWidth || 1280}px`
+          : `${pageStyle.fixedWidth || 980}px`;
+
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
     color: pageStyle.color,
     fontFamily: pageStyle.fontFamily,
+    width: '100%',
+    maxWidth: resolvedPageWidth,
+    margin: '0 auto',
   };
 
   const visibleSections = useMemo(() => {
@@ -153,10 +164,10 @@ export default function EditablePortfolioCanvas({ store }) {
   return (
       <div
           className="canvas-wrap"
-          style={{ backgroundColor: pageStyle.backgroundColor }}
+          style={{ backgroundColor: pageStyle.baseBackgroundColor || 'transparent' }}
           onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
       >
-        <div className="portfolio-page preview-page" style={canvasStyle}>
+        <div ref={exportRef} className="portfolio-page preview-page" style={canvasStyle}>
           <div className="portfolio-grid">
             {visibleSections.map((item) => (
                 <SectionTile
@@ -178,4 +189,6 @@ export default function EditablePortfolioCanvas({ store }) {
         </div>
       </div>
   );
-}
+});
+
+export default EditablePortfolioCanvas;

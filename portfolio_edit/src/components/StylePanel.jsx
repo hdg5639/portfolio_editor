@@ -22,13 +22,49 @@ function StyleControls({ value, onChange, compact = false }) {
     return (
         <div className={`style-grid ${compact ? 'compact' : ''}`}>
             {!compact ? (
-                <Field label="페이지 베이스 배경색">
-                    <input
-                        type="color"
-                        value={current.baseBackgroundColor || '#ece7dc'}
-                        onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
-                    />
-                </Field>
+                <>
+                    <Field label="페이지 베이스 배경색">
+                        <input
+                            type="color"
+                            value={current.baseBackgroundColor || '#ece7dc'}
+                            onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
+                        />
+                    </Field>
+
+                    <Field label="페이지 너비 모드">
+                        <select
+                            value={current.widthMode || 'fixed'}
+                            onChange={(e) => onChange('widthMode', e.target.value)}
+                        >
+                            <option value="fixed">고정 비율</option>
+                            <option value="custom">자유 선택</option>
+                        </select>
+                    </Field>
+
+                    {(current.widthMode || 'fixed') === 'fixed' ? (
+                        <Field label="고정 페이지 너비(px)">
+                            <input
+                                type="number"
+                                min="720"
+                                max="1600"
+                                step="10"
+                                value={current.fixedWidth ?? 980}
+                                onChange={(e) => onChange('fixedWidth', Number(e.target.value))}
+                            />
+                        </Field>
+                    ) : (
+                        <Field label="자유 페이지 너비(px)">
+                            <input
+                                type="number"
+                                min="720"
+                                max="2200"
+                                step="10"
+                                value={current.customWidth ?? 1280}
+                                onChange={(e) => onChange('customWidth', Number(e.target.value))}
+                            />
+                        </Field>
+                    )}
+                </>
             ) : null}
 
             <Field label="글자색">

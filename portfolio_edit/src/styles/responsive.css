@@ -1,27 +1,60 @@
 @media print {
+    html,
     body {
+        margin: 0;
+        padding: 0;
         background: white !important;
+    }
+
+    #root {
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border: none !important;
+        min-height: auto !important;
     }
 
     .no-print {
         display: none !important;
     }
 
+    .topbar,
+    .side-panel-shell,
+    .style-panel-shell {
+        display: none !important;
+    }
+
     .layout-shell {
-        display: block;
-        max-width: none;
-        padding: 0;
+        display: block !important;
+        grid-template-columns: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .canvas-wrap {
+        min-height: auto !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
     }
 
     .portfolio-page {
-        box-shadow: none !important;
-        border: none !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-height: auto !important;
+        margin: 0 !important;
         padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
     }
 
     @page {
         size: A4;
-        margin: 14mm;
+        margin: 12mm;
     }
 }
 

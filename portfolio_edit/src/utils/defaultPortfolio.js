@@ -148,7 +148,7 @@ export const createCustomSection = ({
 
 export const defaultProfileBlocks = () => [
   { key: 'image', colSpan: 3, rowSpan: 2, visible: true, label: '프로필 이미지' },
-  { key: 'quote', colSpan: 9, rowSpan: 1, visible: true, label: '한 줄 메시지' },
+  { key: 'quote', colSpan: 8, rowSpan: 1, visible: true, label: '한 줄 메시지' },
   { key: 'contacts', colSpan: 4, rowSpan: 1, visible: true, label: '연락처' },
   { key: 'identity', colSpan: 8, rowSpan: 1, visible: true, label: '이름 / 직무' },
   { key: 'intro', colSpan: 12, rowSpan: 1, visible: true, label: '자기소개' },
@@ -164,40 +164,42 @@ export const defaultSectionLayout = () => [
 
 export const defaultPortfolio = {
   profile: {
-    name: '한동균',
-    role: 'Backend Developer',
-    quote: '운영 가능한 품질을 끝까지 만드는 개발자',
-    email: 'email@example.com',
-    github: 'github.com/example',
-    phone: '010-0000-0000',
+    name: '김도윤',
+    role: 'Full Stack Developer',
+    quote: '문제를 구조로 풀고, 서비스를 끝까지 완성하는 개발자',
+    email: 'doyun.kim@example.com',
+    github: 'github.com/doyunkim-dev',
+    phone: '010-4821-1934',
     intro:
-        '문제의 본질을 파악하고, 기능 구현을 넘어 운영과 유지보수까지 고려하는 개발자입니다. 프로젝트마다 구조, 예외 처리, 배포 안정성을 함께 고민해왔습니다.',
+        '사용자 경험과 운영 안정성을 함께 고려하며 서비스를 설계하는 개발자입니다. 프론트엔드와 백엔드를 넘나들며 기능 구현뿐 아니라 구조 개선, 성능 최적화, 유지보수성까지 함께 고민해왔습니다.',
     image: '',
     layout: defaultProfileBlocks(),
   },
+
   skills: [
-    { id: uid(), category: 'Language', value: 'Java, JavaScript, TypeScript' },
-    { id: uid(), category: 'Backend', value: 'Spring Boot, JPA, MyBatis, Node.js' },
-    { id: uid(), category: 'Infra', value: 'Docker, Jenkins, AWS EC2, NGINX' },
-    { id: uid(), category: 'Database', value: 'MariaDB, MySQL, PostgreSQL' },
+    { id: uid(), category: 'Language', value: 'TypeScript, JavaScript, Java, Python' },
+    { id: uid(), category: 'Frontend', value: 'React, Next.js, Tailwind CSS, Redux Toolkit' },
+    { id: uid(), category: 'Backend', value: 'Node.js, Spring Boot, Express, REST API' },
+    { id: uid(), category: 'Infra / DB', value: 'Docker, AWS, PostgreSQL, Redis, GitHub Actions' },
   ],
+
   projects: [
     {
       id: uid(),
-      title: '새로고침',
-      period: '2024.09 ~ 2025.06',
-      role: '백엔드 / 클라우드 아키텍처',
+      title: 'TaskFlow',
+      period: '2025.01 ~ 2025.04',
+      role: '풀스택 개발 / 프로젝트 리드',
       summary:
-          '재활용 관리, 실시간 채팅, 챗봇, 구매/판매 시스템을 포함한 환경 보호 플랫폼입니다.',
-      techStack: ['Spring Boot', 'MariaDB', 'Docker', 'AWS EC2', 'Jenkins'],
-      link: 'https://github.com/example/refresh',
+          '팀 협업을 위한 일정·문서·업무 관리 플랫폼입니다. 프로젝트 보드, 댓글, 알림, 대시보드 기능을 중심으로 생산성을 높이는 서비스를 구현했습니다.',
+      techStack: ['Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker'],
+      link: 'https://github.com/example/taskflow',
       blocks: [
         {
           id: uid(),
           type: 'text',
           title: '핵심 기여',
           content:
-              'MSA 구조 설계, 운영 기준 예외 처리 정리, 배포 자동화 구조 설계를 담당했습니다.',
+              '서비스 구조 설계, 인증 흐름 구현, 프로젝트 보드 및 알림 기능 개발을 주도했습니다. 공통 컴포넌트와 API 응답 구조를 정리해 개발 효율을 높였습니다.',
           colSpan: 8,
           rowSpan: 1,
         },
@@ -205,15 +207,61 @@ export const defaultPortfolio = {
           id: uid(),
           type: 'list',
           title: '주요 성과',
-          items: ['서비스 경계 분리', 'CI/CD 파이프라인 구축', '실시간 기능 안정성 개선'],
+          items: [
+            '칸반 보드 및 일정 기능 구현',
+            '실시간 알림 UX 개선',
+            '공통 API/컴포넌트 구조 정리',
+          ],
           colSpan: 4,
           rowSpan: 2,
         },
         {
           id: uid(),
           type: 'image',
-          title: '구조도 / 화면',
-          caption: '메인 구조',
+          title: '서비스 화면',
+          caption: '대시보드 및 프로젝트 보드',
+          images: [''],
+          colSpan: 8,
+          rowSpan: 1,
+        },
+      ],
+    },
+    {
+      id: uid(),
+      title: 'DevArchive',
+      period: '2024.08 ~ 2024.12',
+      role: '백엔드 개발',
+      summary:
+          '기술 문서와 회고를 아카이빙하고 검색할 수 있는 개발자 기록 플랫폼입니다. 태그 기반 분류와 검색 최적화를 통해 정보 탐색성을 높였습니다.',
+      techStack: ['Spring Boot', 'JPA', 'MySQL', 'Redis', 'AWS EC2'],
+      link: 'https://github.com/example/devarchive',
+      blocks: [
+        {
+          id: uid(),
+          type: 'text',
+          title: '핵심 기여',
+          content:
+              '문서 CRUD, 태그 시스템, 검색 API, 캐시 전략을 구현했습니다. 데이터 조회 패턴을 분석해 반복 요청이 많은 구간을 개선했습니다.',
+          colSpan: 8,
+          rowSpan: 1,
+        },
+        {
+          id: uid(),
+          type: 'list',
+          title: '주요 성과',
+          items: [
+            '태그 기반 검색 기능 구현',
+            '조회 성능 개선용 캐시 적용',
+            '배포 환경 구성 및 운영',
+          ],
+          colSpan: 4,
+          rowSpan: 2,
+        },
+        {
+          id: uid(),
+          type: 'image',
+          title: '아키텍처 / 화면',
+          caption: '문서 상세 및 검색 화면',
           images: [''],
           colSpan: 8,
           rowSpan: 1,
@@ -221,11 +269,15 @@ export const defaultPortfolio = {
       ],
     },
   ],
+
   awards: [
-    { id: uid(), date: '2025.06', title: '캡스톤디자인 우수상', desc: '새로고침 프로젝트' },
+    { id: uid(), date: '2025.11', title: '해커톤 우수상', desc: '협업 생산성 플랫폼 TaskFlow' },
+    { id: uid(), date: '2024.12', title: '캡스톤 프로젝트 장려상', desc: 'DevArchive 프로젝트' },
   ],
+
   certificates: [
-    { id: uid(), date: '2025.04', title: 'SQLD', desc: 'SQL 개발자' },
+    { id: uid(), date: '2025.05', title: 'SQLD', desc: 'SQL 개발자' },
+    { id: uid(), date: '2024.09', title: '정보처리기사', desc: '필기 합격 / 실기 준비' },
   ],
   customSections: [],
   layout: {
@@ -240,10 +292,13 @@ export const defaultPortfolio = {
   },
   styles: {
     page: {
-      baseBackgroundColor: '#ece7dc',
       backgroundColor: '#f4f1ea',
+      baseBackgroundColor: '#ece7dc',
       color: '#1d1d1b',
       fontFamily: 'Noto Sans KR, sans-serif',
+      widthMode: 'fixed',
+      fixedWidth: 980,
+      customWidth: 1280,
     },
     card: {
       backgroundColor: '#ffffff',
