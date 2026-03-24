@@ -182,13 +182,13 @@ export default function App() {
                 className="layout-shell"
                 style={{
                     gridTemplateColumns: `${
-                        ui.showContentPanel ? '320px' : '0px'
-                    } minmax(0, 1fr) ${ui.showStylePanel ? '320px' : '0px'}`,
+                        ui.showContentPanel ? '280px' : '0px'
+                    } minmax(0, 1fr) ${ui.showStylePanel ? '300px' : '0px'}`,
                 }}
             >
-                {ui.showContentPanel ? <SidePanel store={store} /> : <div />}
-                <EditablePortfolioCanvas ref={exportRef} store={store} />
-                {ui.showStylePanel ? <StylePanel store={store} /> : <div />}
+                {ui.showContentPanel ? <SidePanel store={store}/> : <div/>}
+                <EditablePortfolioCanvas ref={exportRef} store={store}/>
+                {ui.showStylePanel ? <StylePanel store={store}/> : <div/>}
             </main>
         </div>
     );

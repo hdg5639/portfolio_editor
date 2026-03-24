@@ -1,7 +1,7 @@
 .panel-stack {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     min-width: 0;
 }
 
@@ -14,12 +14,12 @@
 }
 
 .panel-section-head {
-    padding: 16px 18px;
+    padding: 12px 14px;
+    gap: 10px;
     border-bottom: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
 }
 
 .panel-section-head strong {
@@ -27,7 +27,7 @@
 }
 
 .panel-section-body {
-    padding: 16px 18px;
+    padding: 12px 14px;
 }
 
 .style-panel-shell {
@@ -163,13 +163,13 @@
 
 .style-quick-grid {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .style-grid {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -208,5 +208,5 @@
 }
 
 .style-accordion-body {
-    padding: 0 16px 16px;
+    padding: 0 14px 14px;
 }
