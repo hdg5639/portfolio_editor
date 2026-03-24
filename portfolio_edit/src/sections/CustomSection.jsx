@@ -7,8 +7,52 @@ function readFileAsDataUrl(file, callback) {
     reader.readAsDataURL(file);
 }
 
-function EditableText({ as = 'input', value, placeholder, onChange, className = '', disabled = false }) {
-    if (disabled) return <div className={className}>{value || placeholder}</div>;
+function bind(store, key, label) {
+    return {
+        style: store.actions.styleFor(key),
+        select: () => store.actions.select({ key, label }),
+    };
+}
+
+function selectableInputProps(store, key, label) {
+    const bound = bind(store, key, label);
+    return {
+        style: bound.style,
+        onClick: (e) => {
+            e.stopPropagation();
+            bound.select();
+        },
+    };
+}
+
+function selectableViewProps(store, key, label) {
+    const bound = bind(store, key, label);
+    return {
+        style: bound.style,
+        onClick: (e) => {
+            e.stopPropagation();
+            bound.select();
+        },
+    };
+}
+
+function EditableText({
+                          as = 'input',
+                          value,
+                          placeholder,
+                          onChange,
+                          className = '',
+                          disabled = false,
+                          style,
+                          onClick,
+                      }) {
+    if (disabled) {
+        return (
+            <div className={className} style={style} onClick={onClick}>
+                {value || placeholder}
+            </div>
+        );
+    }
 
     if (as === 'textarea') {
         return (
@@ -17,6 +61,8 @@ function EditableText({ as = 'input', value, placeholder, onChange, className = 
                 value={value || ''}
                 placeholder={placeholder}
                 onChange={(e) => onChange(e.target.value)}
+                style={style}
+                onClick={onClick}
             />
         );
     }
@@ -27,6 +73,8 @@ function EditableText({ as = 'input', value, placeholder, onChange, className = 
             value={value || ''}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
+            style={style}
+            onClick={onClick}
         />
     );
 }
@@ -80,19 +128,16 @@ function ItemShell({
 
     return (
         <div
-            className={`custom-item-shell span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+            className={`custom-item-shell span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${
+                isDragging ? 'dragging' : ''
+            } ${isDragOver ? 'drag-over' : ''}`}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
             {isEdit ? (
                 <div className="project-block-toolbar">
-                    <div
-                        className="drag-handle"
-                        draggable
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
-                    >
+                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         ⋮⋮
                     </div>
 
@@ -196,23 +241,22 @@ function ComplexBlockShell({
 
     return (
         <div
-            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+                isDragging ? 'dragging' : ''
+            } ${isDragOver ? 'drag-over' : ''}`}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
             {editable ? (
                 <div className="project-block-toolbar">
-                    <div
-                        className="drag-handle"
-                        draggable
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
-                    >
+                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         ⋮⋮
                     </div>
 
-                    <strong>{block.type} · {block.title}</strong>
+                    <strong>
+                        {block.type} · {block.title}
+                    </strong>
 
                     <div className="profile-block-actions">
                         {[12, 8, 6, 4, 3].map((value) => (
@@ -263,25 +307,40 @@ function ComplexBlockShell({
 }
 
 function ComplexTextBlock({ store, sectionId, itemId, block, editable }) {
+    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
+    const contentKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.content`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '복합 텍스트 블록 제목')}
+                        onChange={(e) =>
+                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <textarea
                         value={block.content || ''}
-                        onChange={(e) => store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'content', e.target.value)}
+                        {...selectableInputProps(store, contentKey, '복합 텍스트 블록 본문')}
+                        onChange={(e) =>
+                            store.actions.updateCustomComplexBlock(
+                                sectionId,
+                                itemId,
+                                block.id,
+                                'content',
+                                e.target.value
+                            )
+                        }
                         className="custom-input description"
                     />
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
-                    <p>{block.content}</p>
+                    <h4 {...selectableViewProps(store, titleKey, '복합 텍스트 블록 제목')}>{block.title}</h4>
+                    <p {...selectableViewProps(store, contentKey, '복합 텍스트 블록 본문')}>{block.content}</p>
                 </>
             )}
         </div>
@@ -289,23 +348,40 @@ function ComplexTextBlock({ store, sectionId, itemId, block, editable }) {
 }
 
 function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
+    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '복합 리스트 블록 제목')}
+                        onChange={(e) =>
+                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <div className="project-list-edit">
-                        {(block.items || []).map((entry, index) => (
-                            <input
-                                key={`${block.id}-${index}`}
-                                value={entry}
-                                onChange={(e) => store.actions.updateCustomComplexListItem(sectionId, itemId, block.id, index, e.target.value)}
-                            />
-                        ))}
+                        {(block.items || []).map((entry, index) => {
+                            const itemKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.items.${index}`;
+                            return (
+                                <input
+                                    key={`${block.id}-${index}`}
+                                    value={entry}
+                                    {...selectableInputProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
+                                    onChange={(e) =>
+                                        store.actions.updateCustomComplexListItem(
+                                            sectionId,
+                                            itemId,
+                                            block.id,
+                                            index,
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            );
+                        })}
                         <button
                             type="button"
                             className="ghost small"
@@ -317,11 +393,19 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
+                    <h4 {...selectableViewProps(store, titleKey, '복합 리스트 블록 제목')}>{block.title}</h4>
                     <ul className="project-list-view">
-                        {(block.items || []).map((entry, index) => (
-                            <li key={`${block.id}-${index}`}>{entry}</li>
-                        ))}
+                        {(block.items || []).map((entry, index) => {
+                            const itemKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.items.${index}`;
+                            return (
+                                <li
+                                    key={`${block.id}-${index}`}
+                                    {...selectableViewProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
+                                >
+                                    {entry}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </>
             )}
@@ -330,24 +414,43 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
 }
 
 function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
+    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
+    const captionKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.caption`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '복합 이미지 블록 제목')}
+                        onChange={(e) =>
+                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <input
                         value={block.caption || ''}
-                        onChange={(e) => store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'caption', e.target.value)}
+                        {...selectableInputProps(store, captionKey, '복합 이미지 블록 캡션')}
+                        onChange={(e) =>
+                            store.actions.updateCustomComplexBlock(
+                                sectionId,
+                                itemId,
+                                block.id,
+                                'caption',
+                                e.target.value
+                            )
+                        }
                         className="custom-input subtitle"
                     />
                     <div className="project-image-grid">
                         {(block.images || []).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                {image ? <img src={image} alt={block.title || 'custom'} /> : <div className="project-image-placeholder">IMAGE</div>}
+                                {image ? (
+                                    <img src={image} alt={block.title || 'custom'} />
+                                ) : (
+                                    <div className="project-image-placeholder">IMAGE</div>
+                                )}
                                 <label className="ghost small upload-label">
                                     이미지 업로드
                                     <input
@@ -357,7 +460,13 @@ function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             readFileAsDataUrl(file, (value) =>
-                                                store.actions.updateCustomComplexImage(sectionId, itemId, block.id, index, value)
+                                                store.actions.updateCustomComplexImage(
+                                                    sectionId,
+                                                    itemId,
+                                                    block.id,
+                                                    index,
+                                                    value
+                                                )
                                             );
                                         }}
                                     />
@@ -376,7 +485,7 @@ function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
+                    <h4 {...selectableViewProps(store, titleKey, '복합 이미지 블록 제목')}>{block.title}</h4>
                     <div className="project-image-grid">
                         {(block.images || []).filter(Boolean).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
@@ -384,7 +493,11 @@ function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
                             </div>
                         ))}
                     </div>
-                    {block.caption ? <p className="project-caption">{block.caption}</p> : null}
+                    {block.caption ? (
+                        <p {...selectableViewProps(store, captionKey, '복합 이미지 블록 캡션')} className="project-caption">
+                            {block.caption}
+                        </p>
+                    ) : null}
                 </>
             )}
         </div>
@@ -395,6 +508,12 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
     const [draggingBlockId, setDraggingBlockId] = useState(null);
     const [dragOverBlockId, setDragOverBlockId] = useState(null);
 
+    const titleKey = `custom.${sectionId}.${item.id}.title`;
+    const subtitleKey = `custom.${sectionId}.${item.id}.subtitle`;
+    const dateKey = `custom.${sectionId}.${item.id}.date`;
+    const summaryKey = `custom.${sectionId}.${item.id}.summary`;
+    const linkKey = `custom.${sectionId}.${item.id}.link`;
+
     return (
         <article className="portfolio-card project-card-inner">
             <div className="project-top-meta">
@@ -402,39 +521,58 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                     <>
                         <input
                             value={item.title || ''}
-                            onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'title', e.target.value)}
+                            {...selectableInputProps(store, titleKey, '복합 프로젝트 제목')}
+                            onChange={(e) =>
+                                store.actions.updateCustomSectionItem(sectionId, item.id, 'title', e.target.value)
+                            }
                             className="custom-input title"
                         />
                         <input
                             value={item.subtitle || ''}
-                            onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'subtitle', e.target.value)}
+                            {...selectableInputProps(store, subtitleKey, '복합 프로젝트 부제목')}
+                            onChange={(e) =>
+                                store.actions.updateCustomSectionItem(sectionId, item.id, 'subtitle', e.target.value)
+                            }
                             className="custom-input subtitle"
                         />
                         <input
                             value={item.date || ''}
-                            onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'date', e.target.value)}
+                            {...selectableInputProps(store, dateKey, '복합 프로젝트 날짜')}
+                            onChange={(e) =>
+                                store.actions.updateCustomSectionItem(sectionId, item.id, 'date', e.target.value)
+                            }
                             className="custom-input meta"
                         />
                         <textarea
                             value={item.summary || ''}
-                            onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'summary', e.target.value)}
+                            {...selectableInputProps(store, summaryKey, '복합 프로젝트 요약')}
+                            onChange={(e) =>
+                                store.actions.updateCustomSectionItem(sectionId, item.id, 'summary', e.target.value)
+                            }
                             className="custom-input description"
                         />
                         <input
                             value={item.link || ''}
-                            onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'link', e.target.value)}
+                            {...selectableInputProps(store, linkKey, '복합 프로젝트 링크')}
+                            onChange={(e) =>
+                                store.actions.updateCustomSectionItem(sectionId, item.id, 'link', e.target.value)
+                            }
                             className="custom-input link"
                         />
                     </>
                 ) : (
                     <>
                         <div className="project-head-row">
-                            <h3>{item.title}</h3>
-                            <strong>{item.subtitle}</strong>
+                            <h3 {...selectableViewProps(store, titleKey, '복합 프로젝트 제목')}>{item.title}</h3>
+                            <strong {...selectableViewProps(store, subtitleKey, '복합 프로젝트 부제목')}>
+                                {item.subtitle}
+                            </strong>
                         </div>
-                        <p className="project-period">{item.date}</p>
-                        <p>{item.summary}</p>
-                        <p>{item.link}</p>
+                        <p className="project-period" {...selectableViewProps(store, dateKey, '복합 프로젝트 날짜')}>
+                            {item.date}
+                        </p>
+                        <p {...selectableViewProps(store, summaryKey, '복합 프로젝트 요약')}>{item.summary}</p>
+                        <p {...selectableViewProps(store, linkKey, '복합 프로젝트 링크')}>{item.link}</p>
                     </>
                 )}
             </div>
@@ -442,13 +580,19 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
             {editable ? (
                 <div className="project-list-edit">
                     <strong>기술 스택</strong>
-                    {(item.techStack || []).map((tech, index) => (
-                        <input
-                            key={`${item.id}-tech-${index}`}
-                            value={tech}
-                            onChange={(e) => store.actions.updateCustomComplexTech(sectionId, item.id, index, e.target.value)}
-                        />
-                    ))}
+                    {(item.techStack || []).map((tech, index) => {
+                        const techKey = `custom.${sectionId}.${item.id}.tech.${index}`;
+                        return (
+                            <input
+                                key={`${item.id}-tech-${index}`}
+                                value={tech}
+                                {...selectableInputProps(store, techKey, `복합 프로젝트 기술 ${index + 1}`)}
+                                onChange={(e) =>
+                                    store.actions.updateCustomComplexTech(sectionId, item.id, index, e.target.value)
+                                }
+                            />
+                        );
+                    })}
                     <button
                         type="button"
                         className="ghost small"
@@ -459,9 +603,18 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                 </div>
             ) : (
                 <div className="chip-list">
-                    {(item.techStack || []).filter(Boolean).map((tech, index) => (
-                        <span key={`${item.id}-chip-${index}`} className="chip">{tech}</span>
-                    ))}
+                    {(item.techStack || []).filter(Boolean).map((tech, index) => {
+                        const techKey = `custom.${sectionId}.${item.id}.tech.${index}`;
+                        return (
+                            <span
+                                key={`${item.id}-chip-${index}`}
+                                className="chip"
+                                {...selectableViewProps(store, techKey, `복합 프로젝트 기술 ${index + 1}`)}
+                            >
+                                {tech}
+                            </span>
+                        );
+                    })}
                 </div>
             )}
 
@@ -479,11 +632,29 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         setDragOverId={setDragOverBlockId}
                     >
                         {block.type === 'text' ? (
-                            <ComplexTextBlock store={store} sectionId={sectionId} itemId={item.id} block={block} editable={editable} />
+                            <ComplexTextBlock
+                                store={store}
+                                sectionId={sectionId}
+                                itemId={item.id}
+                                block={block}
+                                editable={editable}
+                            />
                         ) : block.type === 'list' ? (
-                            <ComplexListBlock store={store} sectionId={sectionId} itemId={item.id} block={block} editable={editable} />
+                            <ComplexListBlock
+                                store={store}
+                                sectionId={sectionId}
+                                itemId={item.id}
+                                block={block}
+                                editable={editable}
+                            />
                         ) : (
-                            <ComplexImageBlock store={store} sectionId={sectionId} itemId={item.id} block={block} editable={editable} />
+                            <ComplexImageBlock
+                                store={store}
+                                sectionId={sectionId}
+                                itemId={item.id}
+                                block={block}
+                                editable={editable}
+                            />
                         )}
                     </ComplexBlockShell>
                 ))}
@@ -491,13 +662,25 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
 
             {editable ? (
                 <div className="project-add-blocks">
-                    <button type="button" className="ghost small" onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'text')}>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'text')}
+                    >
                         텍스트 블록
                     </button>
-                    <button type="button" className="ghost small" onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'list')}>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'list')}
+                    >
                         리스트 블록
                     </button>
-                    <button type="button" className="ghost small" onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'image')}>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addCustomComplexBlock(sectionId, item.id, 'image')}
+                    >
                         이미지 블록
                     </button>
                 </div>
@@ -510,6 +693,9 @@ function renderItem(section, item, store, disabled) {
     const sectionId = section.id;
 
     if (section.template === 'simpleList') {
+        const titleKey = `custom.${sectionId}.${item.id}.title`;
+        const descKey = `custom.${sectionId}.${item.id}.description`;
+
         return (
             <div className="custom-item simple">
                 <EditableText
@@ -518,20 +704,28 @@ function renderItem(section, item, store, disabled) {
                     onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'title', value)}
                     className="custom-input title"
                     disabled={disabled}
+                    {...selectableInputProps(store, titleKey, '커스텀 항목 제목')}
                 />
                 <EditableText
                     as="textarea"
                     value={item.description}
                     placeholder="설명"
-                    onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)}
+                    onChange={(value) =>
+                        store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)
+                    }
                     className="custom-input description"
                     disabled={disabled}
+                    {...selectableInputProps(store, descKey, '커스텀 항목 설명')}
                 />
             </div>
         );
     }
 
     if (section.template === 'timeline') {
+        const dateKey = `custom.${sectionId}.${item.id}.date`;
+        const titleKey = `custom.${sectionId}.${item.id}.title`;
+        const descKey = `custom.${sectionId}.${item.id}.description`;
+
         return (
             <div className="custom-item timeline">
                 <EditableText
@@ -540,6 +734,7 @@ function renderItem(section, item, store, disabled) {
                     onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'date', value)}
                     className="custom-input meta"
                     disabled={disabled}
+                    {...selectableInputProps(store, dateKey, '타임라인 날짜')}
                 />
                 <EditableText
                     value={item.title}
@@ -547,22 +742,33 @@ function renderItem(section, item, store, disabled) {
                     onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'title', value)}
                     className="custom-input title"
                     disabled={disabled}
+                    {...selectableInputProps(store, titleKey, '타임라인 제목')}
                 />
                 <EditableText
                     as="textarea"
                     value={item.description}
                     placeholder="설명"
-                    onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)}
+                    onChange={(value) =>
+                        store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)
+                    }
                     className="custom-input description"
                     disabled={disabled}
+                    {...selectableInputProps(store, descKey, '타임라인 설명')}
                 />
             </div>
         );
     }
 
     if (section.template === 'media') {
+        const titleKey = `custom.${sectionId}.${item.id}.title`;
+        const descKey = `custom.${sectionId}.${item.id}.description`;
+
         return (
-            <div className={`custom-item media ${item.imagePosition === 'left' ? 'image-left' : ''} ${item.imagePosition === 'right' ? 'image-right' : ''}`}>
+            <div
+                className={`custom-item media ${item.imagePosition === 'left' ? 'image-left' : ''} ${
+                    item.imagePosition === 'right' ? 'image-right' : ''
+                }`}
+            >
                 {item.image ? (
                     <div className="custom-media-preview">
                         <img src={item.image} alt={item.title || 'custom'} />
@@ -574,7 +780,14 @@ function renderItem(section, item, store, disabled) {
                         <div className="inline-actions wrap">
                             <select
                                 value={item.imagePosition || 'top'}
-                                onChange={(e) => store.actions.updateCustomSectionItem(sectionId, item.id, 'imagePosition', e.target.value)}
+                                onChange={(e) =>
+                                    store.actions.updateCustomSectionItem(
+                                        sectionId,
+                                        item.id,
+                                        'imagePosition',
+                                        e.target.value
+                                    )
+                                }
                             >
                                 <option value="top">이미지 상단</option>
                                 <option value="left">이미지 좌측</option>
@@ -589,7 +802,12 @@ function renderItem(section, item, store, disabled) {
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         readFileAsDataUrl(file, (value) =>
-                                            store.actions.updateCustomSectionItem(sectionId, item.id, 'image', value)
+                                            store.actions.updateCustomSectionItem(
+                                                sectionId,
+                                                item.id,
+                                                'image',
+                                                value
+                                            )
                                         );
                                     }}
                                 />
@@ -603,28 +821,25 @@ function renderItem(section, item, store, disabled) {
                         onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'title', value)}
                         className="custom-input title"
                         disabled={disabled}
+                        {...selectableInputProps(store, titleKey, '미디어 항목 제목')}
                     />
                     <EditableText
                         as="textarea"
                         value={item.description}
                         placeholder="설명"
-                        onChange={(value) => store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)}
+                        onChange={(value) =>
+                            store.actions.updateCustomSectionItem(sectionId, item.id, 'description', value)
+                        }
                         className="custom-input description"
                         disabled={disabled}
+                        {...selectableInputProps(store, descKey, '미디어 항목 설명')}
                     />
                 </div>
             </div>
         );
     }
 
-    return (
-        <ComplexProjectItem
-            sectionId={sectionId}
-            item={item}
-            store={store}
-            editable={!disabled}
-        />
-    );
+    return <ComplexProjectItem sectionId={sectionId} item={item} store={store} editable={!disabled} />;
 }
 
 export default function CustomSection({ store, section }) {
@@ -641,14 +856,37 @@ export default function CustomSection({ store, section }) {
                         className="section-title-input"
                         style={titleStyle}
                         value={section.name}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.select({
+                                key: `section.custom.${section.id}.title`,
+                                label: `${section.name} 섹션 제목`,
+                            });
+                        }}
                         onChange={(e) => store.actions.updateCustomSectionMeta(section.id, 'name', e.target.value)}
                     />
                 ) : (
-                    <h2 className="section-title" style={titleStyle}>{section.name}</h2>
+                    <h2
+                        className="section-title"
+                        style={titleStyle}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.select({
+                                key: `section.custom.${section.id}.title`,
+                                label: `${section.name} 섹션 제목`,
+                            });
+                        }}
+                    >
+                        {section.name}
+                    </h2>
                 )}
 
                 {isEdit ? (
-                    <button type="button" className="ghost small" onClick={() => store.actions.addCustomSectionItem(section.id)}>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addCustomSectionItem(section.id)}
+                    >
                         항목 추가
                     </button>
                 ) : null}

@@ -7,6 +7,36 @@ function readFileAsDataUrl(file, callback) {
     reader.readAsDataURL(file);
 }
 
+function bind(store, key, label) {
+    return {
+        selected: store.selected?.key === key,
+        style: store.actions.styleFor(key),
+        select: () => store.actions.select({ key, label }),
+    };
+}
+
+function selectableInputProps(store, key, label) {
+    const bound = bind(store, key, label);
+    return {
+        style: bound.style,
+        onClick: (e) => {
+            e.stopPropagation();
+            bound.select();
+        },
+    };
+}
+
+function selectableViewProps(store, key, label) {
+    const bound = bind(store, key, label);
+    return {
+        style: bound.style,
+        onClick: (e) => {
+            e.stopPropagation();
+            bound.select();
+        },
+    };
+}
+
 function BlockShell({
                         store,
                         projectId,
@@ -59,7 +89,9 @@ function BlockShell({
 
     return (
         <div
-            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+                isDragging ? 'dragging' : ''
+            } ${isDragOver ? 'drag-over' : ''}`}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
@@ -127,25 +159,34 @@ function BlockShell({
 }
 
 function TextBlock({ block, projectId, store, editable }) {
+    const titleKey = `projects.${projectId}.blocks.${block.id}.title`;
+    const contentKey = `projects.${projectId}.blocks.${block.id}.content`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '프로젝트 블록 제목')}
+                        onChange={(e) =>
+                            store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <textarea
-                        value={block.content}
-                        onChange={(e) => store.actions.updateProjectBlock(projectId, block.id, 'content', e.target.value)}
+                        value={block.content || ''}
+                        {...selectableInputProps(store, contentKey, '프로젝트 블록 본문')}
+                        onChange={(e) =>
+                            store.actions.updateProjectBlock(projectId, block.id, 'content', e.target.value)
+                        }
                         className="custom-input description"
                     />
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
-                    <p>{block.content}</p>
+                    <h4 {...selectableViewProps(store, titleKey, '프로젝트 블록 제목')}>{block.title}</h4>
+                    <p {...selectableViewProps(store, contentKey, '프로젝트 블록 본문')}>{block.content}</p>
                 </>
             )}
         </div>
@@ -153,33 +194,58 @@ function TextBlock({ block, projectId, store, editable }) {
 }
 
 function ListBlock({ block, projectId, store, editable }) {
+    const titleKey = `projects.${projectId}.blocks.${block.id}.title`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '프로젝트 리스트 제목')}
+                        onChange={(e) =>
+                            store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <div className="project-list-edit">
-                        {(block.items || []).map((item, index) => (
-                            <input
-                                key={`${block.id}-${index}`}
-                                value={item}
-                                onChange={(e) => store.actions.updateProjectListItem(projectId, block.id, index, e.target.value)}
-                            />
-                        ))}
-                        <button type="button" className="ghost small" onClick={() => store.actions.addProjectListItem(projectId, block.id)}>
+                        {(block.items || []).map((item, index) => {
+                            const itemKey = `projects.${projectId}.blocks.${block.id}.items.${index}`;
+                            return (
+                                <input
+                                    key={`${block.id}-${index}`}
+                                    value={item}
+                                    {...selectableInputProps(store, itemKey, `프로젝트 리스트 항목 ${index + 1}`)}
+                                    onChange={(e) =>
+                                        store.actions.updateProjectListItem(projectId, block.id, index, e.target.value)
+                                    }
+                                />
+                            );
+                        })}
+                        <button
+                            type="button"
+                            className="ghost small"
+                            onClick={() => store.actions.addProjectListItem(projectId, block.id)}
+                        >
                             리스트 항목 추가
                         </button>
                     </div>
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
+                    <h4 {...selectableViewProps(store, titleKey, '프로젝트 리스트 제목')}>{block.title}</h4>
                     <ul className="project-list-view">
-                        {(block.items || []).map((item, index) => <li key={`${block.id}-${index}`}>{item}</li>)}
+                        {(block.items || []).map((item, index) => {
+                            const itemKey = `projects.${projectId}.blocks.${block.id}.items.${index}`;
+                            return (
+                                <li
+                                    key={`${block.id}-${index}`}
+                                    {...selectableViewProps(store, itemKey, `프로젝트 리스트 항목 ${index + 1}`)}
+                                >
+                                    {item}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </>
             )}
@@ -188,25 +254,38 @@ function ListBlock({ block, projectId, store, editable }) {
 }
 
 function ImageBlock({ block, projectId, store, editable }) {
+    const titleKey = `projects.${projectId}.blocks.${block.id}.title`;
+    const captionKey = `projects.${projectId}.blocks.${block.id}.caption`;
+
     return (
         <div className="project-inner-card">
             {editable ? (
                 <>
                     <input
                         value={block.title}
-                        onChange={(e) => store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)}
+                        {...selectableInputProps(store, titleKey, '프로젝트 이미지 블록 제목')}
+                        onChange={(e) =>
+                            store.actions.updateProjectBlock(projectId, block.id, 'title', e.target.value)
+                        }
                         className="custom-input title"
                     />
                     <input
                         value={block.caption || ''}
-                        onChange={(e) => store.actions.updateProjectBlock(projectId, block.id, 'caption', e.target.value)}
+                        {...selectableInputProps(store, captionKey, '프로젝트 이미지 캡션')}
+                        onChange={(e) =>
+                            store.actions.updateProjectBlock(projectId, block.id, 'caption', e.target.value)
+                        }
                         className="custom-input subtitle"
                     />
 
                     <div className="project-image-grid">
                         {(block.images || []).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                {image ? <img src={image} alt={block.title || 'project'} /> : <div className="project-image-placeholder">IMAGE</div>}
+                                {image ? (
+                                    <img src={image} alt={block.title || 'project'} />
+                                ) : (
+                                    <div className="project-image-placeholder">IMAGE</div>
+                                )}
                                 <label className="ghost small upload-label">
                                     이미지 업로드
                                     <input
@@ -225,13 +304,17 @@ function ImageBlock({ block, projectId, store, editable }) {
                         ))}
                     </div>
 
-                    <button type="button" className="ghost small" onClick={() => store.actions.addProjectImage(projectId, block.id)}>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addProjectImage(projectId, block.id)}
+                    >
                         이미지 슬롯 추가
                     </button>
                 </>
             ) : (
                 <>
-                    <h4>{block.title}</h4>
+                    <h4 {...selectableViewProps(store, titleKey, '프로젝트 이미지 블록 제목')}>{block.title}</h4>
                     <div className="project-image-grid">
                         {(block.images || []).filter(Boolean).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
@@ -239,7 +322,11 @@ function ImageBlock({ block, projectId, store, editable }) {
                             </div>
                         ))}
                     </div>
-                    {block.caption ? <p className="project-caption">{block.caption}</p> : null}
+                    {block.caption ? (
+                        <p {...selectableViewProps(store, captionKey, '프로젝트 이미지 캡션')} className="project-caption">
+                            {block.caption}
+                        </p>
+                    ) : null}
                 </>
             )}
         </div>
@@ -254,7 +341,9 @@ export default function ProjectsSection({ store }) {
     return (
         <section className="portfolio-card" style={cardStyle}>
             <div className="section-head">
-                <h2 className="section-title" style={titleStyle}>프로젝트</h2>
+                <h2 className="section-title" style={titleStyle}>
+                    프로젝트
+                </h2>
             </div>
 
             <div className="projects-list">
@@ -270,26 +359,59 @@ function ProjectCard({ project, store, editable }) {
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
 
+    const titleKey = `projects.${project.id}.title`;
+    const roleKey = `projects.${project.id}.role`;
+    const periodKey = `projects.${project.id}.period`;
+    const summaryKey = `projects.${project.id}.summary`;
+    const linkKey = `projects.${project.id}.link`;
+
     return (
         <article className="portfolio-card project-card-inner">
             <div className="project-top-meta">
                 {editable ? (
                     <>
-                        <input value={project.title} onChange={(e) => store.actions.updateProject(project.id, 'title', e.target.value)} className="custom-input title" />
-                        <input value={project.role} onChange={(e) => store.actions.updateProject(project.id, 'role', e.target.value)} className="custom-input subtitle" />
-                        <input value={project.period} onChange={(e) => store.actions.updateProject(project.id, 'period', e.target.value)} className="custom-input meta" />
-                        <textarea value={project.summary} onChange={(e) => store.actions.updateProject(project.id, 'summary', e.target.value)} className="custom-input description" />
-                        <input value={project.link} onChange={(e) => store.actions.updateProject(project.id, 'link', e.target.value)} className="custom-input link" />
+                        <input
+                            value={project.title}
+                            {...selectableInputProps(store, titleKey, '프로젝트 제목')}
+                            onChange={(e) => store.actions.updateProject(project.id, 'title', e.target.value)}
+                            className="custom-input title"
+                        />
+                        <input
+                            value={project.role}
+                            {...selectableInputProps(store, roleKey, '프로젝트 역할')}
+                            onChange={(e) => store.actions.updateProject(project.id, 'role', e.target.value)}
+                            className="custom-input subtitle"
+                        />
+                        <input
+                            value={project.period}
+                            {...selectableInputProps(store, periodKey, '프로젝트 기간')}
+                            onChange={(e) => store.actions.updateProject(project.id, 'period', e.target.value)}
+                            className="custom-input meta"
+                        />
+                        <textarea
+                            value={project.summary}
+                            {...selectableInputProps(store, summaryKey, '프로젝트 요약')}
+                            onChange={(e) => store.actions.updateProject(project.id, 'summary', e.target.value)}
+                            className="custom-input description"
+                        />
+                        <input
+                            value={project.link}
+                            {...selectableInputProps(store, linkKey, '프로젝트 링크')}
+                            onChange={(e) => store.actions.updateProject(project.id, 'link', e.target.value)}
+                            className="custom-input link"
+                        />
                     </>
                 ) : (
                     <>
                         <div className="project-head-row">
-                            <h3>{project.title}</h3>
-                            <strong>{project.role}</strong>
+                            <h3 {...selectableViewProps(store, titleKey, '프로젝트 제목')}>{project.title}</h3>
+                            <strong {...selectableViewProps(store, roleKey, '프로젝트 역할')}>{project.role}</strong>
                         </div>
-                        <p className="project-period">{project.period}</p>
-                        <p>{project.summary}</p>
-                        <p>{project.link}</p>
+                        <p className="project-period" {...selectableViewProps(store, periodKey, '프로젝트 기간')}>
+                            {project.period}
+                        </p>
+                        <p {...selectableViewProps(store, summaryKey, '프로젝트 요약')}>{project.summary}</p>
+                        <p {...selectableViewProps(store, linkKey, '프로젝트 링크')}>{project.link}</p>
                     </>
                 )}
             </div>
@@ -319,10 +441,34 @@ function ProjectCard({ project, store, editable }) {
 
             {editable ? (
                 <div className="project-add-blocks">
-                    <button type="button" className="ghost small" onClick={() => store.actions.addProjectBlock(project.id, 'text')}>텍스트 블록</button>
-                    <button type="button" className="ghost small" onClick={() => store.actions.addProjectBlock(project.id, 'list')}>리스트 블록</button>
-                    <button type="button" className="ghost small" onClick={() => store.actions.addProjectBlock(project.id, 'image')}>이미지 블록</button>
-                    <button type="button" className="ghost danger small" onClick={() => store.actions.removeProject(project.id)}>프로젝트 삭제</button>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addProjectBlock(project.id, 'text')}
+                    >
+                        텍스트 블록
+                    </button>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addProjectBlock(project.id, 'list')}
+                    >
+                        리스트 블록
+                    </button>
+                    <button
+                        type="button"
+                        className="ghost small"
+                        onClick={() => store.actions.addProjectBlock(project.id, 'image')}
+                    >
+                        이미지 블록
+                    </button>
+                    <button
+                        type="button"
+                        className="ghost danger small"
+                        onClick={() => store.actions.removeProject(project.id)}
+                    >
+                        프로젝트 삭제
+                    </button>
                 </div>
             ) : null}
         </article>
