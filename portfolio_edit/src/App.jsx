@@ -183,7 +183,9 @@ export default function App() {
                 style={{
                     gridTemplateColumns: `${
                         ui.showContentPanel ? '280px' : '0px'
-                    } minmax(0, 1fr) ${ui.showStylePanel ? '300px' : '0px'}`,
+                    } minmax(980px, 1fr) ${
+                        ui.showStylePanel ? '300px' : '0px'
+                    }`,
                 }}
             >
                 {ui.showContentPanel ? <SidePanel store={store}/> : <div/>}
