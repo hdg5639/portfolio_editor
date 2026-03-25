@@ -169,6 +169,7 @@
 
 .preview-page {
     box-shadow: none;
+    overflow: hidden;
 }
 
 .portfolio-grid {

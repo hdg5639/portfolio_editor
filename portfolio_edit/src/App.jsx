@@ -500,7 +500,11 @@ export default function App() {
                 ) : null}
 
                 <section className="layout-main">
-                    <EditablePortfolioCanvas ref={exportRef} store={store}/>
+                    <EditablePortfolioCanvas
+                        ref={exportRef}
+                        store={store}
+                        hideZoomControls={ui.isMobile && (ui.mobileSheetOpen || ui.mobileQuickOpen)}
+                    />
                 </section>
 
                 {showDesktopStylePanel ? (
@@ -523,19 +527,12 @@ export default function App() {
 
             {ui.isMobile ? (
                 <>
-                    <EditablePortfolioCanvas
-                        ref={exportRef}
-                        store={store}
-                        hideZoomControls={ui.mobileSheetOpen || ui.mobileQuickOpen}
-                    />
                     <MobileQuickFab store={store} />
                     <MobileSelectionChip store={store} />
                     <MobileBottomDock store={store} />
                     <MobileEditorSheet store={store} />
                 </>
-            ) : (
-                <EditablePortfolioCanvas ref={exportRef} store={store} />
-            )}
+            ) : null}
         </div>
     );
 }
