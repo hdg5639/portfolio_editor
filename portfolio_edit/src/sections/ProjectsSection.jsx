@@ -375,31 +375,50 @@ function ProjectCard({
     const isProjectCardDragEvent = (event) =>
         Array.from(event.dataTransfer?.types || []).includes('application/x-project-card');
 
+    const showProjectDropOverlay = showHelpers && !!draggingProjectId && draggingProjectId !== project.id;
+
     return (
         <article
             className={`portfolio-card project-card-inner ${
                 isProjectDragging ? 'dragging' : ''
             } ${isProjectDragOver ? 'drag-over' : ''}`}
-            onDragOver={(event) => {
+            onDragEnterCapture={(event) => {
                 if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
                 event.preventDefault();
                 event.stopPropagation();
+
                 if (dragOverProjectId !== project.id) {
                     setDragOverProjectId(project.id);
                 }
             }}
-            onDragLeave={(event) => {
+            onDragOverCapture={(event) => {
+                if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
+                event.preventDefault();
+                event.stopPropagation();
+                event.dataTransfer.dropEffect = 'move';
+
+                if (dragOverProjectId !== project.id) {
+                    setDragOverProjectId(project.id);
+                }
+            }}
+            onDragLeaveCapture={(event) => {
                 if (!isProjectCardDragEvent(event)) return;
+
+                const nextTarget = event.relatedTarget;
+                if (nextTarget && event.currentTarget.contains(nextTarget)) return;
+
                 if (dragOverProjectId === project.id) {
                     setDragOverProjectId(null);
                 }
             }}
-            onDrop={(event) => {
+            onDropCapture={(event) => {
                 if (!showHelpers || !isProjectCardDragEvent(event)) return;
                 event.preventDefault();
                 event.stopPropagation();
 
-                const dragged = event.dataTransfer.getData('application/x-project-card') || draggingProjectId;
+                const dragged =
+                    event.dataTransfer.getData('application/x-project-card') || draggingProjectId;
+
                 if (dragged && dragged !== project.id) {
                     store.actions.moveProject(dragged, project.id);
                 }
@@ -418,7 +437,10 @@ function ProjectCard({
                             event.stopPropagation();
                             setDraggingProjectId(project.id);
                             event.dataTransfer.effectAllowed = 'move';
-                            event.dataTransfer.setData('application/x-project-card', String(project.id));
+                            event.dataTransfer.setData(
+                                'application/x-project-card',
+                                String(project.id)
+                            );
                         }}
                         onDragEnd={(event) => {
                             event.stopPropagation();
@@ -431,6 +453,38 @@ function ProjectCard({
 
                     <strong>{project.title || '프로젝트'}</strong>
                 </div>
+            ) : null}
+
+            {showProjectDropOverlay ? (
+                <div
+                    className={`project-card-drop-overlay ${isProjectDragOver ? 'active' : ''}`}
+                    onDragOver={(event) => {
+                        if (!isProjectCardDragEvent(event)) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.dataTransfer.dropEffect = 'move';
+
+                        if (dragOverProjectId !== project.id) {
+                            setDragOverProjectId(project.id);
+                        }
+                    }}
+                    onDrop={(event) => {
+                        if (!isProjectCardDragEvent(event)) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const dragged =
+                            event.dataTransfer.getData('application/x-project-card') ||
+                            draggingProjectId;
+
+                        if (dragged && dragged !== project.id) {
+                            store.actions.moveProject(dragged, project.id);
+                        }
+
+                        setDraggingProjectId(null);
+                        setDragOverProjectId(null);
+                    }}
+                />
             ) : null}
 
             <div className="project-top-meta">
