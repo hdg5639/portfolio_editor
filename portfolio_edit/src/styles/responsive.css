@@ -61,24 +61,42 @@
 /* 공통 축소 폭에서 상단 UI 정도만 정리 */
 @media (max-width: 1280px) {
     .topbar-inner {
-        gap: 12px;
+        gap: 14px;
     }
 
     .topbar-right {
-        gap: 8px;
-        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .topbar-mode-toggle {
+        min-width: 180px;
+        padding: 10px 14px;
+    }
+
+    .topbar-action-button {
+        padding: 8px 10px;
     }
 }
 
 @media (max-width: 920px) {
     .topbar-inner {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
     }
 
     .topbar-right {
-        justify-content: flex-start;
+        width: 100%;
+        justify-content: space-between;
         flex-wrap: wrap;
+    }
+
+    .topbar-mode-toggle {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .topbar-action-group {
+        gap: 6px;
     }
 
     .style-grid,
@@ -100,26 +118,77 @@
         padding: 12px 12px 110px;
     }
 
+    .mobile-app-shell .topbar {
+        background: rgba(255, 255, 255, 0.92);
+    }
+
     .mobile-app-shell .topbar-inner {
         padding: 12px;
         gap: 10px;
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    .mobile-app-shell .topbar-left {
+        flex: 1 1 auto;
+        justify-content: center;
     }
 
     .mobile-app-shell .topbar-left strong {
-        font-size: 16px;
+        font-size: 14px;
     }
 
     .mobile-app-shell .topbar-left p {
         font-size: 12px;
+        line-height: 1.35;
     }
 
     .mobile-app-shell .topbar-right {
-        width: 100%;
-        gap: 8px;
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 108px;
+        align-self: center;
     }
 
-    .mobile-app-shell .topbar-right button {
-        padding: 9px 12px;
+    .mobile-app-shell .topbar-mobile-controls {
+        height: auto;
+        min-height: 42px;
+        gap: 6px;
+        align-items: stretch;
+    }
+
+    .mobile-app-shell .topbar-mode-toggle-mobile {
+        min-width: 0;
+        width: 74px;
+        min-height: 42px;
+        padding: 6px 8px;
+        border-radius: 14px;
+        justify-content: center;
+    }
+
+    .mobile-app-shell .topbar-mode-toggle-mobile .topbar-mode-toggle-kicker {
+        margin-bottom: 2px;
+        font-size: 9px;
+    }
+
+    .mobile-app-shell .topbar-mode-toggle-mobile strong {
+        font-size: 12px;
+        line-height: 1.05;
+    }
+
+    .mobile-app-shell .topbar-mode-toggle-mobile .topbar-mode-toggle-next {
+        font-size: 9px;
+        line-height: 1.1;
+    }
+
+    .mobile-app-shell .topbar-mobile-icon-stack {
+        width: 34px;
+        gap: 4px;
+    }
+
+    .mobile-app-shell .topbar-icon-button {
+        height: 19px;
+        border-radius: 10px;
         font-size: 12px;
     }
 
@@ -143,17 +212,16 @@
     }
 
     .mobile-app-shell .topbar-inner {
-        padding: 10px 12px;
-        gap: 8px;
+        padding: 8px 10px;
+        gap: 6px;
     }
 
     .mobile-app-shell .topbar-left p {
-        font-size: 11px;
+        font-size: 10px;
     }
 
-    .mobile-app-shell .topbar-right button {
-        padding: 8px 10px;
-        font-size: 11px;
+    .mobile-app-shell .topbar-mode-toggle-mobile {
+        padding: 7px 8px;
     }
 
     .mobile-editor-sheet {
