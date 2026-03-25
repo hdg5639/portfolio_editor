@@ -177,23 +177,6 @@ function AccordionItem({title, children, defaultOpen = false}) {
     );
 }
 
-function InlineAccordion({ title, children, defaultOpen = true, action = null }) {
-    return (
-        <details className="inline-accordion" open={defaultOpen}>
-            <summary className="inline-accordion-summary">
-                <span className="inline-accordion-title">{title}</span>
-                <span
-                    className="inline-accordion-action"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {action}
-                </span>
-            </summary>
-            <div className="inline-accordion-body">{children}</div>
-        </details>
-    );
-}
-
 function StyleControls({value, onChange, compact = false, alphaTargets = {}}) {
     const current = value || {};
     const alphaBackground = Boolean(alphaTargets.backgroundColor);
@@ -348,109 +331,8 @@ function StyleControls({value, onChange, compact = false, alphaTargets = {}}) {
     );
 }
 
-
-const SHADOW_ANGLE_OPTIONS = [
-    ['top-left', '↖'],
-    ['top', '↑'],
-    ['top-right', '↗'],
-    ['left', '←'],
-    ['right', '→'],
-    ['bottom-left', '↙'],
-    ['bottom', '↓'],
-    ['bottom-right', '↘'],
-];
-
-function clampShadowValue(value, min, max, fallback) {
-    const next = Number(value);
-    if (Number.isNaN(next)) return fallback;
-    return Math.max(min, Math.min(max, next));
-}
-
-function ShadowAnglePicker({ value, onChange }) {
-    return (
-        <div className="shadow-angle-grid" role="group" aria-label="그림자 각도">
-            <button
-                type="button"
-                className={`shadow-angle-button angle-top-left ${value === 'top-left' ? 'active' : ''}`}
-                onClick={() => onChange('top-left')}
-                title="top-left"
-            >
-                ↖
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button angle-top ${value === 'top' ? 'active' : ''}`}
-                onClick={() => onChange('top')}
-                title="top"
-            >
-                ↑
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button angle-top-right ${value === 'top-right' ? 'active' : ''}`}
-                onClick={() => onChange('top-right')}
-                title="top-right"
-            >
-                ↗
-            </button>
-
-            <button
-                type="button"
-                className={`shadow-angle-button angle-left ${value === 'left' ? 'active' : ''}`}
-                onClick={() => onChange('left')}
-                title="left"
-            >
-                ←
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button center ${value === 'center' ? 'active' : ''}`}
-                onClick={() => onChange('center')}
-                title="center"
-            >
-                •
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button angle-right ${value === 'right' ? 'active' : ''}`}
-                onClick={() => onChange('right')}
-                title="right"
-            >
-                →
-            </button>
-
-            <button
-                type="button"
-                className={`shadow-angle-button angle-bottom-left ${value === 'bottom-left' ? 'active' : ''}`}
-                onClick={() => onChange('bottom-left')}
-                title="bottom-left"
-            >
-                ↙
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button angle-bottom ${value === 'bottom' ? 'active' : ''}`}
-                onClick={() => onChange('bottom')}
-                title="bottom"
-            >
-                ↓
-            </button>
-            <button
-                type="button"
-                className={`shadow-angle-button angle-bottom-right ${value === 'bottom-right' ? 'active' : ''}`}
-                onClick={() => onChange('bottom-right')}
-                title="bottom-right"
-            >
-                ↘
-            </button>
-        </div>
-    );
-}
-
 function CardStyleControls({ value, onChange }) {
     const current = value || {};
-    const shadowEnabled = current.shadowEnabled !== false;
-    const shadowAngle = current.shadowAngle || 'bottom-right';
 
     return (
         <div className="style-grid compact">
@@ -483,120 +365,11 @@ function CardStyleControls({ value, onChange }) {
                     onChange={(e) => onChange('padding', Number(e.target.value))}
                 />
             </Field>
-
-            <div className="style-field span-2">
-                <InlineAccordion
-                    title="그림자"
-                    defaultOpen
-                    action={
-                        <button
-                            type="button"
-                            className={`header-inline-toggle ${shadowEnabled ? 'active' : ''}`}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onChange('shadowEnabled', !shadowEnabled);
-                            }}
-                        >
-                            <span className="header-inline-toggle-label">
-                                {shadowEnabled ? 'ON' : 'OFF'}
-                            </span>
-                            <span className="header-inline-toggle-track">
-                                <span className="header-inline-toggle-thumb" />
-                            </span>
-                        </button>
-                    }
-                >
-                    <div className="card-shadow-controls">
-                        <Field label="각도">
-                            <ShadowAnglePicker
-                                value={shadowAngle}
-                                onChange={(nextAngle) => {
-                                    onChange('shadowEnabled', true);
-                                    onChange('shadowAngle', nextAngle);
-                                }}
-                            />
-                        </Field>
-
-                        <Field label="투명도">
-                            <div className="shadow-range-row">
-                                <input
-                                    className="alpha-range-input"
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    step="1"
-                                    value={current.shadowOpacity ?? 10}
-                                    onChange={(e) =>
-                                        onChange(
-                                            'shadowOpacity',
-                                            clampShadowValue(e.target.value, 0, 100, 10)
-                                        )
-                                    }
-                                />
-
-                                <div className="alpha-value-box shadow-value-box">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="1"
-                                        value={current.shadowOpacity ?? 10}
-                                        onChange={(e) =>
-                                            onChange(
-                                                'shadowOpacity',
-                                                clampShadowValue(e.target.value, 0, 100, 10)
-                                            )
-                                        }
-                                    />
-                                    <span>%</span>
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label="길이">
-                            <div className="shadow-range-row">
-                                <input
-                                    className="alpha-range-input"
-                                    type="range"
-                                    min="0"
-                                    max="120"
-                                    step="1"
-                                    value={current.shadowLength ?? 28}
-                                    onChange={(e) =>
-                                        onChange(
-                                            'shadowLength',
-                                            clampShadowValue(e.target.value, 0, 120, 28)
-                                        )
-                                    }
-                                />
-
-                                <div className="alpha-value-box shadow-value-box length-box">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="120"
-                                        step="1"
-                                        value={current.shadowLength ?? 28}
-                                        onChange={(e) =>
-                                            onChange(
-                                                'shadowLength',
-                                                clampShadowValue(e.target.value, 0, 120, 28)
-                                            )
-                                        }
-                                    />
-                                    <span>px</span>
-                                </div>
-                            </div>
-                        </Field>
-                    </div>
-                </InlineAccordion>
-            </div>
         </div>
     );
 }
 
-export default function StylePanel({ store }) {
+export default function StylePanel({ store, mobileTool = null, quickOnly = false, embedded = false }) {
     const { selected, actions } = store;
     const current = actions.getSelectedStyle();
     const isCardSelection = [
@@ -607,8 +380,100 @@ export default function StylePanel({ store }) {
         'customCard',
     ].includes(selected?.key);
 
+    const quickPanel = isCardSelection ? (
+        <CardStyleControls
+            value={current}
+            onChange={(field, value) =>
+                actions.updateSelectedStyle(field, value)
+            }
+        />
+    ) : (
+        <div className="style-quick-grid">
+            <Field label="빠른 글자색">
+                <input
+                    type="color"
+                    value={
+                        current?.color && current.color !== 'transparent'
+                            ? current.color
+                            : '#1d1d1b'
+                    }
+                    onChange={(e) =>
+                        actions.updateSelectedStyle('color', e.target.value)
+                    }
+                />
+            </Field>
+
+            <Field label="빠른 배경색">
+                <input
+                    type="color"
+                    value={
+                        current?.backgroundColor &&
+                        current.backgroundColor !== 'transparent'
+                            ? current.backgroundColor
+                            : '#ffffff'
+                    }
+                    onChange={(e) =>
+                        actions.updateSelectedStyle(
+                            'backgroundColor',
+                            e.target.value
+                        )
+                    }
+                />
+            </Field>
+
+            <Field label="빠른 크기">
+                <input
+                    type="number"
+                    value={current?.fontSize ?? 16}
+                    onChange={(e) =>
+                        actions.updateSelectedStyle(
+                            'fontSize',
+                            Number(e.target.value)
+                        )
+                    }
+                />
+            </Field>
+
+            <Field label="빠른 굵기">
+                <select
+                    value={String(current?.fontWeight ?? 400)}
+                    onChange={(e) =>
+                        actions.updateSelectedStyle(
+                            'fontWeight',
+                            e.target.value
+                        )
+                    }
+                >
+                    <option value="300">300</option>
+                    <option value="400">400</option>
+                    <option value="500">500</option>
+                    <option value="600">600</option>
+                    <option value="700">700</option>
+                    <option value="800">800</option>
+                </select>
+            </Field>
+        </div>
+    );
+
+    if (quickOnly) {
+        return (
+            <div className={`style-panel-quick-only ${embedded ? 'embedded-panel-shell' : ''}`}>
+                <div className="panel-section style-panel-summary compact-floating-panel">
+                    <div className="panel-section-head compact-floating-panel-head">
+                        <strong>빠른 설정</strong>
+                        <span>{selected?.label || '선택 없음'}</span>
+                    </div>
+                    <div className="panel-section-body style-panel-summary-body">{quickPanel}</div>
+                </div>
+            </div>
+        );
+    }
+
+    const showGlobal = !mobileTool || mobileTool === 'global';
+    const showSelected = !mobileTool || mobileTool !== 'global';
+
     return (
-        <div className="sidebar-panel style-panel-shell">
+        <div className={`sidebar-panel style-panel-shell ${embedded ? 'embedded-panel-shell' : ''}`}>
             <div className="sidebar-panel-header">
                 <div className="sidebar-panel-header-text">
                     <strong>스타일 편집</strong>
@@ -618,114 +483,54 @@ export default function StylePanel({ store }) {
 
             <div className="sidebar-panel-body">
                 <div className="panel-stack">
-                    <section className="panel-section style-panel-summary">
-                        <div className="panel-section-body style-panel-summary-body">
-                            <div className="style-quick-grid">
-                                <Field label="빠른 글자색">
-                                    <input
-                                        type="color"
-                                        value={
-                                            current?.color && current.color !== 'transparent'
-                                                ? current.color
-                                                : '#1d1d1b'
-                                        }
-                                        onChange={(e) =>
-                                            actions.updateSelectedStyle('color', e.target.value)
-                                        }
-                                    />
-                                </Field>
+                    {showSelected ? (
+                        <section className="panel-section style-panel-summary">
+                            <div className="panel-section-body style-panel-summary-body">{quickPanel}</div>
+                        </section>
+                    ) : null}
 
-                                <Field label="빠른 배경색">
-                                    <input
-                                        type="color"
-                                        value={
-                                            current?.backgroundColor &&
-                                            current.backgroundColor !== 'transparent'
-                                                ? current.backgroundColor
-                                                : '#ffffff'
-                                        }
-                                        onChange={(e) =>
-                                            actions.updateSelectedStyle(
-                                                'backgroundColor',
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-                                </Field>
-
-                                <Field label="빠른 크기">
-                                    <input
-                                        type="number"
-                                        value={current?.fontSize ?? 16}
-                                        onChange={(e) =>
-                                            actions.updateSelectedStyle(
-                                                'fontSize',
-                                                Number(e.target.value)
-                                            )
-                                        }
-                                    />
-                                </Field>
-
-                                <Field label="빠른 굵기">
-                                    <select
-                                        value={String(current?.fontWeight ?? 400)}
-                                        onChange={(e) =>
-                                            actions.updateSelectedStyle(
-                                                'fontWeight',
-                                                e.target.value
-                                            )
-                                        }
-                                    >
-                                        <option value="300">300</option>
-                                        <option value="400">400</option>
-                                        <option value="500">500</option>
-                                        <option value="600">600</option>
-                                        <option value="700">700</option>
-                                        <option value="800">800</option>
-                                    </select>
-                                </Field>
-                            </div>
-                        </div>
-                    </section>
-
-                    <AccordionItem title="전역 스타일" defaultOpen>
-                        <StyleControls
-                            value={store.portfolio.styles.page}
-                            alphaTargets={{
-                                baseBackgroundColor: true,
-                                backgroundColor: true,
-                                borderColor: true,
-                            }}
-                            onChange={(field, value) =>
-                                actions.updateGlobalStyle('page', field, value)
-                            }
-                        />
-                    </AccordionItem>
-
-                    <AccordionItem
-                        title={isCardSelection ? '선택 카드 스타일' : '선택 요소 스타일'}
-                        defaultOpen
-                    >
-                        {isCardSelection ? (
-                            <CardStyleControls
-                                value={current}
-                                onChange={(field, value) =>
-                                    actions.updateSelectedStyle(field, value)
-                                }
-                            />
-                        ) : (
+                    {showGlobal ? (
+                        <AccordionItem title="전역 스타일" defaultOpen>
                             <StyleControls
-                                value={current}
+                                value={store.portfolio.styles.page}
                                 alphaTargets={{
+                                    baseBackgroundColor: true,
                                     backgroundColor: true,
                                     borderColor: true,
                                 }}
                                 onChange={(field, value) =>
-                                    actions.updateSelectedStyle(field, value)
+                                    actions.updateGlobalStyle('page', field, value)
                                 }
                             />
-                        )}
-                    </AccordionItem>
+                        </AccordionItem>
+                    ) : null}
+
+                    {showSelected ? (
+                        <AccordionItem
+                            title={isCardSelection ? '선택 카드 스타일' : '선택 요소 스타일'}
+                            defaultOpen
+                        >
+                            {isCardSelection ? (
+                                <CardStyleControls
+                                    value={current}
+                                    onChange={(field, value) =>
+                                        actions.updateSelectedStyle(field, value)
+                                    }
+                                />
+                            ) : (
+                                <StyleControls
+                                    value={current}
+                                    alphaTargets={{
+                                        backgroundColor: true,
+                                        borderColor: true,
+                                    }}
+                                    onChange={(field, value) =>
+                                        actions.updateSelectedStyle(field, value)
+                                    }
+                                />
+                            )}
+                        </AccordionItem>
+                    ) : null}
                 </div>
             </div>
         </div>

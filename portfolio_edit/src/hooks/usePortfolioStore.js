@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+
+const MOBILE_BREAKPOINT = 920;
 import {
     defaultPortfolio,
     createSkill,
@@ -38,61 +40,6 @@ function moveBefore(list, draggedKey, targetKey, keyName = 'key') {
     next.splice(toIndex, 0, dragged);
 
     return next;
-}
-
-const DEFAULT_CARD_SHADOW = {
-    shadowEnabled: true,
-    shadowAngle: 'bottom-right',
-    shadowOpacity: 10,
-    shadowLength: 28,
-};
-
-const SHADOW_DIRECTIONS = {
-    top: { x: 0, y: -1 },
-    'top-right': { x: 1, y: -1 },
-    right: { x: 1, y: 0 },
-    'bottom-right': { x: 1, y: 1 },
-    bottom: { x: 0, y: 1 },
-    'bottom-left': { x: -1, y: 1 },
-    left: { x: -1, y: 0 },
-    'top-left': { x: -1, y: -1 },
-    center: { x: 0, y: 0 },
-};
-
-function normalizeShadowLength(value) {
-    const next = Number(value);
-    if (Number.isNaN(next)) return DEFAULT_CARD_SHADOW.shadowLength;
-    return Math.max(0, Math.min(120, next));
-}
-
-function normalizeShadowOpacity(value) {
-    const next = Number(value);
-    if (Number.isNaN(next)) return DEFAULT_CARD_SHADOW.shadowOpacity;
-    return Math.max(0, Math.min(100, next));
-}
-
-function buildCardShadow(style = {}) {
-    if (style.shadowEnabled === false) {
-        return 'none';
-    }
-
-    const length = normalizeShadowLength(style.shadowLength);
-    const opacity = normalizeShadowOpacity(style.shadowOpacity) / 100;
-    const angle = style.shadowAngle || DEFAULT_CARD_SHADOW.shadowAngle;
-    const direction = SHADOW_DIRECTIONS[angle] || SHADOW_DIRECTIONS[DEFAULT_CARD_SHADOW.shadowAngle];
-
-    if (angle === 'center') {
-        const blur = Math.max(10, Math.round(length * 1.2));
-        const spread = Math.max(0, Math.round(length * 0.02));
-        return `0px 0px ${blur}px ${spread}px rgba(25, 21, 15, ${opacity.toFixed(2)})`;
-    }
-
-    const offsetX = Math.round(direction.x * length * 0.45);
-    const offsetY = Math.round(direction.y * length * 0.45);
-    const blur = Math.max(6, Math.round(length * 1.15));
-    const spread = Math.max(-2, Math.round(length * -0.08));
-
-    return `${offsetX}px ${offsetY}px ${blur}px ${spread}px rgba(25, 21, 15, ${opacity.toFixed(2)})`;
 }
 
 function syncCustomSections(portfolio) {
@@ -191,7 +138,6 @@ function migratePortfolio(rawPortfolio) {
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
-        ...DEFAULT_CARD_SHADOW,
         ...legacyCard,
         ...(next.styles.profileCard || {}),
     };
@@ -201,7 +147,6 @@ function migratePortfolio(rawPortfolio) {
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
-        ...DEFAULT_CARD_SHADOW,
         ...legacyCard,
         ...(next.styles.projectsCard || {}),
     };
@@ -211,7 +156,6 @@ function migratePortfolio(rawPortfolio) {
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
-        ...DEFAULT_CARD_SHADOW,
         ...legacyCard,
         ...(next.styles.skillsCard || {}),
     };
@@ -221,7 +165,6 @@ function migratePortfolio(rawPortfolio) {
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
-        ...DEFAULT_CARD_SHADOW,
         ...legacyCard,
         ...(next.styles.timelineCard || {}),
     };
@@ -231,7 +174,6 @@ function migratePortfolio(rawPortfolio) {
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
-        ...DEFAULT_CARD_SHADOW,
         ...legacyCard,
         ...(next.styles.customCard || {}),
     };
@@ -336,20 +278,50 @@ export function usePortfolioStore() {
 
     const [mode, setMode] = useState('edit');
     const [selected, setSelected] = useState({ key: 'page', label: '페이지 전체' });
-    const [ui, setUi] = useState({
+    const [ui, setUi] = useState(() => ({
         showContentPanel: true,
         showStylePanel: true,
         showEditHelpers: true,
-    });
+        isMobile: typeof window !== 'undefined' ? window.innerWidth <= MOBILE_BREAKPOINT : false,
+        mobileEditorMode: 'layout',
+        mobileLayoutTool: 'sections',
+        mobileStyleTool: 'text',
+        mobileSheetOpen: false,
+        mobileQuickOpen: false,
+    }));
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
     }, [portfolio]);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+
+        const syncViewport = () => {
+            const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+            setUi((prev) => ({
+                ...prev,
+                isMobile,
+                mobileSheetOpen: isMobile ? prev.mobileSheetOpen : false,
+                mobileQuickOpen: isMobile ? prev.mobileQuickOpen : false,
+            }));
+        };
+
+        syncViewport();
+        window.addEventListener('resize', syncViewport);
+        return () => window.removeEventListener('resize', syncViewport);
+    }, []);
+
     const actions = useMemo(
         () => ({
             setMode,
-            select: setSelected,
+            select: (next) => {
+                setSelected(next);
+                setUi((prev) => ({
+                    ...prev,
+                    mobileSheetOpen: prev.isMobile && prev.mobileEditorMode === 'style' ? true : prev.mobileSheetOpen,
+                }));
+            },
 
             togglePanel: (panel) =>
                 setUi((prev) => ({
@@ -368,6 +340,41 @@ export function usePortfolioStore() {
                 setUi((prev) => ({
                     ...prev,
                     showEditHelpers: Boolean(visible),
+                })),
+
+            setMobileEditorMode: (mode) =>
+                setUi((prev) => ({
+                    ...prev,
+                    mobileEditorMode: mode,
+                    mobileSheetOpen: true,
+                })),
+
+            setMobileLayoutTool: (tool) =>
+                setUi((prev) => ({
+                    ...prev,
+                    mobileLayoutTool: tool,
+                    mobileEditorMode: 'layout',
+                    mobileSheetOpen: true,
+                })),
+
+            setMobileStyleTool: (tool) =>
+                setUi((prev) => ({
+                    ...prev,
+                    mobileStyleTool: tool,
+                    mobileEditorMode: 'style',
+                    mobileSheetOpen: true,
+                })),
+
+            toggleMobileSheet: (force) =>
+                setUi((prev) => ({
+                    ...prev,
+                    mobileSheetOpen: typeof force === 'boolean' ? force : !prev.mobileSheetOpen,
+                })),
+
+            toggleMobileQuick: (force) =>
+                setUi((prev) => ({
+                    ...prev,
+                    mobileQuickOpen: typeof force === 'boolean' ? force : !prev.mobileQuickOpen,
                 })),
 
             reset: () => {
@@ -1250,10 +1257,6 @@ export function usePortfolioStore() {
                 borderColor: portfolio.styles[target]?.borderColor,
                 borderRadius: `${portfolio.styles[target]?.borderRadius ?? 24}px`,
                 padding: `${portfolio.styles[target]?.padding ?? 28}px`,
-                boxShadow: buildCardShadow({
-                    ...DEFAULT_CARD_SHADOW,
-                    ...(portfolio.styles[target] || {}),
-                }),
             }),
 
             getCustomSectionById: (sectionId) =>

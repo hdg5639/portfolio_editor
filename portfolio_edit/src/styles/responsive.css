@@ -105,3 +105,32 @@
         grid-template-columns: 1fr;
     }
 }
+@media (max-width: 920px) {
+    .mobile-app-shell .layout-shell {
+        padding: 12px 12px 110px;
+        grid-template-columns: 1fr !important;
+    }
+
+    .mobile-app-shell .topbar-inner {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .mobile-app-shell .topbar-left strong {
+        font-size: 16px;
+    }
+
+    .mobile-app-shell .topbar-left p {
+        font-size: 12px;
+    }
+
+    .mobile-app-shell .topbar-right {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .mobile-app-shell .topbar-right button {
+        padding: 9px 12px;
+        font-size: 12px;
+    }
+}
