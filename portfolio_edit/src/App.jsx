@@ -12,7 +12,6 @@ const MOBILE_LAYOUT_TOOLS = [
     { key: 'custom', label: '커스텀' },
     { key: 'skills', label: '기술' },
     { key: 'projects', label: '프로젝트' },
-    { key: 'rotate', label: '회전' },
 ];
 
 const MOBILE_STYLE_TOOLS = [
@@ -43,7 +42,6 @@ function MobileEditorSheet({ store }) {
             custom: '커스텀 섹션',
             skills: '기술 스택',
             projects: '프로젝트',
-            rotate: '페이지 방향',
         }
         : {
             text: '텍스트 스타일',
@@ -182,29 +180,94 @@ function MobileBottomDock({ store }) {
     );
 }
 
+
+function ExportOrientationDialog({ isOpen, isExporting, currentOrientation, onClose, onExport }) {
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <button
+                type="button"
+                className="export-dialog-backdrop"
+                onClick={onClose}
+                aria-label="PDF 방향 선택 닫기"
+            />
+
+            <section className="export-dialog no-print" role="dialog" aria-modal="true" aria-label="PDF 방향 선택">
+                <div className="export-dialog-head">
+                    <div>
+                        <strong>PDF 방향 선택</strong>
+                        <p>추출 전에 세로형 또는 가로형을 선택합니다.</p>
+                    </div>
+
+                    <button type="button" className="mobile-sheet-close" onClick={onClose}>
+                        닫기
+                    </button>
+                </div>
+
+                <div className="orientation-picker export-orientation-picker">
+                    <button
+                        type="button"
+                        className={`orientation-card ${currentOrientation !== 'landscape' ? 'active' : ''}`}
+                        onClick={() => onExport('portrait')}
+                        disabled={isExporting}
+                    >
+                        <span className="orientation-card-preview portrait" />
+                        <strong>세로형</strong>
+                        <p>A4 Portrait로 저장</p>
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`orientation-card ${currentOrientation === 'landscape' ? 'active' : ''}`}
+                        onClick={() => onExport('landscape')}
+                        disabled={isExporting}
+                    >
+                        <span className="orientation-card-preview landscape" />
+                        <strong>가로형</strong>
+                        <p>A4 Landscape로 저장</p>
+                    </button>
+                </div>
+            </section>
+        </>
+    );
+}
+
 export default function App() {
     const store = usePortfolioStore();
     const { ui, mode, actions, portfolio } = store;
     const exportRef = useRef(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
     const currentSelectedStyle = useMemo(() => store.actions.getSelectedStyle(), [store.actions]);
 
-    const handleExportPdf = async () => {
+    const handleExportPdf = async (nextOrientation = portfolio.styles.page?.orientation || 'portrait') => {
         const target = exportRef.current;
         if (!target || isExporting) return;
 
+        let wrapper = null;
+
         try {
             setIsExporting(true);
+            setIsExportSheetOpen(false);
 
             const prevMode = mode;
+            const prevOrientation = portfolio.styles.page?.orientation || 'portrait';
+            const resolvedOrientation = nextOrientation || prevOrientation;
+
+            if (prevOrientation !== resolvedOrientation) {
+                actions.setPageOrientation(resolvedOrientation);
+                await new Promise((resolve) => setTimeout(resolve, 220));
+            }
+
             if (mode !== 'preview') {
                 actions.setMode('preview');
-                await new Promise((resolve) => setTimeout(resolve, 200));
+                await new Promise((resolve) => setTimeout(resolve, 220));
             }
 
             await document.fonts?.ready;
 
-            const isLandscape = portfolio.styles.page?.orientation === 'landscape';
+            const isLandscape = resolvedOrientation === 'landscape';
             const A4_WIDTH_MM = isLandscape ? 297 : 210;
             const A4_HEIGHT_MM = isLandscape ? 210 : 297;
             const EXPORT_WIDTH_PX = isLandscape ? 1754 : 1240;
@@ -212,7 +275,7 @@ export default function App() {
 
             const clone = target.cloneNode(true);
 
-            const wrapper = document.createElement('div');
+            wrapper = document.createElement('div');
             wrapper.style.position = 'fixed';
             wrapper.style.left = '-100000px';
             wrapper.style.top = '0';
@@ -244,7 +307,7 @@ export default function App() {
             });
 
             const pdf = new jsPDF(
-                portfolio.styles.page?.orientation === 'landscape' ? 'l' : 'p',
+                resolvedOrientation === 'landscape' ? 'l' : 'p',
                 'mm',
                 'a4'
             );
@@ -295,8 +358,6 @@ export default function App() {
 
             pdf.save(`${safeName}-portfolio.pdf`);
 
-            document.body.removeChild(wrapper);
-
             if (prevMode !== 'preview') {
                 actions.setMode(prevMode);
             }
@@ -304,6 +365,9 @@ export default function App() {
             console.error('PDF export failed:', error);
             alert('PDF 추출 중 오류가 발생했습니다.');
         } finally {
+            if (wrapper && wrapper.parentNode) {
+                wrapper.parentNode.removeChild(wrapper);
+            }
             setIsExporting(false);
         }
     };
@@ -362,7 +426,7 @@ export default function App() {
                             미리보기
                         </button>
 
-                        <button type="button" onClick={handleExportPdf} disabled={isExporting}>
+                        <button type="button" onClick={() => setIsExportSheetOpen(true)} disabled={isExporting}>
                             {isExporting ? 'PDF 생성 중...' : 'PDF 추출'}
                         </button>
 
@@ -396,6 +460,14 @@ export default function App() {
                     </aside>
                 ) : null}
             </main>
+
+            <ExportOrientationDialog
+                isOpen={isExportSheetOpen}
+                isExporting={isExporting}
+                currentOrientation={portfolio.styles.page?.orientation || 'portrait'}
+                onClose={() => !isExporting && setIsExportSheetOpen(false)}
+                onExport={handleExportPdf}
+            />
 
             {ui.isMobile ? (
                 <>

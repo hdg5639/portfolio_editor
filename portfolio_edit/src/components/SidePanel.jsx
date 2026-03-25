@@ -470,51 +470,6 @@ function LayoutProjectsPanel({ portfolio, actions }) {
     );
 }
 
-function LayoutRotatePanel({ portfolio, actions }) {
-    const isLandscape = portfolio.styles.page?.orientation === 'landscape';
-
-    return (
-        <>
-            <MobileLayoutIntro
-                title="페이지 방향"
-                desc="모바일에서도 포트폴리오 페이지를 세로형 / 가로형으로 바로 전환합니다."
-            />
-
-            <PanelSection title="방향 전환" collapsible defaultOpen>
-                <div className="orientation-picker">
-                    <button
-                        type="button"
-                        className={`orientation-card ${!isLandscape ? 'active' : ''}`}
-                        onClick={() => actions.setPageOrientation('portrait')}
-                    >
-                        <span className="orientation-card-preview portrait" />
-                        <strong>세로형</strong>
-                        <p>A4 Portrait</p>
-                    </button>
-
-                    <button
-                        type="button"
-                        className={`orientation-card ${isLandscape ? 'active' : ''}`}
-                        onClick={() => actions.setPageOrientation('landscape')}
-                    >
-                        <span className="orientation-card-preview landscape" />
-                        <strong>가로형</strong>
-                        <p>A4 Landscape</p>
-                    </button>
-                </div>
-
-                <button
-                    type="button"
-                    className="orientation-toggle-button"
-                    onClick={actions.togglePageOrientation}
-                >
-                    현재 방향 빠르게 전환
-                </button>
-            </PanelSection>
-        </>
-    );
-}
-
 function renderEmbeddedMobileLayoutTool({
                                             tool,
                                             portfolio,
@@ -545,8 +500,6 @@ function renderEmbeddedMobileLayoutTool({
             return <LayoutSkillsPanel portfolio={portfolio} actions={actions} />;
         case 'projects':
             return <LayoutProjectsPanel portfolio={portfolio} actions={actions} />;
-        case 'rotate':
-            return <LayoutRotatePanel portfolio={portfolio} actions={actions} />;
         default:
             return null;
     }

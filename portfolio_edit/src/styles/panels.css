@@ -886,3 +886,73 @@
     padding: 12px 14px;
     font-weight: 800;
 }
+
+.export-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(8, 6, 13, 0.36);
+    z-index: 70;
+}
+
+.export-dialog {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(420px, calc(100vw - 28px));
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+    border-radius: 28px;
+    border: 1px solid rgba(29, 29, 27, 0.08);
+    background: rgba(255, 248, 241, 0.98);
+    box-shadow: 0 28px 60px rgba(17, 12, 24, 0.22);
+    z-index: 71;
+}
+
+.export-dialog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.export-dialog-head strong {
+    display: block;
+    font-size: 18px;
+    color: #1d1d1b;
+}
+
+.export-dialog-head p {
+    margin: 6px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted);
+}
+
+.export-orientation-picker .orientation-card {
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.export-orientation-picker .orientation-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(29, 29, 27, 0.2);
+    box-shadow: 0 16px 28px rgba(17, 12, 24, 0.08);
+}
+
+.export-orientation-picker .orientation-card:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 640px) {
+    .export-dialog {
+        top: auto;
+        bottom: 16px;
+        transform: translateX(-50%);
+        border-radius: 24px;
+    }
+}
