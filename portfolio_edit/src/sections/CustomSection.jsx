@@ -90,11 +90,12 @@ function ItemShell({
                        children,
                    }) {
     const isEdit = store.mode === 'edit';
+    const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingId === item.id;
     const isDragOver = dragOverId === item.id && draggingId !== item.id;
 
     const onDragStart = (event) => {
-        if (!isEdit) return;
+        if (!showHelpers) return;
         event.stopPropagation();
         setDraggingId(item.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -102,14 +103,14 @@ function ItemShell({
     };
 
     const onDragOver = (event) => {
-        if (!isEdit || !draggingId) return;
+        if (!showHelpers || !draggingId) return;
         event.preventDefault();
         event.stopPropagation();
         if (dragOverId !== item.id) setDragOverId(item.id);
     };
 
     const onDrop = (event) => {
-        if (!isEdit) return;
+        if (!showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
         const dragged = event.dataTransfer.getData('text/plain') || draggingId;
@@ -135,7 +136,7 @@ function ItemShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
-            {isEdit ? (
+            {showHelpers ? (
                 <div className="project-block-toolbar">
                     <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         ⋮⋮
@@ -203,11 +204,12 @@ function ComplexBlockShell({
                                children,
                            }) {
     const editable = store.mode === 'edit';
+    const showHelpers = editable && store.ui.showEditHelpers;
     const isDragging = draggingId === block.id;
     const isDragOver = dragOverId === block.id && draggingId !== block.id;
 
     const onDragStart = (event) => {
-        if (!editable) return;
+        if (!showHelpers) return;
         event.stopPropagation();
         setDraggingId(block.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -215,14 +217,14 @@ function ComplexBlockShell({
     };
 
     const onDragOver = (event) => {
-        if (!editable || !draggingId) return;
+        if (!showHelpers || !draggingId) return;
         event.preventDefault();
         event.stopPropagation();
         if (dragOverId !== block.id) setDragOverId(block.id);
     };
 
     const onDrop = (event) => {
-        if (!editable) return;
+        if (!showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
         const dragged = event.dataTransfer.getData('text/plain') || draggingId;
@@ -248,15 +250,13 @@ function ComplexBlockShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
-            {editable ? (
+            {showHelpers ? (
                 <div className="project-block-toolbar">
                     <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         ⋮⋮
                     </div>
 
-                    <strong>
-                        {block.type} · {block.title}
-                    </strong>
+                    <strong>{block.type} · {block.title}</strong>
 
                     <div className="profile-block-actions">
                         {[12, 8, 6, 4, 3].map((value) => (

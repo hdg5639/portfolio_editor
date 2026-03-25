@@ -18,29 +18,32 @@ function SectionTile({
                        children,
                      }) {
   const editable = store.mode === 'edit';
+  const showHelpers = editable && store.ui.showEditHelpers;
   const isDragging = draggingKey === sectionKey;
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
 
   const handleDragStart = (event) => {
-    if (!editable) return;
+    if (!showHelpers) return;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', sectionKey);
     setDraggingKey(sectionKey);
   };
 
   const handleDragOver = (event) => {
-    if (!editable || !draggingKey) return;
+    if (!showHelpers || !draggingKey) return;
     event.preventDefault();
     if (dragOverKey !== sectionKey) setDragOverKey(sectionKey);
   };
 
   const handleDrop = (event) => {
-    if (!editable) return;
+    if (!showHelpers) return;
     event.preventDefault();
+
     const dragged = event.dataTransfer.getData('text/plain') || draggingKey;
     if (dragged && dragged !== sectionKey) {
       store.actions.moveSection(dragged, sectionKey);
     }
+
     setDraggingKey(null);
     setDragOverKey(null);
   };
@@ -59,7 +62,7 @@ function SectionTile({
           onDrop={handleDrop}
           onDragEnd={handleDragEnd}
       >
-        {editable ? (
+        {showHelpers ? (
             <div className="section-tile-toolbar no-print">
               <div
                   className="drag-handle"

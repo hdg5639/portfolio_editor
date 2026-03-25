@@ -101,7 +101,7 @@ function ComplexSectionDetail({ section, actions }) {
 }
 
 export default function SidePanel({ store }) {
-    const { portfolio, actions } = store;
+    const { portfolio, actions, ui } = store;
     const [newSectionPreset, setNewSectionPreset] = useState('text');
 
     const sectionLabels = Object.fromEntries(
@@ -113,8 +113,21 @@ export default function SidePanel({ store }) {
             <div className="sidebar-panel-header">
                 <div className="sidebar-panel-header-text">
                     <strong>구성 편집</strong>
-                    <p>섹션 표시, 프로젝트, 커스텀 영역을 관리합니다.</p>
+                    <p>섹션과 프로젝트 구성을 관리합니다.</p>
                 </div>
+
+                <button
+                    type="button"
+                    className={`header-inline-toggle ${ui.showEditHelpers ? 'active' : ''}`}
+                    onClick={actions.toggleEditHelpers}
+                    aria-pressed={ui.showEditHelpers}
+                    title="배치 핸들 표시 토글"
+                >
+                    <span className="header-inline-toggle-label">배치</span>
+                    <span className="header-inline-toggle-track">
+                        <span className="header-inline-toggle-thumb" />
+                    </span>
+                </button>
             </div>
 
             <div className="sidebar-panel-body">

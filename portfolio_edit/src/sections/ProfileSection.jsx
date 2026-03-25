@@ -90,11 +90,12 @@ function ProfileBlockShell({
                                children,
                            }) {
     const isEdit = store.mode === 'edit';
+    const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingKey === blockKey;
     const isDragOver = dragOverKey === blockKey && draggingKey !== blockKey;
 
     const handleDragStart = (event) => {
-        if (!isEdit) return;
+        if (!showHelpers) return;
         event.stopPropagation();
         setDraggingKey(blockKey);
         event.dataTransfer.effectAllowed = 'move';
@@ -102,7 +103,7 @@ function ProfileBlockShell({
     };
 
     const handleDragOver = (event) => {
-        if (!isEdit || !draggingKey) return;
+        if (!showHelpers || !draggingKey) return;
         event.preventDefault();
         event.stopPropagation();
         event.dataTransfer.dropEffect = 'move';
@@ -110,7 +111,7 @@ function ProfileBlockShell({
     };
 
     const handleDrop = (event) => {
-        if (!isEdit) return;
+        if (!showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
 
@@ -138,7 +139,7 @@ function ProfileBlockShell({
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
         >
-            {isEdit ? (
+            {showHelpers ? (
                 <div className="profile-block-toolbar no-print">
                     <div
                         className="drag-handle"
