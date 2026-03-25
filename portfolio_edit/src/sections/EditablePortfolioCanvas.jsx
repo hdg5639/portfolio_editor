@@ -51,8 +51,7 @@ function SectionTile({
     event.preventDefault();
     event.stopPropagation();
 
-    const dragged =
-        event.dataTransfer.getData('application/x-section') || draggingKey;
+    const dragged = event.dataTransfer.getData('application/x-section') || draggingKey;
 
     if (dragged && dragged !== sectionKey) {
       store.actions.moveSection(dragged, sectionKey);
@@ -81,9 +80,9 @@ function SectionTile({
 
   return (
       <div
-          className={`section-tile span-${span} span-r-${rowSpan || 1} ${
-              isDragging ? 'dragging' : ''
-          } ${isDragOver ? 'drag-over' : ''}`}
+          className={`section-tile span-${span} span-r-${rowSpan || 1} ${isDragging ? 'dragging' : ''} ${
+              isDragOver ? 'drag-over' : ''
+          }`}
           onDragEnterCapture={handleDragOver}
           onDragOverCapture={handleDragOver}
           onDragLeaveCapture={handleDragLeave}
@@ -92,12 +91,7 @@ function SectionTile({
       >
         {showHelpers ? (
             <div className="section-tile-toolbar no-print">
-              <div
-                  className="drag-handle"
-                  draggable
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-              >
+              <div className="drag-handle" draggable onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 ⋮⋮
               </div>
 
@@ -125,8 +119,10 @@ function SectionTile({
   );
 }
 
-const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ store, hideZoomControls = false },
-                                                                            exportRef) {
+const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
+    { store, hideZoomControls = false },
+    exportRef
+) {
   const { portfolio, actions } = store;
   const pageStyle = portfolio.styles.page;
 
@@ -135,26 +131,10 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
 
   const isLandscape = pageStyle.orientation === 'landscape';
   const baseWidth =
-      pageStyle.widthMode === 'custom'
-          ? pageStyle.customWidth || 1280
-          : pageStyle.fixedWidth || 980;
-
+      pageStyle.widthMode === 'custom' ? pageStyle.customWidth || 1280 : pageStyle.fixedWidth || 980;
   const pageMinHeight = Math.round(baseWidth * (isLandscape ? 210 / 297 : 297 / 210));
-
   const isMobileCanvas = !!store.ui?.isMobile;
 
-  const canvasStyle = {
-    backgroundColor: pageStyle.backgroundColor,
-    color: pageStyle.color,
-    fontFamily: pageStyle.fontFamily,
-    width: `${baseWidth}px`,
-    minWidth: `${baseWidth}px`,
-    maxWidth: `${baseWidth}px`,
-    minHeight: `${pageMinHeight}px`,
-    margin: isMobileCanvas ? '0' : '0 auto',
-    boxSizing: 'border-box',
-    flex: '0 0 auto',
-  };
   const visibleSections = useMemo(() => {
     return portfolio.layout.items.filter((item) => portfolio.layout.sections[item.key]);
   }, [portfolio.layout.items, portfolio.layout.sections]);
@@ -186,7 +166,22 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
 
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
+  const [contentHeight, setContentHeight] = useState(pageMinHeight);
   const wrapRef = useRef(null);
+  const pageInnerRef = useRef(null);
+
+  const canvasStyle = {
+    backgroundColor: pageStyle.backgroundColor,
+    color: pageStyle.color,
+    fontFamily: pageStyle.fontFamily,
+    width: `${baseWidth}px`,
+    minWidth: `${baseWidth}px`,
+    maxWidth: `${baseWidth}px`,
+    minHeight: `${contentHeight}px`,
+    margin: isMobileCanvas ? '0' : '0 auto',
+    boxSizing: 'border-box',
+    flex: '0 0 auto',
+  };
 
   const getFitScale = useCallback(() => {
     const wrap = wrapRef.current;
@@ -258,15 +253,35 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     };
   }, [getFitScale, isMobileCanvas, baseWidth, pageStyle.orientation]);
 
+  useLayoutEffect(() => {
+    const node = pageInnerRef.current;
+    if (!node) return;
+
+    const updateHeight = () => {
+      const measured = Math.max(pageMinHeight, Math.ceil(node.scrollHeight));
+      setContentHeight(measured);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [pageMinHeight, visibleSections, portfolio]);
+
   const scaledWidth = Math.round(baseWidth * scale);
-  const scaledHeight = Math.round(pageMinHeight * scale);
+  const scaledHeight = Math.round(contentHeight * scale);
 
   return (
       <div
           className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''}`}
           ref={wrapRef}
-          style={{backgroundColor: 'transparent'}}
-          onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
+          style={{ backgroundColor: 'transparent' }}
+          onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
       >
         <div
             className={`canvas-scale-stage ${isMobileCanvas ? 'mobile-scale-stage' : ''}`}
@@ -282,19 +297,26 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
               style={{
                 width: `${baseWidth}px`,
                 minWidth: `${baseWidth}px`,
-                height: `${pageMinHeight}px`,
-                minHeight: `${pageMinHeight}px`,
+                height: `${contentHeight}px`,
+                minHeight: `${contentHeight}px`,
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
               }}
           >
             <div
-                ref={exportRef}
+                ref={(node) => {
+                  pageInnerRef.current = node;
+                  if (typeof exportRef === 'function') {
+                    exportRef(node);
+                  } else if (exportRef) {
+                    exportRef.current = node;
+                  }
+                }}
                 className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
                 style={canvasStyle}
             >
               <div className="portfolio-grid">
-                {visibleSections.map(({key: sectionKey, ...item}) => (
+                {visibleSections.map(({ key: sectionKey, ...item }) => (
                     <SectionTile
                         key={sectionKey}
                         sectionKey={sectionKey}
@@ -313,7 +335,6 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
           </div>
         </div>
 
-
         {!hideZoomControls ? (
             <div
                 className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
@@ -321,13 +342,16 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
             >
               {showZoomUI ? (
                   <>
-                    <button onClick={handleZoomOut} title="축소">-</button>
+                    <button onClick={handleZoomOut} title="축소">-
+                    </button>
                     <span onClick={handleZoomReset} style={{ cursor: 'pointer' }} title="100%로 초기화">
-                    {Math.round(scale * 100)}%
-                </span>
-                    <button onClick={handleZoomIn} title="확대">+</button>
+                {Math.round(scale * 100)}%
+              </span>
+                    <button onClick={handleZoomIn} title="확대">+
+                    </button>
                     <div className="zoom-divider" />
-                    <button onClick={() => setShowZoomUI(false)} title="숨기기">✕</button>
+                    <button onClick={() => setShowZoomUI(false)} title="숨기기">✕
+                    </button>
                   </>
               ) : (
                   <button onClick={() => setShowZoomUI(true)} title="줌 컨트롤 열기">🔍</button>

@@ -164,12 +164,12 @@
     padding: 28px;
     border: 1px solid transparent;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .preview-page {
     box-shadow: none;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .portfolio-grid {
