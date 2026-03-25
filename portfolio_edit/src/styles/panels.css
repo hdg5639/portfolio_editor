@@ -813,19 +813,20 @@
     }
 }
 
-.mobile-editor-backdrop {
+.mobile-sheet-backdrop {
     position: fixed;
     inset: 0;
+    z-index: 74;
+    border: 0;
     background: rgba(15, 23, 42, 0.18);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.22s ease;
-    z-index: 74;
 }
 
-.mobile-editor-backdrop.is-open {
+.mobile-sheet-backdrop.is-open {
     opacity: 1;
     pointer-events: auto;
 }
@@ -844,7 +845,6 @@
     background: #f8f5ef;
     box-shadow: 0 30px 80px rgba(17, 12, 5, 0.2);
     overflow: hidden;
-
     transform: translate(-50%, calc(-50% + 24px)) scale(0.98);
     opacity: 0;
     pointer-events: none;
@@ -859,6 +859,14 @@
     pointer-events: auto;
 }
 
+.mobile-editor-sheet-handle {
+    width: 64px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(29, 29, 27, 0.14);
+    margin: 12px auto 0;
+}
+
 .mobile-editor-sheet-head {
     position: sticky;
     top: 0;
@@ -870,6 +878,42 @@
     padding: 14px 18px 12px;
     border-bottom: 1px solid rgba(29, 29, 27, 0.08);
     background: #f8f5ef;
+}
+
+.mobile-editor-sheet-head strong {
+    display: block;
+    font-size: 16px;
+}
+
+.mobile-editor-sheet-head p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.mobile-sheet-close {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+    padding: 8px 12px;
+}
+
+.mobile-editor-sheet-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 14px;
+}
+
+.mobile-editor-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mobile-editor-sheet.is-open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .mobile-quick-fab {

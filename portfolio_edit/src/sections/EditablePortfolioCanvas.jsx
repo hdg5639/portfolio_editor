@@ -125,7 +125,8 @@ function SectionTile({
   );
 }
 
-const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ store }, exportRef) {
+const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ store, hideZoomControls = false },
+                                                                            exportRef) {
   const { portfolio, actions } = store;
   const pageStyle = portfolio.styles.page;
 
@@ -315,24 +316,27 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
           </div>
         </div>
 
-        <div
-            className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
-            onClick={(e) => e.stopPropagation()}
-        >
-          {showZoomUI ? (
-              <>
-                <button onClick={handleZoomOut} title="축소">-</button>
-                <span onClick={handleZoomReset} style={{cursor: 'pointer'}} title="100%로 초기화">
+
+        {!hideZoomControls ? (
+            <div
+                className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
+                onClick={(e) => e.stopPropagation()}
+            >
+              {showZoomUI ? (
+                  <>
+                    <button onClick={handleZoomOut} title="축소">-</button>
+                    <span onClick={handleZoomReset} style={{ cursor: 'pointer' }} title="100%로 초기화">
                     {Math.round(scale * 100)}%
                 </span>
-                <button onClick={handleZoomIn} title="확대">+</button>
-                <div className="zoom-divider"/>
-                <button onClick={() => setShowZoomUI(false)} title="숨기기">✕</button>
-              </>
-          ) : (
-              <button onClick={() => setShowZoomUI(true)} title="줌 컨트롤 열기">🔍</button>
-          )}
-        </div>
+                    <button onClick={handleZoomIn} title="확대">+</button>
+                    <div className="zoom-divider" />
+                    <button onClick={() => setShowZoomUI(false)} title="숨기기">✕</button>
+                  </>
+              ) : (
+                  <button onClick={() => setShowZoomUI(true)} title="줌 컨트롤 열기">🔍</button>
+              )}
+            </div>
+        ) : null}
       </div>
   );
 });

@@ -50,7 +50,7 @@ function MobileEditorSheet({ store }) {
         }
 
         setIsVisible(false);
-        const timer = setTimeout(() => setShouldRender(false), 240);
+        const timer = setTimeout(() => setShouldRender(false), 220);
         return () => clearTimeout(timer);
     }, [ui.mobileSheetOpen]);
 
@@ -70,37 +70,38 @@ function MobileEditorSheet({ store }) {
             select: '선택 전환',
         };
 
-    const title =
-        titleMap[isLayout ? ui.mobileLayoutTool : ui.mobileStyleTool] || '편집';
+    const title = titleMap[isLayout ? ui.mobileLayoutTool : ui.mobileStyleTool] || '편집';
 
     return (
         <>
-            <div
-                className={`mobile-editor-backdrop ${isVisible ? 'is-open' : ''}`}
+            <button
+                type="button"
+                className={`mobile-sheet-backdrop ${isVisible ? 'is-open' : ''}`}
                 onClick={() => actions.toggleMobileSheet(false)}
                 aria-label="모바일 편집창 닫기"
             />
 
             <section className={`mobile-editor-sheet ${isVisible ? 'is-open' : ''}`}>
-                <div className="mobile-editor-sheet-header">
+                <div className="mobile-editor-sheet-handle" />
+
+                <div className="mobile-editor-sheet-head">
                     <div>
                         <strong>{title}</strong>
-                        <p>
-                            {isLayout
-                                ? '구성 항목을 바로 수정합니다.'
-                                : '선택 대상을 기준으로 스타일을 수정합니다.'}
-                        </p>
+                        <p>{isLayout ? '구성 항목을 바로 수정합니다.' : '선택 대상을 기준으로 스타일을 수정합니다.'}</p>
                     </div>
-                    <button type="button" onClick={() => actions.toggleMobileSheet(false)}>
+
+                    <button type="button" className="mobile-sheet-close" onClick={() => actions.toggleMobileSheet(false)}>
                         닫기
                     </button>
                 </div>
 
-                {isLayout ? (
-                    <SidePanel store={store} mobileTool={ui.mobileLayoutTool} embedded />
-                ) : (
-                    <StylePanel store={store} mobileTool={ui.mobileStyleTool} embedded />
-                )}
+                <div className="mobile-editor-sheet-body">
+                    {isLayout ? (
+                        <SidePanel store={store} mobileTool={ui.mobileLayoutTool} embedded />
+                    ) : (
+                        <StylePanel store={store} mobileTool={ui.mobileStyleTool} embedded />
+                    )}
+                </div>
             </section>
         </>
     );
@@ -522,12 +523,19 @@ export default function App() {
 
             {ui.isMobile ? (
                 <>
-                    <MobileSelectionChip store={store}/>
-                    <MobileQuickFab store={store} current={currentSelectedStyle}/>
-                    <MobileBottomDock store={store}/>
+                    <EditablePortfolioCanvas
+                        ref={exportRef}
+                        store={store}
+                        hideZoomControls={ui.mobileSheetOpen || ui.mobileQuickOpen}
+                    />
+                    <MobileQuickFab store={store} />
+                    <MobileSelectionChip store={store} />
+                    <MobileBottomDock store={store} />
                     <MobileEditorSheet store={store} />
                 </>
-            ) : null}
+            ) : (
+                <EditablePortfolioCanvas ref={exportRef} store={store} />
+            )}
         </div>
     );
 }
