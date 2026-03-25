@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import LayoutSizeControl from './LayoutSizeControl';
+import LayoutSizeControl from './LayoutSizeControl.jsx';
+import { getCardSelectionState, getProfileBlockSelectionState } from '../utils/storeHelpers';
 
 function bind(store, key, label) {
     return {
@@ -78,6 +79,10 @@ function EditableInput({
     );
 }
 
+function SelectionBadge({ label, tone = 'block' }) {
+    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
+
 function ProfileBlockShell({
                                store,
                                blockKey,
@@ -94,6 +99,7 @@ function ProfileBlockShell({
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingKey === blockKey;
     const isDragOver = dragOverKey === blockKey && draggingKey !== blockKey;
+    const blockSelection = getProfileBlockSelectionState(store.selected?.key, blockKey);
 
     const handleDragStart = (event) => {
         if (!showHelpers) return;
@@ -133,13 +139,21 @@ function ProfileBlockShell({
 
     return (
         <div
-            className={`profile-layout-item span-${colSpan} span-r-${rowSpan} ${isDragging ? 'dragging' : ''} ${
+            className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} ${isDragging ? 'dragging' : ''} ${
                 isDragOver ? 'drag-over' : ''
-            }`}
+            } ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
+            onClick={(event) => {
+                event.stopPropagation();
+                store.actions.select({ key: `profile.${blockKey}`, label: `${label} 블럭` });
+            }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
         >
+            {blockSelection.active ? (
+                <SelectionBadge label={blockSelection.selected ? `${label} 선택됨` : `${label} 포함`} tone="block" />
+            ) : null}
+
             {showHelpers ? (
                 <div className="profile-block-toolbar no-print">
                     <div
@@ -184,6 +198,7 @@ export default function ProfileSection({ store }) {
     const { profile } = store.portfolio;
     const isEdit = store.mode === 'edit';
     const cardStyle = store.actions.sectionCardStyle('profileCard');
+    const cardSelection = getCardSelectionState(store.selected?.key, 'profileCard', ['profile']);
 
     const [draggingKey, setDraggingKey] = useState(null);
     const [dragOverKey, setDragOverKey] = useState(null);
@@ -361,13 +376,17 @@ export default function ProfileSection({ store }) {
 
     return (
         <section
-            className="portfolio-card"
+            className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={cardStyle}
             onClick={(e) => {
                 e.stopPropagation();
                 store.actions.select({ key: 'profileCard', label: '프로필 카드' });
             }}
         >
+            {cardSelection.active ? (
+                <SelectionBadge label={cardSelection.selected ? '프로필 카드 선택됨' : '프로필 카드 내부 선택'} tone="card" />
+            ) : null}
+
             <div className="section-head">
                 <div className="profile-layout-head">
                     <div>

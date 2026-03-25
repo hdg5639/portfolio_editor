@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import LayoutSizeControl from './LayoutSizeControl';
+import LayoutSizeControl from './LayoutSizeControl.jsx';
+import { getCardSelectionState, getProjectSelectionState, getProjectBlockSelectionState } from '../utils/storeHelpers';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -38,6 +39,10 @@ function selectableViewProps(store, key, label) {
     };
 }
 
+function SelectionBadge({ label, tone = 'block' }) {
+    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
+
 function BlockShell({
                         store,
                         projectId,
@@ -52,6 +57,7 @@ function BlockShell({
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingId === block.id;
     const isDragOver = dragOverId === block.id && draggingId !== block.id;
+    const blockSelection = getProjectBlockSelectionState(store.selected?.key, projectId, block.id);
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -90,10 +96,14 @@ function BlockShell({
 
     return (
         <div
-            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''}`}
+            } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             draggable={showHelpers}
+            onClick={(event) => {
+                event.stopPropagation();
+                store.actions.select({ key: `projects.${projectId}.blocks.${block.id}`, label: `${block.title || '프로젝트'} 블럭` });
+            }}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragLeave={() => {
@@ -102,6 +112,10 @@ function BlockShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
+            {blockSelection.active ? (
+                <SelectionBadge label={blockSelection.selected ? `${block.title || '블럭'} 선택됨` : `${block.title || '블럭'} 포함`} tone="block" />
+            ) : null}
+
             {showHelpers ? (
                 <div className="project-block-toolbar">
                     <div
@@ -336,18 +350,23 @@ export default function ProjectsSection({ store }) {
     const cardStyle = store.actions.sectionCardStyle('projectsCard');
     const isEdit = store.mode === 'edit';
     const titleStyle = store.actions.styleFor('section.projects.title');
+    const cardSelection = getCardSelectionState(store.selected?.key, 'projectsCard', ['projects', 'section.projects']);
     const [draggingProjectId, setDraggingProjectId] = useState(null);
     const [dragOverProjectId, setDragOverProjectId] = useState(null);
 
     return (
         <section
-            className="portfolio-card"
+            className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={cardStyle}
             onClick={(e) => {
                 e.stopPropagation();
                 store.actions.select({key: 'projectsCard', label: '프로젝트 카드'});
             }}
         >
+            {cardSelection.active ? (
+                <SelectionBadge label={cardSelection.selected ? '프로젝트 카드 선택됨' : '프로젝트 카드 내부 선택'} tone="card" />
+            ) : null}
+
             <div className="section-head">
                 <h2 className="section-title" style={titleStyle}>
                     프로젝트
@@ -398,12 +417,17 @@ function ProjectCard({
         Array.from(event.dataTransfer?.types || []).includes('application/x-project-card');
 
     const showProjectDropOverlay = showHelpers && !!draggingProjectId && draggingProjectId !== project.id;
+    const projectSelection = getProjectSelectionState(store.selected?.key, project.id);
 
     return (
         <article
-            className={`portfolio-card project-card-inner ${
+            className={`portfolio-card project-card-inner selection-scope selection-item ${
                 isProjectDragging ? 'dragging' : ''
-            } ${isProjectDragOver ? 'drag-over' : ''}`}
+            } ${isProjectDragOver ? 'drag-over' : ''} ${projectSelection.selected ? 'is-selected' : ''} ${projectSelection.ancestor ? 'is-ancestor' : ''}`}
+            onClick={(event) => {
+                event.stopPropagation();
+                store.actions.select({ key: `projects.${project.id}`, label: `${project.title || '프로젝트'} 항목` });
+            }}
             onDragEnterCapture={(event) => {
                 if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
                 event.preventDefault();
@@ -449,6 +473,10 @@ function ProjectCard({
                 setDragOverProjectId(null);
             }}
         >
+            {projectSelection.active ? (
+                <SelectionBadge label={projectSelection.selected ? `${project.title || '프로젝트'} 선택됨` : `${project.title || '프로젝트'} 내부 선택`} tone="item" />
+            ) : null}
+
             {showHelpers ? (
                 <div className="project-card-toolbar">
                     <div

@@ -1,4 +1,5 @@
 import InlineEditable from '../components/InlineEditable';
+import { getCardSelectionState, getSkillRowSelectionState } from '../utils/storeHelpers';
 
 function bind(store, key, label) {
     return {
@@ -9,18 +10,27 @@ function bind(store, key, label) {
     };
 }
 
+function SelectionBadge({ label, tone = 'block' }) {
+    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
+
 export default function SkillSection({ store }) {
     const { portfolio, actions } = store;
+    const cardSelection = getCardSelectionState(store.selected?.key, 'skillsCard', ['skills', 'section.skills']);
 
     return (
         <section
-            className="portfolio-card"
+            className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={actions.sectionCardStyle('skillsCard')}
             onClick={(e) => {
                 e.stopPropagation();
                 store.actions.select({ key: 'skillsCard', label: '기술 스택 카드' });
             }}
         >
+            {cardSelection.active ? (
+                <SelectionBadge label={cardSelection.selected ? '기술 카드 선택됨' : '기술 카드 내부 선택'} tone="card" />
+            ) : null}
+
             <div className="section-head">
                 <h2 className="section-title" style={actions.styleFor('section.skills.title')}>
                     기술 스택
@@ -28,8 +38,13 @@ export default function SkillSection({ store }) {
             </div>
 
             <div className="skill-table">
-                {portfolio.skills.map((skill) => (
-                    <div className="skill-row" key={skill.id}>
+                {portfolio.skills.map((skill) => {
+                    const rowSelection = getSkillRowSelectionState(store.selected?.key, skill.id);
+                    return (
+                    <div className={`skill-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={skill.id}>
+                        {rowSelection.active ? (
+                            <SelectionBadge label={rowSelection.selected ? `${skill.category || '기술'} 선택됨` : `${skill.category || '기술'} 내부 선택`} tone="item" />
+                        ) : null}
                         <InlineEditable
                             tag="strong"
                             value={skill.category}
@@ -45,7 +60,8 @@ export default function SkillSection({ store }) {
                             {...bind(store, `skills.${skill.id}.value`, `기술 내용 ${skill.category}`)}
                         />
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </section>
     );

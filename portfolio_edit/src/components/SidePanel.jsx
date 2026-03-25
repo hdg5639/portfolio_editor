@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import PanelSection from './PanelSection';
+import PanelSection from './PanelSection.jsx';
 import { CUSTOM_SECTION_PRESETS } from '../utils/defaultPortfolio';
 
 function SectionToggles({ sections, labels, actions }) {

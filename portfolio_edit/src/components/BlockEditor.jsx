@@ -1,4 +1,4 @@
-import ImageInput from './ImageInput';
+import ImageInput from './ImageInput.jsx';
 
 export default function BlockEditor({ block, onChange, onRemove }) {
   return (

@@ -1,10 +1,15 @@
 import { forwardRef, useMemo, useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import ProfileSection from './ProfileSection';
-import SkillSection from './SkillSection';
-import ProjectsSection from './ProjectsSection';
-import TimelineSection from './TimelineSection';
-import CustomSection from './CustomSection';
-import LayoutSizeControl from './LayoutSizeControl';
+import ProfileSection from './ProfileSection.jsx';
+import SkillSection from './SkillSection.jsx';
+import ProjectsSection from './ProjectsSection.jsx';
+import TimelineSection from './TimelineSection.jsx';
+import CustomSection from './CustomSection.jsx';
+import LayoutSizeControl from './LayoutSizeControl.jsx';
+import { getSectionSelectionState } from '../utils/storeHelpers';
+
+function SelectionBadge({ label, tone = 'section' }) {
+  return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
 
 function SectionTile({
                        store,
@@ -23,6 +28,7 @@ function SectionTile({
   const isDragging = draggingKey === sectionKey;
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
   const showSectionDropOverlay = showHelpers && !!draggingKey && draggingKey !== sectionKey;
+  const sectionSelection = getSectionSelectionState(store.selected?.key, sectionKey);
 
   const isSectionDragEvent = (event) =>
       Array.from(event.dataTransfer?.types || []).includes('application/x-section');
@@ -80,15 +86,31 @@ function SectionTile({
 
   return (
       <div
-          className={`section-tile span-${span} span-r-${rowSpan || 1} ${isDragging ? 'dragging' : ''} ${
+          className={`section-tile selection-scope selection-section span-${span} span-r-${rowSpan || 1} ${isDragging ? 'dragging' : ''} ${
               isDragOver ? 'drag-over' : ''
-          }`}
+          } ${sectionSelection.selected ? 'is-selected' : ''} ${sectionSelection.ancestor ? 'is-ancestor' : ''}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            const mapping = {
+              profile: { key: 'profileCard', label: '프로필 카드' },
+              projects: { key: 'projectsCard', label: '프로젝트 카드' },
+              skills: { key: 'skillsCard', label: '기술 스택 카드' },
+              awards: { key: 'timelineCard', label: '수상 카드' },
+              certificates: { key: 'timelineCard', label: '자격증 카드' },
+            };
+            const payload = sectionKey.startsWith('custom:') ? { key: 'customCard', label: '커스텀 카드' } : mapping[sectionKey];
+            if (payload) store.actions.select(payload);
+          }}
           onDragEnterCapture={handleDragOver}
           onDragOverCapture={handleDragOver}
           onDragLeaveCapture={handleDragLeave}
           onDropCapture={handleDrop}
           onDragEnd={handleDragEnd}
       >
+        {sectionSelection.active ? (
+            <SelectionBadge label={sectionSelection.selected ? `${label} 선택됨` : `${label} 내부 선택`} tone="section" />
+        ) : null}
+
         {showHelpers ? (
             <div className="section-tile-toolbar no-print">
               <div className="drag-handle" draggable onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

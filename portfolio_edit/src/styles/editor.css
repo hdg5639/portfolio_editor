@@ -41,8 +41,9 @@
 }
 
 .inline-editable.selected {
-    border-color: rgba(31, 122, 69, 0.24);
-    background: rgba(31, 122, 69, 0.06);
+    border-color: rgba(91, 140, 255, 0.5);
+    background: rgba(91, 140, 255, 0.08);
+    box-shadow: 0 0 0 2px rgba(91, 140, 255, 0.12);
 }
 
 .inline-editable:focus {
@@ -64,7 +65,7 @@
 
 .image-editable.selected {
     border-color: #5b8cff;
-    box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.12);
+    box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.14);
 }
 
 .image-editable img {

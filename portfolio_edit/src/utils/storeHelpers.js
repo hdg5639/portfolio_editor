@@ -3,7 +3,7 @@ import {
     defaultSectionLayout,
     defaultProfileBlocks,
     createComplexCustomItem, createTextBlock, createListBlock, createImageBlock
-} from './defaultPortfolio';
+} from './defaultPortfolio.js';
 
 export const MOBILE_BREAKPOINT = 920;
 
@@ -43,6 +43,94 @@ export function moveBefore(list, draggedKey, targetKey, keyName = 'key') {
     const [dragged] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, dragged);
     return next;
+}
+
+
+
+function matchesSelectionScope(selectedKey, prefix) {
+    if (!selectedKey || !prefix) return false;
+    return selectedKey === prefix || selectedKey.startsWith(`${prefix}.`);
+}
+
+export function getCardSelectionState(selectedKey, cardKey, prefixes = []) {
+    const selected = selectedKey === cardKey;
+    const ancestor = !selected && prefixes.some((prefix) => matchesSelectionScope(selectedKey, prefix));
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getSectionSelectionState(selectedKey, sectionKey) {
+    const mapping = {
+        profile: { cardKey: 'profileCard', prefixes: ['profile', 'section.profile'] },
+        projects: { cardKey: 'projectsCard', prefixes: ['projects', 'section.projects'] },
+        skills: { cardKey: 'skillsCard', prefixes: ['skills', 'section.skills'] },
+        awards: { cardKey: 'timelineCard', prefixes: ['awards', 'section.awards'] },
+        certificates: { cardKey: 'timelineCard', prefixes: ['certificates', 'section.certificates'] },
+    };
+
+    if (sectionKey?.startsWith('custom:')) {
+        const sectionId = sectionKey.slice('custom:'.length);
+        return getCardSelectionState(selectedKey, 'customCard', [`custom.${sectionId}`, `section.custom.${sectionId}`]);
+    }
+
+    const current = mapping[sectionKey];
+    if (!current) return { selected: false, ancestor: false, active: false };
+    return getCardSelectionState(selectedKey, current.cardKey, current.prefixes);
+}
+
+export function getProfileBlockSelectionState(selectedKey, blockKey) {
+    const scopes = {
+        image: ['profile.image'],
+        quote: ['profile.quote'],
+        contacts: ['profile.contacts'],
+        identity: ['profile.name', 'profile.role'],
+        intro: ['profile.intro'],
+    };
+    const prefixes = scopes[blockKey] || [];
+    const selected = prefixes.some((prefix) => selectedKey === prefix);
+    const ancestor = !selected && prefixes.some((prefix) => matchesSelectionScope(selectedKey, prefix));
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getProjectSelectionState(selectedKey, projectId) {
+    const prefix = `projects.${projectId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getProjectBlockSelectionState(selectedKey, projectId, blockId) {
+    const prefix = `projects.${projectId}.blocks.${blockId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getCustomItemSelectionState(selectedKey, sectionId, itemId) {
+    const prefix = `custom.${sectionId}.${itemId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getCustomBlockSelectionState(selectedKey, sectionId, itemId, blockId) {
+    const prefix = `custom.${sectionId}.${itemId}.blocks.${blockId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getSkillRowSelectionState(selectedKey, skillId) {
+    const prefix = `skills.${skillId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
+}
+
+export function getTimelineItemSelectionState(selectedKey, sectionKey, itemId) {
+    const prefix = `${sectionKey}.${itemId}`;
+    const selected = selectedKey === prefix;
+    const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
+    return { selected, ancestor, active: selected || ancestor };
 }
 
 export function syncCustomSections(portfolio) {

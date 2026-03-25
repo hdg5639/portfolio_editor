@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import LayoutSizeControl from './LayoutSizeControl';
+import LayoutSizeControl from './LayoutSizeControl.jsx';
+import { getCardSelectionState, getCustomItemSelectionState, getCustomBlockSelectionState } from '../utils/storeHelpers';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -80,6 +81,10 @@ function EditableText({
     );
 }
 
+function SelectionBadge({ label, tone = 'block' }) {
+    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
+
 function ItemShell({
                        store,
                        sectionId,
@@ -94,6 +99,7 @@ function ItemShell({
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingId === item.id;
     const isDragOver = dragOverId === item.id && draggingId !== item.id;
+    const itemSelection = getCustomItemSelectionState(store.selected?.key, sectionId, item.id);
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -130,13 +136,21 @@ function ItemShell({
 
     return (
         <div
-            className={`custom-item-shell span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${
+            className={`custom-item-shell selection-scope selection-item span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''}`}
+            } ${isDragOver ? 'drag-over' : ''} ${itemSelection.selected ? 'is-selected' : ''} ${itemSelection.ancestor ? 'is-ancestor' : ''}`}
+            onClick={(event) => {
+                event.stopPropagation();
+                store.actions.select({ key: `custom.${sectionId}.${item.id}`, label: `${item.title || '커스텀'} 항목` });
+            }}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
+            {itemSelection.active ? (
+                <SelectionBadge label={itemSelection.selected ? `${item.title || '항목'} 선택됨` : `${item.title || '항목'} 내부 선택`} tone="item" />
+            ) : null}
+
             {showHelpers ? (
                 <div className="project-block-toolbar">
                     <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -186,6 +200,7 @@ function ComplexBlockShell({
     const showHelpers = editable && store.ui.showEditHelpers;
     const isDragging = draggingId === block.id;
     const isDragOver = dragOverId === block.id && draggingId !== block.id;
+    const blockSelection = getCustomBlockSelectionState(store.selected?.key, sectionId, itemId, block.id);
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -222,13 +237,21 @@ function ComplexBlockShell({
 
     return (
         <div
-            className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''}`}
+            } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
+            onClick={(event) => {
+                event.stopPropagation();
+                store.actions.select({ key: `custom.${sectionId}.${itemId}.blocks.${block.id}`, label: `${block.title || block.type} 블럭` });
+            }}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
+            {blockSelection.active ? (
+                <SelectionBadge label={blockSelection.selected ? `${block.title || '블럭'} 선택됨` : `${block.title || '블럭'} 포함`} tone="block" />
+            ) : null}
+
             {showHelpers ? (
                 <div className="project-block-toolbar">
                     <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -823,16 +846,21 @@ export default function CustomSection({ store, section }) {
     const titleStyle = store.actions.styleFor(`section.custom.${section.id}.title`);
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
+    const cardSelection = getCardSelectionState(store.selected?.key, 'customCard', [`custom.${section.id}`, `section.custom.${section.id}`]);
 
     return (
         <section
-            className="portfolio-card"
+            className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={store.actions.sectionCardStyle('customCard')}
             onClick={(e) => {
                 e.stopPropagation();
                 store.actions.select({ key: 'customCard', label: '커스텀 카드' });
             }}
         >
+            {cardSelection.active ? (
+                <SelectionBadge label={cardSelection.selected ? '커스텀 카드 선택됨' : '커스텀 카드 내부 선택'} tone="card" />
+            ) : null}
+
             <div className="section-head">
                 {isEdit ? (
                     <input
