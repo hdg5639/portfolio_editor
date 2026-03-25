@@ -1,5 +1,5 @@
 import './styles/index.css';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { usePortfolioStore } from './hooks/usePortfolioStore';
@@ -36,6 +36,26 @@ function MobileDockButton({ active, label, onClick, emphasized = false }) {
 function MobileEditorSheet({ store }) {
     const { ui, actions } = store;
     const isLayout = ui.mobileEditorMode === 'layout';
+
+    const [shouldRender, setShouldRender] = useState(ui.mobileSheetOpen);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        if (ui.mobileSheetOpen) {
+            setShouldRender(true);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => setIsVisible(true));
+            });
+            return;
+        }
+
+        setIsVisible(false);
+        const timer = setTimeout(() => setShouldRender(false), 240);
+        return () => clearTimeout(timer);
+    }, [ui.mobileSheetOpen]);
+
+    if (!shouldRender) return null;
+
     const titleMap = isLayout
         ? {
             sections: '섹션 표시',
@@ -50,38 +70,37 @@ function MobileEditorSheet({ store }) {
             select: '선택 전환',
         };
 
-    const title = titleMap[isLayout ? ui.mobileLayoutTool : ui.mobileStyleTool] || '편집';
+    const title =
+        titleMap[isLayout ? ui.mobileLayoutTool : ui.mobileStyleTool] || '편집';
 
     return (
         <>
-            <button
-                type="button"
-                className="mobile-sheet-backdrop"
+            <div
+                className={`mobile-editor-backdrop ${isVisible ? 'is-open' : ''}`}
                 onClick={() => actions.toggleMobileSheet(false)}
                 aria-label="모바일 편집창 닫기"
             />
 
-            <section className={`mobile-editor-sheet ${ui.mobileSheetOpen ? 'is-open' : ''}`}>
-                <div className="mobile-editor-sheet-handle" />
-
-                <div className="mobile-editor-sheet-head">
+            <section className={`mobile-editor-sheet ${isVisible ? 'is-open' : ''}`}>
+                <div className="mobile-editor-sheet-header">
                     <div>
                         <strong>{title}</strong>
-                        <p>{isLayout ? '구성 항목을 바로 수정합니다.' : '선택 대상을 기준으로 스타일을 수정합니다.'}</p>
+                        <p>
+                            {isLayout
+                                ? '구성 항목을 바로 수정합니다.'
+                                : '선택 대상을 기준으로 스타일을 수정합니다.'}
+                        </p>
                     </div>
-
-                    <button type="button" className="mobile-sheet-close" onClick={() => actions.toggleMobileSheet(false)}>
+                    <button type="button" onClick={() => actions.toggleMobileSheet(false)}>
                         닫기
                     </button>
                 </div>
 
-                <div className="mobile-editor-sheet-body">
-                    {isLayout ? (
-                        <SidePanel store={store} mobileTool={ui.mobileLayoutTool} embedded />
-                    ) : (
-                        <StylePanel store={store} mobileTool={ui.mobileStyleTool} embedded />
-                    )}
-                </div>
+                {isLayout ? (
+                    <SidePanel store={store} mobileTool={ui.mobileLayoutTool} embedded />
+                ) : (
+                    <StylePanel store={store} mobileTool={ui.mobileStyleTool} embedded />
+                )}
             </section>
         </>
     );
@@ -506,7 +525,7 @@ export default function App() {
                     <MobileSelectionChip store={store}/>
                     <MobileQuickFab store={store} current={currentSelectedStyle}/>
                     <MobileBottomDock store={store}/>
-                    {ui.mobileSheetOpen ? <MobileEditorSheet store={store}/> : null}
+                    <MobileEditorSheet store={store} />
                 </>
             ) : null}
         </div>
