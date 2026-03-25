@@ -111,7 +111,24 @@
     font-size: 12px;
 }
 
-/* 아래 .zoom-controls 버튼 속성들은 기존과 동일하게 유지 */
+.canvas-scale-stage,
+.mobile-scale-stage {
+    overflow: hidden;
+    scrollbar-width: none;
+}
+
+.canvas-scale-stage::-webkit-scrollbar,
+.mobile-scale-stage::-webkit-scrollbar,
+.canvas-scale-wrapper::-webkit-scrollbar,
+.mobile-scale-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.canvas-scale-wrapper,
+.mobile-scale-wrapper {
+    overflow: visible;
+}
+
 .zoom-controls button {
     background: transparent;
     border: none;
