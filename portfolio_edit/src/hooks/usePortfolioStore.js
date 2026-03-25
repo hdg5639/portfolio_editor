@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 
 const MOBILE_BREAKPOINT = 920;
+
+function detectMobileViewport() {
+    if (typeof window === 'undefined') return false;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const shortSide = Math.min(width, height);
+
+    const hasCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    const noHover = window.matchMedia?.('(hover: none)').matches ?? false;
+
+    return shortSide <= MOBILE_BREAKPOINT && (hasCoarsePointer || noHover);
+}
+
 import {
     defaultPortfolio,
     createSkill,
@@ -283,7 +297,7 @@ export function usePortfolioStore() {
         showContentPanel: true,
         showStylePanel: true,
         showEditHelpers: true,
-        isMobile: typeof window !== 'undefined' ? window.innerWidth <= MOBILE_BREAKPOINT : false,
+        isMobile: detectMobileViewport(),
         mobileEditorMode: 'layout',
         mobileLayoutTool: 'sections',
         mobileStyleTool: 'text',
@@ -299,7 +313,8 @@ export function usePortfolioStore() {
         if (typeof window === 'undefined') return undefined;
 
         const syncViewport = () => {
-            const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+            const isMobile = detectMobileViewport();
+
             setUi((prev) => ({
                 ...prev,
                 isMobile,
