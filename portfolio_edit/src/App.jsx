@@ -131,7 +131,11 @@ export default function App() {
         <div
             className="app-shell"
             style={{
-                backgroundColor: portfolio.styles.page.baseBackgroundColor || '#ece7dc',
+                backgroundColor:
+                    portfolio.styles.page.baseBackgroundColor &&
+                    portfolio.styles.page.baseBackgroundColor !== 'transparent'
+                        ? portfolio.styles.page.baseBackgroundColor
+                        : 'transparent',
             }}
         >
             <header className="topbar no-print">
@@ -184,17 +188,17 @@ export default function App() {
             >
                 {ui.showContentPanel ? (
                     <aside className="sidebar-rail left-rail is-open">
-                        <SidePanel store={store} />
+                        <SidePanel store={store}/>
                     </aside>
                 ) : null}
 
                 <section className="layout-main">
-                    <EditablePortfolioCanvas ref={exportRef} store={store} />
+                    <EditablePortfolioCanvas ref={exportRef} store={store}/>
                 </section>
 
                 {ui.showStylePanel ? (
                     <aside className="sidebar-rail right-rail is-open">
-                        <StylePanel store={store} />
+                        <StylePanel store={store}/>
                     </aside>
                 ) : null}
             </main>

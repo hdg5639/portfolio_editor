@@ -318,24 +318,24 @@
 
 .alpha-color-row {
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 52px minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .alpha-color-picker {
     position: relative;
-    width: 56px;
-    height: 40px;
+    width: 52px;
+    height: 36px;
     display: block;
 }
 
 .alpha-color-picker input[type='color'] {
     position: absolute;
     inset: 0;
-    width: 56px;
-    min-width: 56px;
-    height: 40px;
+    width: 52px;
+    min-width: 52px;
+    height: 36px;
     margin: 0;
     opacity: 0;
     cursor: pointer;
@@ -344,10 +344,10 @@
 
 .alpha-color-picker span {
     display: block;
-    width: 56px;
-    height: 40px;
+    width: 52px;
+    height: 36px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 10px;
     background: #fff;
     position: relative;
     overflow: hidden;
@@ -359,32 +359,18 @@
     user-select: none;
 }
 
-.alpha-color-picker span::before {
-    content: '';
+.alpha-color-picker-fill {
     position: absolute;
     inset: 6px;
+    display: block;
     border-radius: 8px;
     border: 1px solid rgba(29, 29, 27, 0.12);
-    background: linear-gradient(135deg, #f3efe7, #e7e1d7);
-}
-
-.alpha-color-picker span::after {
-    content: '색';
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--muted);
-    text-indent: 0;
 }
 
 .alpha-color-preview-shell {
     position: relative;
-    height: 40px;
-    border-radius: 12px;
+    height: 36px;
+    border-radius: 10px;
     border: 1px solid var(--line);
     overflow: hidden;
     background-image:
@@ -392,8 +378,8 @@
             linear-gradient(-45deg, #ececec 25%, transparent 25%),
             linear-gradient(45deg, transparent 75%, #ececec 75%),
             linear-gradient(-45deg, transparent 75%, #ececec 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
 }
 
 .alpha-color-preview-fill {

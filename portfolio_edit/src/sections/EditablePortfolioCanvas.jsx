@@ -143,8 +143,8 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
   return (
       <div
           className="canvas-wrap"
-          style={{ backgroundColor: pageStyle.baseBackgroundColor || 'transparent' }}
-          onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
+          style={{backgroundColor: 'transparent'}}
+          onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
       >
         <div ref={exportRef} className="portfolio-page preview-page" style={canvasStyle}>
           <div className="portfolio-grid">

@@ -81,11 +81,10 @@ function parseColorWithAlpha(value, fallback = '#ffffff') {
 
 function buildColorWithAlpha(hex, alpha) {
     const safeAlpha = clampAlpha(alpha);
+    const { r, g, b } = hexToRgb(hex);
 
-    if (safeAlpha <= 0) return 'transparent';
     if (safeAlpha >= 100) return hex;
 
-    const { r, g, b } = hexToRgb(hex);
     const opacity = Number((safeAlpha / 100).toFixed(2));
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
@@ -107,7 +106,12 @@ function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
                                     onChange(buildColorWithAlpha(e.target.value, parsed.alpha))
                                 }
                             />
-                            <span>색상 선택</span>
+                            <span>
+                                <i
+                                    className="alpha-color-picker-fill"
+                                    style={{backgroundColor: parsed.hex}}
+                                />
+                            </span>
                         </label>
 
                         <div className="alpha-color-preview-shell">
@@ -186,7 +190,7 @@ function StyleControls({value, onChange, compact = false, alphaTargets = {}}) {
                     <AlphaColorField
                         label="외부 배경색"
                         value={current.baseBackgroundColor}
-                        fallback="#ece7dc"
+                        fallback="#ffffff"
                         onChange={(next) => onChange('baseBackgroundColor', next)}
                     />
                 ) : (
@@ -197,7 +201,7 @@ function StyleControls({value, onChange, compact = false, alphaTargets = {}}) {
                                 current.baseBackgroundColor &&
                                 current.baseBackgroundColor !== 'transparent'
                                     ? current.baseBackgroundColor
-                                    : '#ece7dc'
+                                    : '#ffffff'
                             }
                             onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
                         />
