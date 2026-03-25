@@ -333,14 +333,21 @@ function ImageBlock({block, projectId, store, editable}) {
 }
 
 export default function ProjectsSection({ store }) {
-    const cardStyle = store.actions.cardStyle();
+    const cardStyle = store.actions.sectionCardStyle('projectsCard');
     const isEdit = store.mode === 'edit';
     const titleStyle = store.actions.styleFor('section.projects.title');
     const [draggingProjectId, setDraggingProjectId] = useState(null);
     const [dragOverProjectId, setDragOverProjectId] = useState(null);
 
     return (
-        <section className="portfolio-card" style={cardStyle}>
+        <section
+            className="portfolio-card"
+            style={cardStyle}
+            onClick={(e) => {
+                e.stopPropagation();
+                store.actions.select({key: 'projectsCard', label: '프로젝트 카드'});
+            }}
+        >
             <div className="section-head">
                 <h2 className="section-title" style={titleStyle}>
                     프로젝트

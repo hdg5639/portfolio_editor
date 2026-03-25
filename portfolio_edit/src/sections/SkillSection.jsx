@@ -15,10 +15,10 @@ export default function SkillSection({ store }) {
     return (
         <section
             className="portfolio-card"
-            style={actions.cardStyle()}
+            style={actions.sectionCardStyle('skillsCard')}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({ key: 'card', label: '공통 카드' });
+                store.actions.select({ key: 'skillsCard', label: '기술 스택 카드' });
             }}
         >
             <div className="section-head">

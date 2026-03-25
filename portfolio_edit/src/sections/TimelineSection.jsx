@@ -16,10 +16,10 @@ export default function TimelineSection({ store, sectionKey, title }) {
     return (
         <section
             className="portfolio-card"
-            style={actions.cardStyle()}
+            style={actions.sectionCardStyle('timelineCard')}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({ key: 'card', label: '공통 카드' });
+                store.actions.select({ key: 'timelineCard', label: `${title} 카드` });
             }}
         >
             <div className="section-head">

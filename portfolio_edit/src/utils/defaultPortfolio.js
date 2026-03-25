@@ -300,12 +300,35 @@ export const defaultPortfolio = {
       fixedWidth: 980,
       customWidth: 1280,
     },
-    card: {
+    profileCard: {
       backgroundColor: '#ffffff',
       borderColor: '#e8e1d7',
       borderRadius: 24,
       padding: 28,
-      color: '#1d1d1b',
+    },
+    projectsCard: {
+      backgroundColor: '#ffffff',
+      borderColor: '#e8e1d7',
+      borderRadius: 24,
+      padding: 28,
+    },
+    skillsCard: {
+      backgroundColor: '#ffffff',
+      borderColor: '#e8e1d7',
+      borderRadius: 24,
+      padding: 28,
+    },
+    timelineCard: {
+      backgroundColor: '#ffffff',
+      borderColor: '#e8e1d7',
+      borderRadius: 24,
+      padding: 28,
+    },
+    customCard: {
+      backgroundColor: '#ffffff',
+      borderColor: '#e8e1d7',
+      borderRadius: 24,
+      padding: 28,
     },
     elements: {
       'profile.quote': {

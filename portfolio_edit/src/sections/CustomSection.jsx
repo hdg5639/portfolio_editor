@@ -825,7 +825,14 @@ export default function CustomSection({ store, section }) {
     const [dragOverId, setDragOverId] = useState(null);
 
     return (
-        <section className="portfolio-card" style={store.actions.cardStyle()}>
+        <section
+            className="portfolio-card"
+            style={store.actions.sectionCardStyle('customCard')}
+            onClick={(e) => {
+                e.stopPropagation();
+                store.actions.select({ key: 'customCard', label: '커스텀 카드' });
+            }}
+        >
             <div className="section-head">
                 {isEdit ? (
                     <input

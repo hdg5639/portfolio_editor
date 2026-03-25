@@ -129,6 +129,55 @@ function migratePortfolio(rawPortfolio) {
         ...(next.styles.page || {}),
     };
 
+    const legacyCard = next.styles.card || {};
+
+    next.styles.profileCard = {
+        backgroundColor: '#ffffff',
+        borderColor: '#e8e1d7',
+        borderRadius: 24,
+        padding: 28,
+        ...legacyCard,
+        ...(next.styles.profileCard || {}),
+    };
+
+    next.styles.projectsCard = {
+        backgroundColor: '#ffffff',
+        borderColor: '#e8e1d7',
+        borderRadius: 24,
+        padding: 28,
+        ...legacyCard,
+        ...(next.styles.projectsCard || {}),
+    };
+
+    next.styles.skillsCard = {
+        backgroundColor: '#ffffff',
+        borderColor: '#e8e1d7',
+        borderRadius: 24,
+        padding: 28,
+        ...legacyCard,
+        ...(next.styles.skillsCard || {}),
+    };
+
+    next.styles.timelineCard = {
+        backgroundColor: '#ffffff',
+        borderColor: '#e8e1d7',
+        borderRadius: 24,
+        padding: 28,
+        ...legacyCard,
+        ...(next.styles.timelineCard || {}),
+    };
+
+    next.styles.customCard = {
+        backgroundColor: '#ffffff',
+        borderColor: '#e8e1d7',
+        borderRadius: 24,
+        padding: 28,
+        ...legacyCard,
+        ...(next.styles.customCard || {}),
+    };
+
+    delete next.styles.card;
+
     next.projects = (next.projects || []).map((project) => ({
         ...project,
         blocks: (project.blocks || []).map((block) => ({
@@ -1079,8 +1128,16 @@ export function usePortfolioStore() {
             updateSelectedStyle: (field, value) => {
                 if (!selected) return;
 
-                if (selected.key === 'page' || selected.key === 'card') {
-                    const target = selected.key === 'page' ? 'page' : 'card';
+                const cardStyleKeys = [
+                    'profileCard',
+                    'projectsCard',
+                    'skillsCard',
+                    'timelineCard',
+                    'customCard',
+                ];
+
+                if (selected.key === 'page' || cardStyleKeys.includes(selected.key)) {
+                    const target = selected.key;
                     setPortfolio((prev) => ({
                         ...prev,
                         styles: {
@@ -1108,8 +1165,18 @@ export function usePortfolioStore() {
 
             getSelectedStyle: () => {
                 if (!selected) return null;
+
+                const cardStyleKeys = [
+                    'profileCard',
+                    'projectsCard',
+                    'skillsCard',
+                    'timelineCard',
+                    'customCard',
+                ];
+
                 if (selected.key === 'page') return portfolio.styles.page;
-                if (selected.key === 'card') return portfolio.styles.card;
+                if (cardStyleKeys.includes(selected.key)) return portfolio.styles[selected.key];
+
                 return { ...defaultStyle(), ...(portfolio.styles.elements[selected.key] || {}) };
             },
 
@@ -1118,12 +1185,11 @@ export function usePortfolioStore() {
                 ...(portfolio.styles.elements[key] || {}),
             }),
 
-            cardStyle: () => ({
-                backgroundColor: portfolio.styles.card.backgroundColor,
-                borderColor: portfolio.styles.card.borderColor,
-                borderRadius: `${portfolio.styles.card.borderRadius}px`,
-                padding: `${portfolio.styles.card.padding}px`,
-                color: portfolio.styles.card.color,
+            sectionCardStyle: (target) => ({
+                backgroundColor: portfolio.styles[target]?.backgroundColor,
+                borderColor: portfolio.styles[target]?.borderColor,
+                borderRadius: `${portfolio.styles[target]?.borderRadius ?? 24}px`,
+                padding: `${portfolio.styles[target]?.padding ?? 28}px`,
             }),
 
             getCustomSectionById: (sectionId) =>

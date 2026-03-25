@@ -183,7 +183,7 @@ function ProfileBlockShell({
 export default function ProfileSection({ store }) {
     const { profile } = store.portfolio;
     const isEdit = store.mode === 'edit';
-    const cardStyle = store.actions.cardStyle();
+    const cardStyle = store.actions.sectionCardStyle('profileCard');
 
     const [draggingKey, setDraggingKey] = useState(null);
     const [dragOverKey, setDragOverKey] = useState(null);
@@ -365,7 +365,7 @@ export default function ProfileSection({ store }) {
             style={cardStyle}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({ key: 'card', label: '공통 카드' });
+                store.actions.select({ key: 'profileCard', label: '프로필 카드' });
             }}
         >
             <div className="section-head">
