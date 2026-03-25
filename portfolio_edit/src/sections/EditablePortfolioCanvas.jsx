@@ -22,25 +22,38 @@ function SectionTile({
   const showHelpers = editable && store.ui.showEditHelpers;
   const isDragging = draggingKey === sectionKey;
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
+  const showSectionDropOverlay = showHelpers && !!draggingKey && draggingKey !== sectionKey;
+
+  const isSectionDragEvent = (event) =>
+      Array.from(event.dataTransfer?.types || []).includes('application/x-section');
 
   const handleDragStart = (event) => {
     if (!showHelpers) return;
+    event.stopPropagation();
     event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', sectionKey);
+    event.dataTransfer.setData('application/x-section', sectionKey);
     setDraggingKey(sectionKey);
   };
 
   const handleDragOver = (event) => {
-    if (!showHelpers || !draggingKey) return;
+    if (!showHelpers || !draggingKey || !isSectionDragEvent(event)) return;
     event.preventDefault();
-    if (dragOverKey !== sectionKey) setDragOverKey(sectionKey);
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'move';
+
+    if (dragOverKey !== sectionKey) {
+      setDragOverKey(sectionKey);
+    }
   };
 
   const handleDrop = (event) => {
-    if (!showHelpers) return;
+    if (!showHelpers || !isSectionDragEvent(event)) return;
     event.preventDefault();
+    event.stopPropagation();
 
-    const dragged = event.dataTransfer.getData('text/plain') || draggingKey;
+    const dragged =
+        event.dataTransfer.getData('application/x-section') || draggingKey;
+
     if (dragged && dragged !== sectionKey) {
       store.actions.moveSection(dragged, sectionKey);
     }
@@ -49,7 +62,19 @@ function SectionTile({
     setDragOverKey(null);
   };
 
-  const handleDragEnd = () => {
+  const handleDragLeave = (event) => {
+    if (!isSectionDragEvent(event)) return;
+
+    const nextTarget = event.relatedTarget;
+    if (nextTarget && event.currentTarget.contains(nextTarget)) return;
+
+    if (dragOverKey === sectionKey) {
+      setDragOverKey(null);
+    }
+  };
+
+  const handleDragEnd = (event) => {
+    event?.stopPropagation?.();
     setDraggingKey(null);
     setDragOverKey(null);
   };
@@ -59,8 +84,10 @@ function SectionTile({
           className={`section-tile span-${span} span-r-${rowSpan || 1} ${
               isDragging ? 'dragging' : ''
           } ${isDragOver ? 'drag-over' : ''}`}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
+          onDragEnterCapture={handleDragOver}
+          onDragOverCapture={handleDragOver}
+          onDragLeaveCapture={handleDragLeave}
+          onDropCapture={handleDrop}
           onDragEnd={handleDragEnd}
       >
         {showHelpers ? (
@@ -83,6 +110,14 @@ function SectionTile({
                   onHeightChange={(value) => store.actions.setSectionRowSpan(sectionKey, value)}
               />
             </div>
+        ) : null}
+
+        {showSectionDropOverlay ? (
+            <div
+                className={`section-drop-overlay ${isDragOver ? 'active' : ''}`}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+            />
         ) : null}
 
         {children}
@@ -189,9 +224,18 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
               style={canvasStyle}
           >
             <div className="portfolio-grid">
-              {visibleSections.map((item) => (
-                  <SectionTile key={item.key} store={store} {...item}>
-                    {sectionMap[item.key]?.node || null}
+              {visibleSections.map(({key: sectionKey, ...item}) => (
+                  <SectionTile
+                      key={sectionKey}
+                      sectionKey={sectionKey}
+                      store={store}
+                      draggingKey={draggingKey}
+                      dragOverKey={dragOverKey}
+                      setDraggingKey={setDraggingKey}
+                      setDragOverKey={setDragOverKey}
+                      {...item}
+                  >
+                    {sectionMap[sectionKey]?.node || null}
                   </SectionTile>
               ))}
             </div>
