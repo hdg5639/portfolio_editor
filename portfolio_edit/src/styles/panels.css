@@ -956,3 +956,11 @@
         border-radius: 24px;
     }
 }
+
+
+.mobile-inline-help {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted);
+}

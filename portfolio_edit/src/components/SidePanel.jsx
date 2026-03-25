@@ -111,7 +111,7 @@ function MobileLayoutIntro({ title, desc }) {
     );
 }
 
-function LayoutSectionPanel({ portfolio, sectionLabels, actions }) {
+function LayoutSectionPanel({ portfolio, sectionLabels, actions, ui }) {
     const visibleCount = Object.values(portfolio.layout?.sections || {}).filter(Boolean).length;
 
     return (
@@ -120,6 +120,26 @@ function LayoutSectionPanel({ portfolio, sectionLabels, actions }) {
                 title="섹션 표시 관리"
                 desc={`현재 ${visibleCount}개의 섹션이 보입니다. 원하는 섹션만 바로 켜고 끌 수 있습니다.`}
             />
+
+            <PanelSection
+                title="배치 핸들"
+                action={
+                    <button
+                        type="button"
+                        className={`header-inline-toggle ${ui.showEditHelpers ? 'active' : ''}`}
+                        onClick={actions.toggleEditHelpers}
+                        aria-pressed={ui.showEditHelpers}
+                        title="배치 핸들 표시 토글"
+                    >
+                        <span className="header-inline-toggle-label">배치</span>
+                        <span className="header-inline-toggle-track">
+                            <span className="header-inline-toggle-thumb" />
+                        </span>
+                    </button>
+                }
+            >
+                <p className="mobile-inline-help">섹션과 내부 블록의 배치 핸들을 표시하거나 숨깁니다.</p>
+            </PanelSection>
 
             <PanelSection title="표시 토글" collapsible defaultOpen>
                 <SectionToggles
@@ -474,6 +494,7 @@ function renderEmbeddedMobileLayoutTool({
                                             tool,
                                             portfolio,
                                             actions,
+                                            ui,
                                             sectionLabels,
                                             newSectionPreset,
                                             setNewSectionPreset,
@@ -485,6 +506,7 @@ function renderEmbeddedMobileLayoutTool({
                     portfolio={portfolio}
                     sectionLabels={sectionLabels}
                     actions={actions}
+                    ui={ui}
                 />
             );
         case 'custom':
@@ -525,6 +547,7 @@ export default function SidePanel({ store, mobileTool = null, embedded = false }
                             tool: mobileTool,
                             portfolio,
                             actions,
+                            ui,
                             sectionLabels,
                             newSectionPreset,
                             setNewSectionPreset,
