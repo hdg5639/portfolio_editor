@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react';
+import { forwardRef, useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import ProfileSection from './ProfileSection';
 import SkillSection from './SkillSection';
 import ProjectsSection from './ProjectsSection';
@@ -145,35 +145,74 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     return map;
   }, [portfolio.customSections, store]);
 
+  const [scale, setScale] = useState(1);
+  const [showZoomUI, setShowZoomUI] = useState(true);
+  const wrapRef = useRef(null);
+
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.3));
+  const handleZoomReset = () => setScale(1);
+
+  const handleWheel = useCallback((e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const zoomOut = e.deltaY > 0;
+      setScale(prev => {
+        const next = zoomOut ? prev - 0.05 : prev + 0.05;
+        return Math.min(Math.max(next, 0.3), 2.0); // 30% ~ 200% 제한
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (wrap) {
+      wrap.addEventListener('wheel', handleWheel, { passive: false });
+      return () => wrap.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleWheel]);
+
   return (
       <div
           className="canvas-wrap"
+          ref={wrapRef}
           style={{backgroundColor: 'transparent'}}
           onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
       >
         <div
-            ref={exportRef}
-            className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
-            style={canvasStyle}
+            className="canvas-scale-wrapper"
+            style={{transform: `scale(${scale})`}}
         >
-          <div className="portfolio-grid">
-            {visibleSections.map((item) => (
-                <SectionTile
-                    key={item.key}
-                    store={store}
-                    sectionKey={item.key}
-                    label={item.label}
-                    span={item.span}
-                    rowSpan={item.rowSpan || 1}
-                    draggingKey={draggingKey}
-                    dragOverKey={dragOverKey}
-                    setDraggingKey={setDraggingKey}
-                    setDragOverKey={setDragOverKey}
-                >
-                  {sectionMap[item.key]?.node || null}
-                </SectionTile>
-            ))}
+          <div
+              ref={exportRef}
+              className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
+              style={canvasStyle}
+          >
+            <div className="portfolio-grid">
+              {visibleSections.map((item) => (
+                  <SectionTile key={item.key} store={store} {...item}>
+                    {sectionMap[item.key]?.node || null}
+                  </SectionTile>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
+             onClick={(e) => e.stopPropagation()}>
+          {showZoomUI ? (
+              <>
+                <button onClick={handleZoomOut} title="축소">-</button>
+                <span onClick={handleZoomReset} style={{cursor: 'pointer'}} title="100%로 초기화">
+                            {Math.round(scale * 100)}%
+                        </span>
+                <button onClick={handleZoomIn} title="확대">+</button>
+                <div className="zoom-divider"/>
+                <button onClick={() => setShowZoomUI(false)} title="숨기기">✕</button>
+              </>
+          ) : (
+              <button onClick={() => setShowZoomUI(true)} title="줌 컨트롤 열기">🔍</button>
+          )}
         </div>
       </div>
   );

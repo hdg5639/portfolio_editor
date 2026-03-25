@@ -1,8 +1,81 @@
 .canvas-wrap {
-    min-height: calc(100vh - 120px);
-    border-radius: 30px;
-    min-width: 0;
-    padding: 24px;
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px 24px;
+}
+
+.layout-shell.has-left-panel .canvas-wrap {
+    padding-left: calc(var(--rail-open-left) + 40px);
+}
+.layout-shell.has-right-panel .canvas-wrap {
+    padding-right: calc(var(--rail-open-right) + 40px);
+}
+
+.canvas-scale-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    transform-origin: center top;
+    transition: transform 0.1s ease-out;
+    will-change: transform;
+}
+
+.zoom-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    background: #1d1d1b;
+    color: #fff;
+    border-radius: 20px;
+    padding: 4px;
+    z-index: 999; /* 🌟 패널들 위로 무조건 올라오게 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* 아래 .zoom-controls 버튼 속성들은 기존과 동일하게 유지 */
+.zoom-controls button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.zoom-controls button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.zoom-controls span {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 48px;
+    text-align: center;
+    user-select: none;
+}
+
+.zoom-controls.collapsed {
+    padding: 4px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.zoom-controls .zoom-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
 }
 
 .portfolio-page {

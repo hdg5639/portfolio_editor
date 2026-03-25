@@ -482,69 +482,37 @@ export default function StylePanel({ store, mobileTool = null, quickOnly = false
         'customCard',
     ].includes(selected?.key);
 
-    const quickPanel = isCardSelection ? (
-        <CardStyleControls
-            value={current}
-            onChange={(field, value) =>
-                actions.updateSelectedStyle(field, value)
-            }
-        />
-    ) : (
+    const quickPanel = (
         <div className="style-quick-grid">
-            <Field label="빠른 글자색">
+            <label className="style-field">
+                <span>빠른 글자색</span>
                 <input
                     type="color"
-                    value={
-                        current?.color && current.color !== 'transparent'
-                            ? current.color
-                            : '#1d1d1b'
-                    }
-                    onChange={(e) =>
-                        actions.updateSelectedStyle('color', e.target.value)
-                    }
+                    value={current?.color || '#1d1d1b'}
+                    onChange={(e) => actions.updateSelectedStyle('color', e.target.value)}
                 />
-            </Field>
-
-            <Field label="빠른 배경색">
+            </label>
+            <label className="style-field">
+                <span>빠른 배경색</span>
                 <input
                     type="color"
-                    value={
-                        current?.backgroundColor &&
-                        current.backgroundColor !== 'transparent'
-                            ? current.backgroundColor
-                            : '#ffffff'
-                    }
-                    onChange={(e) =>
-                        actions.updateSelectedStyle(
-                            'backgroundColor',
-                            e.target.value
-                        )
-                    }
+                    value={current?.backgroundColor || '#ffffff'}
+                    onChange={(e) => actions.updateSelectedStyle('backgroundColor', e.target.value)}
                 />
-            </Field>
-
-            <Field label="빠른 크기">
+            </label>
+            <label className="style-field">
+                <span>빠른 크기</span>
                 <input
                     type="number"
-                    value={current?.fontSize ?? 16}
-                    onChange={(e) =>
-                        actions.updateSelectedStyle(
-                            'fontSize',
-                            Number(e.target.value)
-                        )
-                    }
+                    value={parseInt(current?.fontSize, 10) || 16}
+                    onChange={(e) => actions.updateSelectedStyle('fontSize', Number(e.target.value))}
                 />
-            </Field>
-
-            <Field label="빠른 굵기">
+            </label>
+            <label className="style-field">
+                <span>빠른 굵기</span>
                 <select
-                    value={String(current?.fontWeight ?? 400)}
-                    onChange={(e) =>
-                        actions.updateSelectedStyle(
-                            'fontWeight',
-                            e.target.value
-                        )
-                    }
+                    value={String(current?.fontWeight ?? '400')}
+                    onChange={(e) => actions.updateSelectedStyle('fontWeight', e.target.value)}
                 >
                     <option value="300">300</option>
                     <option value="400">400</option>
@@ -553,7 +521,7 @@ export default function StylePanel({ store, mobileTool = null, quickOnly = false
                     <option value="700">700</option>
                     <option value="800">800</option>
                 </select>
-            </Field>
+            </label>
         </div>
     );
 
@@ -576,14 +544,14 @@ export default function StylePanel({ store, mobileTool = null, quickOnly = false
 
     if (isEmbeddedMobileTool) {
         const selectedStylePanel = selectedTool === 'select' ? (
-            <MobileSelectTool selected={selected} actions={actions} />
+            <MobileSelectTool selected={selected} actions={actions}/>
         ) : isCardSelection && selectedTool !== 'box' ? (
             <section className="panel-section">
                 <div className="panel-section-head">
                     <strong>{selected?.label || '선택 대상'}</strong>
                 </div>
                 <div className="panel-section-body">
-                    <SelectionBadge selected={selected} />
+                    <SelectionBadge selected={selected}/>
                     <StyleToolHint
                         title="이 대상은 박스 스타일만 편집할 수 있음"
                         description="현재 선택은 카드입니다. 텍스트/정렬 대신 ‘박스’ 탭에서 배경색, 테두리, 모서리, 패딩을 수정하세요."
@@ -596,7 +564,7 @@ export default function StylePanel({ store, mobileTool = null, quickOnly = false
                     <strong>{selected?.label || '선택 대상'}</strong>
                 </div>
                 <div className="panel-section-body style-panel-summary-body">
-                    <SelectionBadge selected={selected} />
+                    <SelectionBadge selected={selected}/>
 
                     {isCardSelection ? (
                         <CardStyleControls

@@ -58,60 +58,50 @@
     border-color: #1d1d1b !important;
 }
 
+
 .layout-shell {
-    --rail-open-left: 320px;
-    --rail-open-right: 340px;
+    --rail-open-left: 290px;
+    --rail-open-right: 290px;
     --layout-gap: 18px;
     --sticky-top: 88px;
     --viewport-gap: 18px;
 
-    max-width: 1760px;
-    margin: 0 auto;
-    padding: 18px;
-    display: grid;
-    gap: var(--layout-gap);
-    align-items: start;
-    grid-template-columns:
-        var(--left-rail-width, 0px)
-        minmax(0, 1fr)
-        var(--right-rail-width, 0px);
-}
-
-.layout-shell.has-left-panel {
-    --left-rail-width: var(--rail-open-left);
-}
-
-.layout-shell.left-panel-closed {
-    --left-rail-width: 0px;
-}
-
-.layout-shell.has-right-panel {
-    --right-rail-width: var(--rail-open-right);
-}
-
-.layout-shell.right-panel-closed {
-    --right-rail-width: 0px;
-}
-
-.left-rail {
-    grid-column: 1;
-}
-
-.layout-main {
-    grid-column: 2;
-    min-width: 0;
-}
-
-.right-rail {
-    grid-column: 3;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    display: block; /* 그리드 해제 유지 */
+    height: calc(100vh - 65px);
+    overflow: hidden;
+    background-color: #f1ede5;
 }
 
 .sidebar-rail {
-    min-width: 0;
-    position: sticky;
-    top: var(--sticky-top);
-    align-self: start;
-    height: calc(100vh - var(--sticky-top) - var(--viewport-gap));
+    position: absolute;
+    top: var(--layout-gap);
+    bottom: var(--layout-gap);
+    height: calc(100% - calc(var(--layout-gap) * 2));
+    z-index: 40; /* 캔버스 위로 띄움 */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.left-rail {
+    left: var(--layout-gap);
+    width: var(--rail-open-left);
+}
+
+.right-rail {
+    right: var(--layout-gap);
+    width: var(--rail-open-right);
+}
+
+.layout-main {
+    position: relative;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
 }
 
