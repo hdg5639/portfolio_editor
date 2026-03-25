@@ -93,7 +93,6 @@
     --right-rail-width: 0px;
 }
 
-/* 핵심: 각 영역의 컬럼 위치를 고정 */
 .left-rail {
     grid-column: 1;
 }

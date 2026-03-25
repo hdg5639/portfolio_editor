@@ -300,6 +300,105 @@
     overflow: hidden;
 }
 
+.style-grid .span-2 {
+    grid-column: 1 / -1;
+}
+
+.inline-accordion {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.inline-accordion-summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.inline-accordion-summary::-webkit-details-marker {
+    display: none;
+}
+
+.inline-accordion-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1d1d1b;
+}
+
+.inline-accordion-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.inline-accordion-body {
+    padding: 0 14px 14px;
+    border-top: 1px solid rgba(29, 29, 27, 0.06);
+}
+
+.card-shadow-controls {
+    display: grid;
+    gap: 14px;
+    padding-top: 14px;
+}
+
+.shadow-angle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-auto-rows: 44px;
+    gap: 10px;
+    justify-content: start;
+    align-content: start;
+}
+
+.shadow-angle-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(29, 29, 27, 0.14);
+    border-radius: 14px;
+    background: #fff;
+    color: #4b463f;
+    font-size: 22px;
+    line-height: 1;
+    box-shadow: none;
+}
+
+.shadow-angle-button:hover {
+    background: #f7f3ec;
+    border-color: rgba(29, 29, 27, 0.22);
+    transform: none;
+}
+
+.shadow-angle-button.active {
+    background: #1d1d1b;
+    color: #fff;
+    border-color: #1d1d1b;
+}
+
+.shadow-range-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.shadow-value-box {
+    min-width: 84px;
+}
+
 .style-accordion summary {
     cursor: pointer;
     list-style: none;
@@ -502,4 +601,192 @@
     font-size: 13px;
     color: var(--muted);
     line-height: 1;
+}
+
+.card-shadow-controls {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: 12px;
+    padding-top: 4px;
+}
+
+.shadow-angle-grid {
+    display: inline-grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-auto-rows: 44px;
+    gap: 10px;
+    width: max-content;
+    justify-content: start;
+    align-content: start;
+}
+
+.card-shadow-controls .style-field-control {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.shadow-angle-button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shadow-angle-button.active {
+    border-color: #1d1d1b;
+    background: #1d1d1b;
+    color: #fff;
+}
+
+.shadow-angle-button.angle-top-left {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.shadow-angle-button.angle-top {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.shadow-angle-button.angle-top-right {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.shadow-angle-button.angle-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.shadow-angle-button.center {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.shadow-angle-button.angle-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.shadow-angle-button.angle-bottom-left {
+    grid-column: 1;
+    grid-row: 3;
+}
+
+.shadow-angle-button.angle-bottom {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+.shadow-angle-button.angle-bottom-right {
+    grid-column: 3;
+    grid-row: 3;
+}
+
+.shadow-range-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    gap: 10px;
+    align-items: center;
+}
+
+.shadow-value-box {
+    min-width: 0;
+}
+
+.shadow-value-box input {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.length-box {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+
+.card-shadow-accordion {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    overflow: hidden;
+}
+
+.card-shadow-summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-shadow-summary::-webkit-details-marker {
+    display: none;
+}
+
+.card-shadow-summary-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1d1d1b;
+}
+
+.card-shadow-accordion[open] .card-shadow-summary {
+    border-bottom: 1px solid rgba(29, 29, 27, 0.08);
+}
+
+.card-shadow-controls {
+    display: grid;
+    gap: 12px;
+    padding: 12px 14px 14px;
+}
+
+.shadow-angle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.shadow-angle-button {
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4b463e;
+}
+
+.shadow-angle-button.center {
+    font-size: 18px;
+}
+
+.shadow-angle-button.active {
+    border-color: #1d1d1b;
+    background: #1d1d1b;
+    color: #fff;
+}
+
+.shadow-range-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.shadow-value-box {
+    min-width: 76px;
+}
+
+.shadow-value-box.length-box {
+    min-width: 84px;
 }
