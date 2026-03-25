@@ -141,6 +141,8 @@ function MobileSelectionChip({ store }) {
         'projectsCard',
         'skillsCard',
         'timelineCard',
+        'awardsCard',
+        'certificatesCard',
         'customCard',
     ];
 

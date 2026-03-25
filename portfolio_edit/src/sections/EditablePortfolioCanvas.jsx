@@ -107,8 +107,8 @@ function SectionTile({
               profile: { key: 'profileCard', label: '프로필 카드' },
               projects: { key: 'projectsCard', label: '프로젝트 카드' },
               skills: { key: 'skillsCard', label: '기술 스택 카드' },
-              awards: { key: 'timelineCard', label: '수상 카드' },
-              certificates: { key: 'timelineCard', label: '자격증 카드' },
+              awards: { key: 'awardsCard', label: '수상 카드' },
+              certificates: { key: 'certificatesCard', label: '자격증 카드' },
             };
             const payload = sectionKey.startsWith('custom:') ? { key: 'customCard', label: '커스텀 카드' } : mapping[sectionKey];
             if (payload) store.actions.select(payload);
@@ -119,8 +119,8 @@ function SectionTile({
           onDropCapture={handleDrop}
           onDragEnd={handleDragEnd}
       >
-        {sectionSelection.active ? (
-            <SelectionBadge label={sectionSelection.selected ? `${label} 선택됨` : `${label} 내부 선택`} tone="section" />
+        {sectionSelection.selected ? (
+            <SelectionBadge label={`${label} 선택됨`} tone="section" />
         ) : null}
 
         {showHelpers ? (

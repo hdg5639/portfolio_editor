@@ -160,9 +160,6 @@ function ItemShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
-            {itemSelection.active ? (
-                <SelectionBadge label={itemSelection.selected ? `${item.title || '항목'} 선택됨` : `${item.title || '항목'} 내부 선택`} tone="item" />
-            ) : null}
 
             {showHelpers ? (
                 <div className="project-block-toolbar">
@@ -292,9 +289,6 @@ function ComplexBlockShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
-            {blockSelection.active ? (
-                <SelectionBadge label={blockSelection.selected ? `${block.title || '블럭'} 선택됨` : `${block.title || '블럭'} 포함`} tone="block" />
-            ) : null}
 
             {showHelpers ? (
                 <div className="project-block-toolbar">
@@ -907,8 +901,8 @@ export default function CustomSection({ store, section }) {
                 store.actions.select({ key: 'customCard', label: '커스텀 카드' });
             }}
         >
-            {cardSelection.active ? (
-                <SelectionBadge label={cardSelection.selected ? '커스텀 카드 선택됨' : '커스텀 카드 내부 선택'} tone="card" />
+            {cardSelection.selected ? (
+                <SelectionBadge label="커스텀 카드 선택됨" tone="card" />
             ) : null}
 
             <div className="section-head">

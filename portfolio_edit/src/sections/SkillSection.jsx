@@ -27,8 +27,8 @@ export default function SkillSection({ store }) {
                 store.actions.select({ key: 'skillsCard', label: '기술 스택 카드' });
             }}
         >
-            {cardSelection.active ? (
-                <SelectionBadge label={cardSelection.selected ? '기술 카드 선택됨' : '기술 카드 내부 선택'} tone="card" />
+            {cardSelection.selected ? (
+                <SelectionBadge label="기술 카드 선택됨" tone="card" />
             ) : null}
 
             <div className="section-head">
@@ -41,10 +41,11 @@ export default function SkillSection({ store }) {
                 {portfolio.skills.map((skill) => {
                     const rowSelection = getSkillRowSelectionState(store.selected?.key, skill.id);
                     return (
-                    <div className={`skill-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={skill.id}>
-                        {rowSelection.active ? (
-                            <SelectionBadge label={rowSelection.selected ? `${skill.category || '기술'} 선택됨` : `${skill.category || '기술'} 내부 선택`} tone="item" />
-                        ) : null}
+                    <div className={`skill-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={skill.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.select({ key: `skills.${skill.id}`, label: `${skill.category || '기술'} 행` });
+                        }}>
                         <InlineEditable
                             tag="strong"
                             value={skill.category}

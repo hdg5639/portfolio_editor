@@ -41,10 +41,11 @@
 }
 
 .inline-editable.selected {
-    border-color: rgba(91, 140, 255, 0.5);
-    background: rgba(91, 140, 255, 0.08);
-    box-shadow: 0 0 0 2px rgba(91, 140, 255, 0.12);
+    border-color: rgba(91, 140, 255, 0.42);
+    background: rgba(91, 140, 255, 0.04);
+    box-shadow: none;
 }
+
 
 .inline-editable:focus {
     outline: none;
@@ -64,9 +65,10 @@
 }
 
 .image-editable.selected {
-    border-color: #5b8cff;
-    box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.14);
+    border-color: rgba(91, 140, 255, 0.55);
+    box-shadow: 0 0 0 1px rgba(91, 140, 255, 0.18);
 }
+
 
 .image-editable img {
     width: 100%;

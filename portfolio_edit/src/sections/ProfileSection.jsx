@@ -157,15 +157,12 @@ function ProfileBlockShell({
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
-                store.actions.select({ key: `profile.${blockKey}`, label: `${label} 블럭` });
+                store.actions.select({ key: `profileBlock.${blockKey}`, label: `${label} 블럭` });
             }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
         >
-            {blockSelection.active ? (
-                <SelectionBadge label={blockSelection.selected ? `${label} 선택됨` : `${label} 포함`} tone="block" />
-            ) : null}
 
             {showHelpers ? (
                 <div className="profile-block-toolbar no-print">
@@ -224,7 +221,7 @@ export default function ProfileSection({ store }) {
     const { profile } = store.portfolio;
     const isEdit = store.mode === 'edit';
     const cardStyle = store.actions.sectionCardStyle('profileCard');
-    const cardSelection = getCardSelectionState(store.selected?.key, 'profileCard', ['profile']);
+    const cardSelection = getCardSelectionState(store.selected?.key, 'profileCard', ['profile', 'profileBlock']);
 
     const [draggingKey, setDraggingKey] = useState(null);
     const [dragOverKey, setDragOverKey] = useState(null);
@@ -409,8 +406,8 @@ export default function ProfileSection({ store }) {
                 store.actions.select({ key: 'profileCard', label: '프로필 카드' });
             }}
         >
-            {cardSelection.active ? (
-                <SelectionBadge label={cardSelection.selected ? '프로필 카드 선택됨' : '프로필 카드 내부 선택'} tone="card" />
+            {cardSelection.selected ? (
+                <SelectionBadge label="프로필 카드 선택됨" tone="card" />
             ) : null}
 
             <div className="section-head">

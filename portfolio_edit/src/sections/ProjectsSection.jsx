@@ -125,9 +125,6 @@ function BlockShell({
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
-            {blockSelection.active ? (
-                <SelectionBadge label={blockSelection.selected ? `${block.title || '블럭'} 선택됨` : `${block.title || '블럭'} 포함`} tone="block" />
-            ) : null}
 
             {showHelpers ? (
                 <div className="project-block-toolbar">
@@ -389,8 +386,8 @@ export default function ProjectsSection({ store }) {
                 store.actions.select({key: 'projectsCard', label: '프로젝트 카드'});
             }}
         >
-            {cardSelection.active ? (
-                <SelectionBadge label={cardSelection.selected ? '프로젝트 카드 선택됨' : '프로젝트 카드 내부 선택'} tone="card" />
+            {cardSelection.selected ? (
+                <SelectionBadge label="프로젝트 카드 선택됨" tone="card" />
             ) : null}
 
             <div className="section-head">
@@ -508,9 +505,6 @@ function ProjectCard({
                 setDragOverProjectId(null);
             }}
         >
-            {projectSelection.active ? (
-                <SelectionBadge label={projectSelection.selected ? `${project.title || '프로젝트'} 선택됨` : `${project.title || '프로젝트'} 내부 선택`} tone="item" />
-            ) : null}
 
             {showHelpers ? (
                 <div className="project-card-toolbar">

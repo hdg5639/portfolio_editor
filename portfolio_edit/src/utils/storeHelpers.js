@@ -60,11 +60,11 @@ export function getCardSelectionState(selectedKey, cardKey, prefixes = []) {
 
 export function getSectionSelectionState(selectedKey, sectionKey) {
     const mapping = {
-        profile: { cardKey: 'profileCard', prefixes: ['profile', 'section.profile'] },
+        profile: { cardKey: 'profileCard', prefixes: ['profile', 'profileBlock', 'section.profile'] },
         projects: { cardKey: 'projectsCard', prefixes: ['projects', 'section.projects'] },
         skills: { cardKey: 'skillsCard', prefixes: ['skills', 'section.skills'] },
-        awards: { cardKey: 'timelineCard', prefixes: ['awards', 'section.awards'] },
-        certificates: { cardKey: 'timelineCard', prefixes: ['certificates', 'section.certificates'] },
+        awards: { cardKey: 'awardsCard', prefixes: ['awards', 'section.awards'] },
+        certificates: { cardKey: 'certificatesCard', prefixes: ['certificates', 'section.certificates'] },
     };
 
     if (sectionKey?.startsWith('custom:')) {
@@ -78,6 +78,7 @@ export function getSectionSelectionState(selectedKey, sectionKey) {
 }
 
 export function getProfileBlockSelectionState(selectedKey, blockKey) {
+    const shellKey = `profileBlock.${blockKey}`;
     const scopes = {
         image: ['profile.image'],
         quote: ['profile.quote'],
@@ -86,7 +87,7 @@ export function getProfileBlockSelectionState(selectedKey, blockKey) {
         intro: ['profile.intro'],
     };
     const prefixes = scopes[blockKey] || [];
-    const selected = prefixes.some((prefix) => selectedKey === prefix);
+    const selected = selectedKey === shellKey;
     const ancestor = !selected && prefixes.some((prefix) => matchesSelectionScope(selectedKey, prefix));
     return { selected, ancestor, active: selected || ancestor };
 }

@@ -17,19 +17,20 @@ function SelectionBadge({ label, tone = 'block' }) {
 export default function TimelineSection({ store, sectionKey, title }) {
     const { portfolio, actions } = store;
     const items = portfolio[sectionKey] || [];
-    const cardSelection = getCardSelectionState(store.selected?.key, 'timelineCard', [sectionKey, `section.${sectionKey}`]);
+    const cardKey = sectionKey === 'awards' ? 'awardsCard' : 'certificatesCard';
+    const cardSelection = getCardSelectionState(store.selected?.key, cardKey, [sectionKey, `section.${sectionKey}`]);
 
     return (
         <section
             className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
-            style={actions.sectionCardStyle('timelineCard')}
+            style={actions.sectionCardStyle(cardKey)}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({ key: 'timelineCard', label: `${title} 카드` });
+                store.actions.select({ key: cardKey, label: `${title} 카드` });
             }}
         >
-            {cardSelection.active ? (
-                <SelectionBadge label={cardSelection.selected ? `${title} 카드 선택됨` : `${title} 카드 내부 선택`} tone="card" />
+            {cardSelection.selected ? (
+                <SelectionBadge label={`${title} 카드 선택됨`} tone="card" />
             ) : null}
 
             <div className="section-head">
@@ -42,10 +43,11 @@ export default function TimelineSection({ store, sectionKey, title }) {
                 {items.map((item) => {
                     const rowSelection = getTimelineItemSelectionState(store.selected?.key, sectionKey, item.id);
                     return (
-                    <div className={`timeline-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={item.id}>
-                        {rowSelection.active ? (
-                            <SelectionBadge label={rowSelection.selected ? `${title} 선택됨` : `${title} 내부 선택`} tone="item" />
-                        ) : null}
+                    <div className={`timeline-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={item.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.select({ key: `${sectionKey}.${item.id}`, label: `${title} 항목` });
+                        }}>
                         <InlineEditable
                             value={item.date}
                             onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'date', value)}

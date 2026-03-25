@@ -181,6 +181,8 @@ const CARD_SELECTION_KEYS = [
     'projectsCard',
     'skillsCard',
     'timelineCard',
+    'awardsCard',
+    'certificatesCard',
     'customCard',
 ];
 
@@ -477,6 +479,8 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
         'projectsCard',
         'skillsCard',
         'timelineCard',
+        'awardsCard',
+        'certificatesCard',
         'customCard',
     ].includes(selected?.key);
 
