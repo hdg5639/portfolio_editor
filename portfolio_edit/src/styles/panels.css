@@ -316,14 +316,20 @@
     padding: 0 14px 14px;
 }
 
-.alpha-color-row {
+/* alpha color layout */
+.alpha-color-stack {
     display: grid;
     grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: 36px 32px;
+    column-gap: 8px;
+    row-gap: 8px;
     align-items: center;
-    gap: 8px;
+    min-width: 0;
 }
 
 .alpha-color-picker {
+    grid-column: 1;
+    grid-row: 1;
     position: relative;
     width: 52px;
     height: 36px;
@@ -368,6 +374,8 @@
 }
 
 .alpha-color-preview-shell {
+    grid-column: 2;
+    grid-row: 1;
     position: relative;
     height: 36px;
     border-radius: 10px;
@@ -398,46 +406,31 @@
     background: rgba(255, 255, 255, 0.72);
 }
 
-.alpha-range-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 58px auto;
-    gap: 8px;
-    align-items: center;
-}
-
-.alpha-range-row input[type='number'] {
-    text-align: center;
-    padding: 8px 6px;
-    height: 40px;
-    -moz-appearance: textfield;
-}
-
-.alpha-range-row input[type='number']::-webkit-outer-spin-button,
-.alpha-range-row input[type='number']::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.alpha-range-row input[type='range'] {
+.alpha-range-input {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
     -webkit-appearance: none;
     appearance: none;
-    width: 100%;
     height: 18px;
     padding: 0;
+    margin: 0;
     border: none;
     border-radius: 999px;
     background: transparent;
     box-shadow: none;
     cursor: pointer;
+    align-self: center;
 }
 
-.alpha-range-row input[type='range']::-webkit-slider-runnable-track {
+.alpha-range-input::-webkit-slider-runnable-track {
     height: 8px;
     border-radius: 999px;
     background: #d7d0c4;
 }
 
-.alpha-range-row input[type='range']::-webkit-slider-thumb {
+.alpha-range-input::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 18px;
@@ -449,14 +442,14 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
-.alpha-range-row input[type='range']::-moz-range-track {
+.alpha-range-input::-moz-range-track {
     height: 8px;
     border: none;
     border-radius: 999px;
     background: #d7d0c4;
 }
 
-.alpha-range-row input[type='range']::-moz-range-thumb {
+.alpha-range-input::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border: none;
@@ -465,14 +458,48 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
-.alpha-range-row input[type='range']:focus {
+.alpha-range-input:focus {
     outline: none;
 }
 
-.alpha-range-row input[type='range']:focus::-webkit-slider-runnable-track {
+.alpha-range-input:focus::-webkit-slider-runnable-track {
     background: #cfc7ba;
 }
 
-.alpha-range-row input[type='range']:focus::-moz-range-track {
+.alpha-range-input:focus::-moz-range-track {
     background: #cfc7ba;
+}
+
+.alpha-value-box {
+    grid-column: 2;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: 52px auto;
+    align-items: center;
+    justify-content: start;
+    column-gap: 6px;
+    min-width: 0;
+}
+
+.alpha-value-box input[type='number'] {
+    width: 52px;
+    min-width: 52px;
+    height: 32px;
+    text-align: center;
+    padding: 4px 6px;
+    margin: 0;
+    border-radius: 10px;
+    -moz-appearance: textfield;
+}
+
+.alpha-value-box input[type='number']::-webkit-outer-spin-button,
+.alpha-value-box input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.alpha-value-box span {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1;
 }

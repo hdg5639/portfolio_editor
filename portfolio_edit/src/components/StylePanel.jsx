@@ -97,50 +97,50 @@ function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
         <div className="alpha-color-field">
             <Field label={label}>
                 <div className="alpha-color-stack">
-                    <div className="alpha-color-row">
-                        <label className="alpha-color-picker">
-                            <input
-                                type="color"
-                                value={parsed.hex}
-                                onChange={(e) =>
-                                    onChange(buildColorWithAlpha(e.target.value, parsed.alpha))
-                                }
-                            />
-                            <span>
-                                <i
-                                    className="alpha-color-picker-fill"
-                                    style={{backgroundColor: parsed.hex}}
-                                />
-                            </span>
-                        </label>
-
-                        <div className="alpha-color-preview-shell">
-                            {parsed.alpha > 0 ? (
-                                <div
-                                    className="alpha-color-preview-fill"
-                                    style={{backgroundColor: previewColor}}
-                                />
-                            ) : null}
-                            {parsed.alpha === 0 ? (
-                                <span className="alpha-color-preview-text">투명</span>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    <div className="alpha-range-row">
+                    <label className="alpha-color-picker">
                         <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="1"
-                            value={parsed.alpha}
-                            onInput={(e) =>
-                                onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
-                            }
+                            type="color"
+                            value={parsed.hex}
                             onChange={(e) =>
-                                onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
+                                onChange(buildColorWithAlpha(e.target.value, parsed.alpha))
                             }
                         />
+                        <span>
+            <i
+                className="alpha-color-picker-fill"
+                style={{backgroundColor: parsed.hex}}
+            />
+        </span>
+                    </label>
+
+                    <div className="alpha-color-preview-shell">
+                        {parsed.alpha > 0 ? (
+                            <div
+                                className="alpha-color-preview-fill"
+                                style={{backgroundColor: previewColor}}
+                            />
+                        ) : null}
+                        {parsed.alpha === 0 ? (
+                            <span className="alpha-color-preview-text">투명</span>
+                        ) : null}
+                    </div>
+
+                    <input
+                        className="alpha-range-input"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={parsed.alpha}
+                        onInput={(e) =>
+                            onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
+                        }
+                        onChange={(e) =>
+                            onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
+                        }
+                    />
+
+                    <div className="alpha-value-box">
                         <input
                             type="number"
                             min="0"
