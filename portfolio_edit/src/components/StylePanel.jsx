@@ -151,7 +151,6 @@ function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
                                 onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
                             }
                         />
-                        <span>%</span>
                     </div>
                 </div>
             </Field>
