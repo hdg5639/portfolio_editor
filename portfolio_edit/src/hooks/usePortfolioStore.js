@@ -323,6 +323,16 @@ export function usePortfolioStore() {
                 }));
             },
 
+            selectPage: () => {
+                setSelected({ key: 'page', label: '페이지 전체' });
+                setUi((prev) => ({
+                    ...prev,
+                    mobileEditorMode: prev.isMobile ? 'style' : prev.mobileEditorMode,
+                    mobileStyleTool: prev.isMobile ? 'box' : prev.mobileStyleTool,
+                    mobileSheetOpen: prev.isMobile ? true : prev.mobileSheetOpen,
+                }));
+            },
+
             togglePanel: (panel) =>
                 setUi((prev) => ({
                     ...prev,
@@ -347,6 +357,7 @@ export function usePortfolioStore() {
                     ...prev,
                     mobileEditorMode: mode,
                     mobileSheetOpen: true,
+                    mobileQuickOpen: mode === 'style' ? prev.mobileQuickOpen : false,
                 })),
 
             setMobileLayoutTool: (tool) =>
@@ -355,6 +366,7 @@ export function usePortfolioStore() {
                     mobileLayoutTool: tool,
                     mobileEditorMode: 'layout',
                     mobileSheetOpen: true,
+                    mobileQuickOpen: false,
                 })),
 
             setMobileStyleTool: (tool) =>

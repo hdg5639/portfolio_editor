@@ -18,7 +18,7 @@ const MOBILE_STYLE_TOOLS = [
     { key: 'text', label: '텍스트' },
     { key: 'align', label: '정렬' },
     { key: 'box', label: '박스' },
-    { key: 'global', label: '전역' },
+    { key: 'select', label: '선택' },
 ];
 
 function MobileDockButton({ active, label, onClick, emphasized = false }) {
@@ -44,11 +44,11 @@ function MobileEditorSheet({ store }) {
               projects: '프로젝트',
           }
         : {
-              text: '텍스트 스타일',
-              align: '정렬 스타일',
-              box: '박스 스타일',
-              global: '전역 스타일',
-          };
+            text: '텍스트 스타일',
+            align: '정렬 스타일',
+            box: '박스 스타일',
+            select: '선택 전환',
+        };
 
     const title = titleMap[isLayout ? ui.mobileLayoutTool : ui.mobileStyleTool] || '편집';
 
@@ -108,6 +108,42 @@ function MobileQuickFab({ store }) {
                 {ui.mobileQuickOpen ? '닫기' : '빠른'}
             </button>
         </div>
+    );
+}
+
+function MobileSelectionChip({ store }) {
+    const { ui, selected, actions } = store;
+
+    if (ui.mobileEditorMode !== 'style') return null;
+
+    const cardKeys = [
+        'profileCard',
+        'projectsCard',
+        'skillsCard',
+        'timelineCard',
+        'customCard',
+    ];
+
+    const typeLabel =
+        selected?.key === 'page'
+            ? '페이지'
+            : cardKeys.includes(selected?.key)
+                ? '카드'
+                : '요소';
+
+    return (
+        <button
+            type="button"
+            className="mobile-selection-chip no-print"
+            onClick={() => {
+                actions.setMobileStyleTool('select');
+                actions.toggleMobileSheet(true);
+            }}
+        >
+            <span className="mobile-selection-chip-label">선택됨</span>
+            <strong>{selected?.label || '선택 없음'}</strong>
+            <em>{typeLabel}</em>
+        </button>
     );
 }
 
@@ -356,6 +392,7 @@ export default function App() {
 
             {ui.isMobile ? (
                 <>
+                    <MobileSelectionChip store={store} />
                     <MobileQuickFab store={store} current={currentSelectedStyle} />
                     <MobileBottomDock store={store} />
                     {ui.mobileSheetOpen ? <MobileEditorSheet store={store} /> : null}
