@@ -38,6 +38,22 @@
     will-change: transform;
 }
 
+.canvas-scale-stage,
+.mobile-scale-stage {
+    overflow: hidden;
+}
+
+.canvas-scale-wrapper,
+.mobile-scale-wrapper,
+.portfolio-page {
+    overflow: visible;
+}
+
+.mobile-app-shell {
+    height: 100vh;
+    overflow: hidden;
+}
+
 .mobile-scale-stage {
     position: relative;
 }

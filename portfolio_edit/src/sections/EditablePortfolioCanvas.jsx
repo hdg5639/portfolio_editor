@@ -139,10 +139,9 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
           ? pageStyle.customWidth || 1280
           : pageStyle.fixedWidth || 980;
 
-  const resolvedPageWidth = `${baseWidth}px`;
   const pageMinHeight = Math.round(baseWidth * (isLandscape ? 210 / 297 : 297 / 210));
 
-  const canvasPixelWidth = baseWidth;
+  const isMobileCanvas = !!store.ui?.isMobile;
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -152,7 +151,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     minWidth: `${baseWidth}px`,
     maxWidth: `${baseWidth}px`,
     minHeight: `${pageMinHeight}px`,
-    margin: '0 auto',
+    margin: isMobileCanvas ? '0' : '0 auto',
     boxSizing: 'border-box',
     flex: '0 0 auto',
   };
@@ -184,8 +183,6 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
 
     return map;
   }, [portfolio.customSections, store]);
-
-  const isMobileCanvas = !!store.ui?.isMobile;
 
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
