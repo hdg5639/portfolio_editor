@@ -97,10 +97,14 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
   const [draggingKey, setDraggingKey] = useState(null);
   const [dragOverKey, setDragOverKey] = useState(null);
 
-  const resolvedPageWidth =
+  const isLandscape = pageStyle.orientation === 'landscape';
+  const baseWidth =
       pageStyle.widthMode === 'custom'
-          ? `${pageStyle.customWidth || 1280}px`
-          : `${pageStyle.fixedWidth || 980}px`;
+          ? pageStyle.customWidth || 1280
+          : pageStyle.fixedWidth || 980;
+
+  const resolvedPageWidth = `${baseWidth}px`;
+  const pageMinHeight = Math.round(baseWidth * (isLandscape ? 210 / 297 : 297 / 210));
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -108,6 +112,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     fontFamily: pageStyle.fontFamily,
     width: '100%',
     maxWidth: resolvedPageWidth,
+    minHeight: `${pageMinHeight}px`,
     margin: '0 auto',
   };
 
@@ -146,7 +151,11 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
           style={{backgroundColor: 'transparent'}}
           onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
       >
-        <div ref={exportRef} className="portfolio-page preview-page" style={canvasStyle}>
+        <div
+            ref={exportRef}
+            className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
+            style={canvasStyle}
+        >
           <div className="portfolio-grid">
             {visibleSections.map((item) => (
                 <SectionTile

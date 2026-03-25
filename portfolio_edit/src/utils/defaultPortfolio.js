@@ -299,6 +299,7 @@ export const defaultPortfolio = {
       widthMode: 'fixed',
       fixedWidth: 980,
       customWidth: 1280,
+      orientation: 'portrait',
     },
     profileCard: {
       backgroundColor: '#ffffff',

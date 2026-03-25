@@ -128,6 +128,7 @@ function migratePortfolio(rawPortfolio) {
         widthMode: 'fixed',
         fixedWidth: 980,
         customWidth: 1280,
+        orientation: 'portrait',
         ...(next.styles.page || {}),
     };
 
@@ -351,6 +352,35 @@ export function usePortfolioStore() {
                     ...prev,
                     showEditHelpers: Boolean(visible),
                 })),
+
+            setPageOrientation: (orientation) =>
+                setPortfolio((prev) => ({
+                    ...prev,
+                    styles: {
+                        ...prev.styles,
+                        page: {
+                            ...prev.styles.page,
+                            orientation,
+                        },
+                    },
+                })),
+
+            togglePageOrientation: () =>
+                setPortfolio((prev) => {
+                    const current = prev.styles.page?.orientation || 'portrait';
+                    const nextOrientation = current === 'portrait' ? 'landscape' : 'portrait';
+
+                    return {
+                        ...prev,
+                        styles: {
+                            ...prev.styles,
+                            page: {
+                                ...prev.styles.page,
+                                orientation: nextOrientation,
+                            },
+                        },
+                    };
+                }),
 
             setMobileEditorMode: (mode) =>
                 setUi((prev) => ({

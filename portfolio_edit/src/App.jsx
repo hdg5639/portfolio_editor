@@ -12,6 +12,7 @@ const MOBILE_LAYOUT_TOOLS = [
     { key: 'custom', label: '커스텀' },
     { key: 'skills', label: '기술' },
     { key: 'projects', label: '프로젝트' },
+    { key: 'rotate', label: '회전' },
 ];
 
 const MOBILE_STYLE_TOOLS = [
@@ -38,11 +39,12 @@ function MobileEditorSheet({ store }) {
     const isLayout = ui.mobileEditorMode === 'layout';
     const titleMap = isLayout
         ? {
-              sections: '섹션 표시',
-              custom: '커스텀 섹션',
-              skills: '기술 스택',
-              projects: '프로젝트',
-          }
+            sections: '섹션 표시',
+            custom: '커스텀 섹션',
+            skills: '기술 스택',
+            projects: '프로젝트',
+            rotate: '페이지 방향',
+        }
         : {
             text: '텍스트 스타일',
             align: '정렬 스타일',
@@ -202,9 +204,10 @@ export default function App() {
 
             await document.fonts?.ready;
 
-            const A4_WIDTH_MM = 210;
-            const A4_HEIGHT_MM = 297;
-            const EXPORT_WIDTH_PX = 1240;
+            const isLandscape = portfolio.styles.page?.orientation === 'landscape';
+            const A4_WIDTH_MM = isLandscape ? 297 : 210;
+            const A4_HEIGHT_MM = isLandscape ? 210 : 297;
+            const EXPORT_WIDTH_PX = isLandscape ? 1754 : 1240;
             const EXPORT_PADDING = 0;
 
             const clone = target.cloneNode(true);
@@ -240,7 +243,11 @@ export default function App() {
                 windowHeight: clone.scrollHeight,
             });
 
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF(
+                portfolio.styles.page?.orientation === 'landscape' ? 'l' : 'p',
+                'mm',
+                'a4'
+            );
             const pdfWidth = A4_WIDTH_MM;
             const pdfHeight = A4_HEIGHT_MM;
 
