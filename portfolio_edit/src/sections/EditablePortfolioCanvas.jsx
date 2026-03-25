@@ -260,54 +260,71 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     };
   }, [getFitScale, isMobileCanvas, baseWidth, pageStyle.orientation]);
 
+  const scaledWidth = Math.round(baseWidth * scale);
+  const scaledHeight = Math.round(pageMinHeight * scale);
+
   return (
       <div
           className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''}`}
           ref={wrapRef}
-          style={{ backgroundColor: 'transparent' }}
-          onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
+          style={{backgroundColor: 'transparent'}}
+          onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
       >
         <div
-            className={`canvas-scale-wrapper ${isMobileCanvas ? 'mobile-scale-wrapper' : ''}`}
+            className={`canvas-scale-stage ${isMobileCanvas ? 'mobile-scale-stage' : ''}`}
             style={{
-              width: `${baseWidth}px`,
-              minWidth: `${baseWidth}px`,
-              transform: `scale(${scale})`,
-              transformOrigin: isMobileCanvas ? 'top left' : 'center top',
+              width: `${scaledWidth}px`,
+              minWidth: `${scaledWidth}px`,
+              height: `${scaledHeight}px`,
+              minHeight: `${scaledHeight}px`,
             }}
         >
           <div
-              ref={exportRef}
-              className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
-              style={canvasStyle}
+              className={`canvas-scale-wrapper ${isMobileCanvas ? 'mobile-scale-wrapper' : ''}`}
+              style={{
+                width: `${baseWidth}px`,
+                minWidth: `${baseWidth}px`,
+                height: `${pageMinHeight}px`,
+                minHeight: `${pageMinHeight}px`,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+              }}
           >
-            <div className="portfolio-grid">
-              {visibleSections.map(({key: sectionKey, ...item}) => (
-                  <SectionTile
-                      key={sectionKey}
-                      sectionKey={sectionKey}
-                      store={store}
-                      draggingKey={draggingKey}
-                      dragOverKey={dragOverKey}
-                      setDraggingKey={setDraggingKey}
-                      setDragOverKey={setDragOverKey}
-                      {...item}
-                  >
-                    {sectionMap[sectionKey]?.node || null}
-                  </SectionTile>
-              ))}
+            <div
+                ref={exportRef}
+                className={`portfolio-page preview-page ${isLandscape ? 'is-landscape' : 'is-portrait'}`}
+                style={canvasStyle}
+            >
+              <div className="portfolio-grid">
+                {visibleSections.map(({key: sectionKey, ...item}) => (
+                    <SectionTile
+                        key={sectionKey}
+                        sectionKey={sectionKey}
+                        store={store}
+                        draggingKey={draggingKey}
+                        dragOverKey={dragOverKey}
+                        setDraggingKey={setDraggingKey}
+                        setDragOverKey={setDragOverKey}
+                        {...item}
+                    >
+                      {sectionMap[sectionKey]?.node || null}
+                    </SectionTile>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
-             onClick={(e) => e.stopPropagation()}>
+        <div
+            className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
+            onClick={(e) => e.stopPropagation()}
+        >
           {showZoomUI ? (
               <>
                 <button onClick={handleZoomOut} title="축소">-</button>
                 <span onClick={handleZoomReset} style={{cursor: 'pointer'}} title="100%로 초기화">
-                            {Math.round(scale * 100)}%
-                        </span>
+                    {Math.round(scale * 100)}%
+                </span>
                 <button onClick={handleZoomIn} title="확대">+</button>
                 <div className="zoom-divider"/>
                 <button onClick={() => setShowZoomUI(false)} title="숨기기">✕</button>
