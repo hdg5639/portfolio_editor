@@ -34,8 +34,39 @@
     color: #fff;
     border-radius: 20px;
     padding: 4px;
-    z-index: 999; /* 🌟 패널들 위로 무조건 올라오게 */
+    z-index: 999;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.mobile-canvas-wrap {
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 16px 16px 120px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-scale-wrapper {
+    transform-origin: top left !important;
+}
+
+.mobile-canvas-wrap .zoom-controls {
+    left: auto;
+    right: 16px;
+    transform: none;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    border-radius: 18px;
+}
+
+.mobile-canvas-wrap .zoom-controls button {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+}
+
+.mobile-canvas-wrap .zoom-controls span {
+    min-width: 44px;
+    font-size: 12px;
 }
 
 /* 아래 .zoom-controls 버튼 속성들은 기존과 동일하게 유지 */

@@ -70,7 +70,6 @@
     }
 }
 
-/* 일반 모바일 폭에서는 캔버스 내부를 건드리지 말고 상단/패널 UI만 반응형 처리 */
 @media (max-width: 920px) {
     .topbar-inner {
         flex-direction: column;
@@ -96,7 +95,6 @@
     }
 }
 
-/* 실제 모바일 앱 쉘일 때만 편집 UI 패딩/버튼 크기 조정 */
 @media (max-width: 920px) {
     .mobile-app-shell .layout-shell {
         padding: 12px 12px 110px;

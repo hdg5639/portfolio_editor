@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { forwardRef, useMemo, useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import ProfileSection from './ProfileSection';
 import SkillSection from './SkillSection';
 import ProjectsSection from './ProjectsSection';
@@ -147,13 +147,13 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     backgroundColor: pageStyle.backgroundColor,
     color: pageStyle.color,
     fontFamily: pageStyle.fontFamily,
-    width: `${canvasPixelWidth}px`,
-    minWidth: `${canvasPixelWidth}px`,
-    maxWidth: `${canvasPixelWidth}px`,
+    width: `${baseWidth}px`,
+    minWidth: `${baseWidth}px`,
+    maxWidth: `${baseWidth}px`,
     minHeight: `${pageMinHeight}px`,
     margin: '0 auto',
-    flex: '0 0 auto',
     boxSizing: 'border-box',
+    flex: '0 0 auto',
   };
   const visibleSections = useMemo(() => {
     return portfolio.layout.items.filter((item) => portfolio.layout.sections[item.key]);
@@ -184,46 +184,96 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
     return map;
   }, [portfolio.customSections, store]);
 
+  const isMobileCanvas = !!store.ui?.isMobile;
+
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
   const wrapRef = useRef(null);
 
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
-  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.3));
-  const handleZoomReset = () => setScale(1);
+  const getFitScale = useCallback(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return 1;
 
-  const handleWheel = useCallback((e) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const zoomOut = e.deltaY > 0;
-      setScale(prev => {
-        const next = zoomOut ? prev - 0.05 : prev + 0.05;
-        return Math.min(Math.max(next, 0.3), 2.0); // 30% ~ 200% 제한
-      });
-    }
-  }, []);
+    const computed = window.getComputedStyle(wrap);
+    const paddingLeft = parseFloat(computed.paddingLeft || '0');
+    const paddingRight = parseFloat(computed.paddingRight || '0');
+    const availableWidth = Math.max(0, wrap.clientWidth - paddingLeft - paddingRight);
+
+    if (!availableWidth || !baseWidth) return 1;
+
+    return Math.min(1, availableWidth / baseWidth);
+  }, [baseWidth]);
+
+  const handleZoomIn = () => {
+    setScale((prev) => Math.min(prev + 0.1, 2));
+  };
+
+  const handleZoomOut = () => {
+    const minScale = isMobileCanvas ? getFitScale() : 0.3;
+    setScale((prev) => Math.max(prev - 0.1, minScale));
+  };
+
+  const handleZoomReset = () => {
+    setScale(isMobileCanvas ? getFitScale() : 1);
+  };
+
+  const handleWheel = useCallback(
+      (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+
+        e.preventDefault();
+
+        const minScale = isMobileCanvas ? getFitScale() : 0.3;
+        const zoomOut = e.deltaY > 0;
+
+        setScale((prev) => {
+          const next = zoomOut ? prev - 0.05 : prev + 0.05;
+          return Math.min(Math.max(next, minScale), 2);
+        });
+      },
+      [getFitScale, isMobileCanvas]
+  );
 
   useEffect(() => {
     const wrap = wrapRef.current;
-    if (wrap) {
-      wrap.addEventListener('wheel', handleWheel, { passive: false });
-      return () => wrap.removeEventListener('wheel', handleWheel);
-    }
+    if (!wrap) return;
+
+    wrap.addEventListener('wheel', handleWheel, { passive: false });
+    return () => wrap.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
+
+  useLayoutEffect(() => {
+    if (!isMobileCanvas) return;
+
+    const applyFitScale = () => {
+      setScale(getFitScale());
+    };
+
+    applyFitScale();
+
+    window.addEventListener('resize', applyFitScale);
+    window.addEventListener('orientationchange', applyFitScale);
+
+    return () => {
+      window.removeEventListener('resize', applyFitScale);
+      window.removeEventListener('orientationchange', applyFitScale);
+    };
+  }, [getFitScale, isMobileCanvas, baseWidth, pageStyle.orientation]);
 
   return (
       <div
-          className="canvas-wrap"
+          className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''}`}
           ref={wrapRef}
-          style={{backgroundColor: 'transparent'}}
-          onClick={() => actions.select({key: 'page', label: '페이지 전체'})}
+          style={{ backgroundColor: 'transparent' }}
+          onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
       >
         <div
-            className="canvas-scale-wrapper"
+            className={`canvas-scale-wrapper ${isMobileCanvas ? 'mobile-scale-wrapper' : ''}`}
             style={{
-              width: `${canvasPixelWidth}px`,
-              minWidth: `${canvasPixelWidth}px`,
+              width: `${baseWidth}px`,
+              minWidth: `${baseWidth}px`,
               transform: `scale(${scale})`,
+              transformOrigin: isMobileCanvas ? 'top left' : 'center top',
             }}
         >
           <div
