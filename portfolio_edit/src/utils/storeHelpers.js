@@ -9,12 +9,21 @@ export const MOBILE_BREAKPOINT = 920;
 
 export function detectMobileViewport() {
     if (typeof window === 'undefined') return false;
+
     const width = window.innerWidth;
     const height = window.innerHeight;
     const shortSide = Math.min(width, height);
+
     const hasCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     const noHover = window.matchMedia?.('(hover: none)').matches ?? false;
-    return shortSide <= MOBILE_BREAKPOINT && (hasCoarsePointer || noHover);
+
+    // 실제 모바일 기기는 그대로 잡고,
+    // 데스크톱 브라우저는 폭이 충분히 작으면 모바일 편집 UI로 전환
+    if (hasCoarsePointer || noHover) {
+        return shortSide <= MOBILE_BREAKPOINT;
+    }
+
+    return width <= MOBILE_BREAKPOINT;
 }
 
 export function clone(value) {
