@@ -29,6 +29,7 @@ function SectionTile({
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
   const showSectionDropOverlay = showHelpers && !!draggingKey && draggingKey !== sectionKey;
   const sectionSelection = getSectionSelectionState(store.selected?.key, sectionKey);
+  const useTapReorder = showHelpers && !!store.ui?.isMobile;
 
   const isSectionDragEvent = (event) =>
       Array.from(event.dataTransfer?.types || []).includes('application/x-section');
@@ -84,12 +85,23 @@ function SectionTile({
     setDragOverKey(null);
   };
 
+  const handleTapReorder = (event) => {
+    if (!useTapReorder || !draggingKey || draggingKey === sectionKey) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    store.actions.moveSection(draggingKey, sectionKey);
+    setDraggingKey(null);
+    setDragOverKey(null);
+    return true;
+  };
+
   return (
       <div
           className={`section-tile selection-scope selection-section span-${span} span-r-${rowSpan || 1} ${isDragging ? 'dragging' : ''} ${
               isDragOver ? 'drag-over' : ''
           } ${sectionSelection.selected ? 'is-selected' : ''} ${sectionSelection.ancestor ? 'is-ancestor' : ''}`}
           onClick={(event) => {
+            if (handleTapReorder(event)) return;
             event.stopPropagation();
             const mapping = {
               profile: { key: 'profileCard', label: '프로필 카드' },
@@ -113,7 +125,13 @@ function SectionTile({
 
         {showHelpers ? (
             <div className="section-tile-toolbar no-print">
-              <div className="drag-handle" draggable onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              <div className="drag-handle" draggable onDragStart={handleDragStart} onDragEnd={handleDragEnd} onClick={(event) => {
+                if (!useTapReorder) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setDraggingKey((current) => (current === sectionKey ? null : sectionKey));
+                setDragOverKey(null);
+              }}>
                 ⋮⋮
               </div>
 
@@ -130,10 +148,13 @@ function SectionTile({
 
         {showSectionDropOverlay ? (
             <div
-                className={`section-drop-overlay ${isDragOver ? 'active' : ''}`}
+                className={`section-drop-overlay ${(isDragOver || useTapReorder) ? 'active' : ''}`}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-            />
+                onClick={handleTapReorder}
+            >
+              {useTapReorder ? <span>여기로 이동</span> : null}
+            </div>
         ) : null}
 
         {children}

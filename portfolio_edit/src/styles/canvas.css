@@ -390,6 +390,46 @@
     background: rgba(91, 140, 255, 0.08);
 }
 
+.tap-reorder-overlay {
+    position: absolute;
+    inset: -6px;
+    z-index: 24;
+    border: 2px dashed #5b8cff;
+    border-radius: 20px;
+    background: rgba(91, 140, 255, 0.1);
+    color: #2550b4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: -0.01em;
+    box-shadow: 0 10px 28px rgba(37, 80, 180, 0.12);
+}
+
+.tap-reorder-overlay:active {
+    background: rgba(91, 140, 255, 0.16);
+}
+
+.mobile-app-shell .drag-handle {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-app-shell .drag-handle:active {
+    opacity: 0.7;
+}
+
+.section-drop-overlay,
+.project-card-drop-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2550b4;
+    font-weight: 800;
+    font-size: 12px;
+}
+
 .project-card-toolbar {
     display: flex;
     align-items: center;

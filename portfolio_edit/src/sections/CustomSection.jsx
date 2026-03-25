@@ -100,6 +100,8 @@ function ItemShell({
     const isDragging = draggingId === item.id;
     const isDragOver = dragOverId === item.id && draggingId !== item.id;
     const itemSelection = getCustomItemSelectionState(store.selected?.key, sectionId, item.id);
+    const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== item.id;
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -134,12 +136,23 @@ function ItemShell({
         setDragOverId(null);
     };
 
+    const handleTapReorder = (event) => {
+        if (!showTapOverlay) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        store.actions.moveCustomSectionItem(sectionId, draggingId, item.id);
+        setDraggingId(null);
+        setDragOverId(null);
+        return true;
+    };
+
     return (
         <div
             className={`custom-item-shell selection-scope selection-item span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${itemSelection.selected ? 'is-selected' : ''} ${itemSelection.ancestor ? 'is-ancestor' : ''}`}
             onClick={(event) => {
+                if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `custom.${sectionId}.${item.id}`, label: `${item.title || '커스텀'} 항목` });
             }}
@@ -153,7 +166,13 @@ function ItemShell({
 
             {showHelpers ? (
                 <div className="project-block-toolbar">
-                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
+                        if (!useTapReorder) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDraggingId((current) => (current === item.id ? null : item.id));
+                        setDragOverId(null);
+                    }}>
                         ⋮⋮
                     </div>
 
@@ -180,6 +199,18 @@ function ItemShell({
                 </div>
             ) : null}
 
+            {showTapOverlay ? (
+                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+                    여기로 이동
+                </button>
+            ) : null}
+
+            {showTapOverlay ? (
+                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+                    여기로 이동
+                </button>
+            ) : null}
+
             {children}
         </div>
     );
@@ -201,6 +232,8 @@ function ComplexBlockShell({
     const isDragging = draggingId === block.id;
     const isDragOver = dragOverId === block.id && draggingId !== block.id;
     const blockSelection = getCustomBlockSelectionState(store.selected?.key, sectionId, itemId, block.id);
+    const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== block.id;
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -235,12 +268,23 @@ function ComplexBlockShell({
         setDragOverId(null);
     };
 
+    const handleTapReorder = (event) => {
+        if (!showTapOverlay) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        store.actions.moveCustomSectionItem(sectionId, draggingId, item.id);
+        setDraggingId(null);
+        setDragOverId(null);
+        return true;
+    };
+
     return (
         <div
             className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             onClick={(event) => {
+                if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `custom.${sectionId}.${itemId}.blocks.${block.id}`, label: `${block.title || block.type} 블럭` });
             }}
@@ -254,7 +298,13 @@ function ComplexBlockShell({
 
             {showHelpers ? (
                 <div className="project-block-toolbar">
-                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
+                        if (!useTapReorder) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDraggingId((current) => (current === item.id ? null : item.id));
+                        setDragOverId(null);
+                    }}>
                         ⋮⋮
                     </div>
 

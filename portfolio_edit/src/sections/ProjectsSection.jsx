@@ -58,6 +58,8 @@ function BlockShell({
     const isDragging = draggingId === block.id;
     const isDragOver = dragOverId === block.id && draggingId !== block.id;
     const blockSelection = getProjectBlockSelectionState(store.selected?.key, projectId, block.id);
+    const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== block.id;
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -94,6 +96,16 @@ function BlockShell({
         setDragOverId(null);
     };
 
+    const handleTapReorder = (event) => {
+        if (!showTapOverlay) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        store.actions.moveProjectBlock(projectId, draggingId, block.id);
+        setDraggingId(null);
+        setDragOverId(null);
+        return true;
+    };
+
     return (
         <div
             className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
@@ -101,6 +113,7 @@ function BlockShell({
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             draggable={showHelpers}
             onClick={(event) => {
+                if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `projects.${projectId}.blocks.${block.id}`, label: `${block.title || '프로젝트'} 블럭` });
             }}
@@ -122,6 +135,13 @@ function BlockShell({
                         className="drag-handle"
                         title="드래그해서 위치 이동"
                         onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(event) => {
+                            if (!useTapReorder) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDraggingId((current) => (current === block.id ? null : block.id));
+                            setDragOverId(null);
+                        }}
                     >
                         ⋮⋮
                     </div>
@@ -149,6 +169,12 @@ function BlockShell({
                         </button>
                     </div>
                 </div>
+            ) : null}
+
+            {showTapOverlay ? (
+                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+                    여기로 이동
+                </button>
             ) : null}
 
             {children}
@@ -418,6 +444,7 @@ function ProjectCard({
 
     const showProjectDropOverlay = showHelpers && !!draggingProjectId && draggingProjectId !== project.id;
     const projectSelection = getProjectSelectionState(store.selected?.key, project.id);
+    const useTapReorder = showHelpers && !!store.ui?.isMobile;
 
     return (
         <article
@@ -425,6 +452,14 @@ function ProjectCard({
                 isProjectDragging ? 'dragging' : ''
             } ${isProjectDragOver ? 'drag-over' : ''} ${projectSelection.selected ? 'is-selected' : ''} ${projectSelection.ancestor ? 'is-ancestor' : ''}`}
             onClick={(event) => {
+                if (useTapReorder && draggingProjectId && draggingProjectId !== project.id) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    store.actions.moveProject(draggingProjectId, project.id);
+                    setDraggingProjectId(null);
+                    setDragOverProjectId(null);
+                    return;
+                }
                 event.stopPropagation();
                 store.actions.select({ key: `projects.${project.id}`, label: `${project.title || '프로젝트'} 항목` });
             }}
@@ -497,6 +532,13 @@ function ProjectCard({
                             setDraggingProjectId(null);
                             setDragOverProjectId(null);
                         }}
+                        onClick={(event) => {
+                            if (!useTapReorder) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDraggingProjectId((current) => (current === project.id ? null : project.id));
+                            setDragOverProjectId(null);
+                        }}
                     >
                         ⋮⋮
                     </div>
@@ -507,7 +549,7 @@ function ProjectCard({
 
             {showProjectDropOverlay ? (
                 <div
-                    className={`project-card-drop-overlay ${isProjectDragOver ? 'active' : ''}`}
+                    className={`project-card-drop-overlay ${(isProjectDragOver || useTapReorder) ? 'active' : ''}`}
                     onDragOver={(event) => {
                         if (!isProjectCardDragEvent(event)) return;
                         event.preventDefault();
@@ -534,7 +576,17 @@ function ProjectCard({
                         setDraggingProjectId(null);
                         setDragOverProjectId(null);
                     }}
-                />
+                    onClick={(event) => {
+                        if (!useTapReorder || !draggingProjectId || draggingProjectId === project.id) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        store.actions.moveProject(draggingProjectId, project.id);
+                        setDraggingProjectId(null);
+                        setDragOverProjectId(null);
+                    }}
+                >
+                    {useTapReorder ? <span>여기로 이동</span> : null}
+                </div>
             ) : null}
 
             <div className="project-top-meta">

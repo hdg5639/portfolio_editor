@@ -100,6 +100,8 @@ function ProfileBlockShell({
     const isDragging = draggingKey === blockKey;
     const isDragOver = dragOverKey === blockKey && draggingKey !== blockKey;
     const blockSelection = getProfileBlockSelectionState(store.selected?.key, blockKey);
+    const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const showTapOverlay = useTapReorder && !!draggingKey && draggingKey !== blockKey;
 
     const handleDragStart = (event) => {
         if (!showHelpers) return;
@@ -137,12 +139,23 @@ function ProfileBlockShell({
         setDragOverKey(null);
     };
 
+    const handleTapReorder = (event) => {
+        if (!showTapOverlay) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        store.actions.moveProfileBlock(draggingKey, blockKey);
+        setDraggingKey(null);
+        setDragOverKey(null);
+        return true;
+    };
+
     return (
         <div
             className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} ${isDragging ? 'dragging' : ''} ${
                 isDragOver ? 'drag-over' : ''
             } ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             onClick={(event) => {
+                if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `profile.${blockKey}`, label: `${label} 블럭` });
             }}
@@ -162,6 +175,13 @@ function ProfileBlockShell({
                         draggable
                         onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
+                        onClick={(event) => {
+                            if (!useTapReorder) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDraggingKey((current) => (current === blockKey ? null : blockKey));
+                            setDragOverKey(null);
+                        }}
                     >
                         ⋮⋮
                     </div>
@@ -187,6 +207,12 @@ function ProfileBlockShell({
                         </button>
                     </div>
                 </div>
+            ) : null}
+
+            {showTapOverlay ? (
+                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+                    여기로 이동
+                </button>
             ) : null}
 
             {children}
