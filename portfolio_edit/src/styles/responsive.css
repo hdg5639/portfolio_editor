@@ -58,12 +58,19 @@
     }
 }
 
+/* 공통 축소 폭에서 상단 UI 정도만 정리 */
 @media (max-width: 1280px) {
-    .layout-shell {
-        grid-template-columns: 1fr !important;
+    .topbar-inner {
+        gap: 12px;
+    }
+
+    .topbar-right {
+        gap: 8px;
+        flex-wrap: wrap;
     }
 }
 
+/* 일반 모바일 폭에서는 캔버스 내부를 건드리지 말고 상단/패널 UI만 반응형 처리 */
 @media (max-width: 920px) {
     .topbar-inner {
         flex-direction: column;
@@ -72,12 +79,9 @@
 
     .topbar-right {
         justify-content: flex-start;
+        flex-wrap: wrap;
     }
 
-    .portfolio-grid,
-    .profile-layout-grid,
-    .project-block-grid,
-    .custom-section-grid,
     .style-grid,
     .style-quick-grid,
     .two-column-grid,
@@ -86,29 +90,16 @@
         grid-template-columns: 1fr;
     }
 
-    .span-12,
-    .span-8,
-    .span-6,
-    .span-4,
-    .span-3 {
-        grid-column: span 1;
-    }
-
-    .span-r-1,
-    .span-r-2,
-    .span-r-3 {
-        grid-row: span 1;
-    }
-
     .custom-item.media.image-left,
     .custom-item.media.image-right {
         grid-template-columns: 1fr;
     }
 }
+
+/* 실제 모바일 앱 쉘일 때만 편집 UI 패딩/버튼 크기 조정 */
 @media (max-width: 920px) {
     .mobile-app-shell .layout-shell {
         padding: 12px 12px 110px;
-        grid-template-columns: 1fr !important;
     }
 
     .mobile-app-shell .topbar-inner {
@@ -133,12 +124,24 @@
         padding: 9px 12px;
         font-size: 12px;
     }
+
+    .mobile-app-shell .style-grid,
+    .mobile-app-shell .style-quick-grid,
+    .mobile-app-shell .two-column-grid,
+    .mobile-app-shell .timeline-row,
+    .mobile-app-shell .skill-row {
+        grid-template-columns: 1fr;
+    }
+
+    .mobile-app-shell .custom-item.media.image-left,
+    .mobile-app-shell .custom-item.media.image-right {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-height: 920px) and (orientation: landscape) {
     .mobile-app-shell .layout-shell {
         padding: 10px 10px 104px;
-        grid-template-columns: 1fr !important;
     }
 
     .mobile-app-shell .topbar-inner {

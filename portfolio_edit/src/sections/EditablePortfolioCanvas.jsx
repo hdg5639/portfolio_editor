@@ -141,16 +141,20 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
   const resolvedPageWidth = `${baseWidth}px`;
   const pageMinHeight = Math.round(baseWidth * (isLandscape ? 210 / 297 : 297 / 210));
 
+  const canvasPixelWidth = baseWidth;
+
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
     color: pageStyle.color,
     fontFamily: pageStyle.fontFamily,
-    width: '100%',
-    maxWidth: resolvedPageWidth,
+    width: `${canvasPixelWidth}px`,
+    minWidth: `${canvasPixelWidth}px`,
+    maxWidth: `${canvasPixelWidth}px`,
     minHeight: `${pageMinHeight}px`,
     margin: '0 auto',
+    flex: '0 0 auto',
+    boxSizing: 'border-box',
   };
-
   const visibleSections = useMemo(() => {
     return portfolio.layout.items.filter((item) => portfolio.layout.sections[item.key]);
   }, [portfolio.layout.items, portfolio.layout.sections]);
@@ -216,7 +220,11 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
       >
         <div
             className="canvas-scale-wrapper"
-            style={{transform: `scale(${scale})`}}
+            style={{
+              width: `${canvasPixelWidth}px`,
+              minWidth: `${canvasPixelWidth}px`,
+              transform: `scale(${scale})`,
+            }}
         >
           <div
               ref={exportRef}
