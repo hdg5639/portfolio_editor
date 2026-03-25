@@ -1,9 +1,161 @@
+function clampAlpha(value) {
+    const next = Number(value);
+    if (Number.isNaN(next)) return 100;
+    return Math.max(0, Math.min(100, next));
+}
+
+function hexToRgb(hex) {
+    const normalized = hex.replace('#', '').trim();
+
+    if (normalized.length === 3) {
+        const r = normalized[0] + normalized[0];
+        const g = normalized[1] + normalized[1];
+        const b = normalized[2] + normalized[2];
+        return {
+            r: parseInt(r, 16),
+            g: parseInt(g, 16),
+            b: parseInt(b, 16),
+        };
+    }
+
+    if (normalized.length === 6 || normalized.length === 8) {
+        return {
+            r: parseInt(normalized.slice(0, 2), 16),
+            g: parseInt(normalized.slice(2, 4), 16),
+            b: parseInt(normalized.slice(4, 6), 16),
+        };
+    }
+
+    return { r: 255, g: 255, b: 255 };
+}
+
+function rgbToHex(r, g, b) {
+    const toHex = (value) => value.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function parseColorWithAlpha(value, fallback = '#ffffff') {
+    if (!value) {
+        return { hex: fallback, alpha: 100 };
+    }
+
+    if (value === 'transparent') {
+        return { hex: fallback, alpha: 0 };
+    }
+
+    const raw = String(value).trim();
+
+    if (raw.startsWith('#')) {
+        const normalized = raw.replace('#', '');
+        if (normalized.length === 8) {
+            const rgbHex = `#${normalized.slice(0, 6)}`;
+            const alphaHex = normalized.slice(6, 8);
+            const alpha = Math.round((parseInt(alphaHex, 16) / 255) * 100);
+            return { hex: rgbHex, alpha };
+        }
+
+        if (normalized.length === 3 || normalized.length === 6) {
+            return { hex: raw, alpha: 100 };
+        }
+    }
+
+    const rgbaMatch = raw.match(
+        /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i
+    );
+
+    if (rgbaMatch) {
+        const r = Math.max(0, Math.min(255, Math.round(Number(rgbaMatch[1]))));
+        const g = Math.max(0, Math.min(255, Math.round(Number(rgbaMatch[2]))));
+        const b = Math.max(0, Math.min(255, Math.round(Number(rgbaMatch[3]))));
+        const alphaRaw = rgbaMatch[4] == null ? 1 : Number(rgbaMatch[4]);
+        const alpha = Math.round(Math.max(0, Math.min(1, alphaRaw)) * 100);
+
+        return {
+            hex: rgbToHex(r, g, b),
+            alpha,
+        };
+    }
+
+    return { hex: fallback, alpha: 100 };
+}
+
+function buildColorWithAlpha(hex, alpha) {
+    const safeAlpha = clampAlpha(alpha);
+
+    if (safeAlpha <= 0) return 'transparent';
+    if (safeAlpha >= 100) return hex;
+
+    const { r, g, b } = hexToRgb(hex);
+    const opacity = Number((safeAlpha / 100).toFixed(2));
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
+    const parsed = parseColorWithAlpha(value, fallback);
+    const previewColor = buildColorWithAlpha(parsed.hex, parsed.alpha);
+
+    return (
+        <div className="alpha-color-field">
+            <Field label={label}>
+                <div className="alpha-color-stack">
+                    <div className="alpha-color-row">
+                        <label className="alpha-color-picker">
+                            <input
+                                type="color"
+                                value={parsed.hex}
+                                onChange={(e) =>
+                                    onChange(buildColorWithAlpha(e.target.value, parsed.alpha))
+                                }
+                            />
+                            <span>색상 선택</span>
+                        </label>
+
+                        <div className="alpha-color-preview-shell">
+                            {parsed.alpha > 0 ? (
+                                <div
+                                    className="alpha-color-preview-fill"
+                                    style={{backgroundColor: previewColor}}
+                                />
+                            ) : null}
+                            {parsed.alpha === 0 ? (
+                                <span className="alpha-color-preview-text">투명</span>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    <div className="alpha-range-row">
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={parsed.alpha}
+                            onChange={(e) =>
+                                onChange(buildColorWithAlpha(parsed.hex, e.target.value))
+                            }
+                        />
+                        <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={parsed.alpha}
+                            onChange={(e) =>
+                                onChange(buildColorWithAlpha(parsed.hex, e.target.value))
+                            }
+                        />
+                        <span>%</span>
+                    </div>
+                </div>
+            </Field>
+        </div>
+    );
+}
+
 function Field({ label, children }) {
     return (
-        <label className="style-field">
+        <div className="style-field">
             <span>{label}</span>
             {children}
-        </label>
+        </div>
     );
 }
 
@@ -16,11 +168,36 @@ function AccordionItem({ title, children, defaultOpen = false }) {
     );
 }
 
-function StyleControls({ value, onChange }) {
+function StyleControls({ value, onChange, compact = false, alphaTargets = {} }) {
     const current = value || {};
+    const alphaBackground = Boolean(alphaTargets.backgroundColor);
+    const alphaBorder = Boolean(alphaTargets.borderColor);
+    const alphaBaseBackground = Boolean(alphaTargets.baseBackgroundColor);
 
     return (
         <div className="style-grid compact">
+            {Object.prototype.hasOwnProperty.call(current, 'baseBackgroundColor') &&
+                (alphaBaseBackground ? (
+                    <AlphaColorField
+                        label="외부 배경색"
+                        value={current.baseBackgroundColor}
+                        fallback="#ece7dc"
+                        onChange={(next) => onChange('baseBackgroundColor', next)}
+                    />
+                ) : (
+                    <Field label="외부 배경색">
+                        <input
+                            type="color"
+                            value={
+                                current.baseBackgroundColor &&
+                                current.baseBackgroundColor !== 'transparent'
+                                    ? current.baseBackgroundColor
+                                    : '#ece7dc'
+                            }
+                            onChange={(e) => onChange('baseBackgroundColor', e.target.value)}
+                        />
+                    </Field>
+                ))}
             <Field label="글자색">
                 <input
                     type="color"
@@ -33,17 +210,26 @@ function StyleControls({ value, onChange }) {
                 />
             </Field>
 
-            <Field label="배경색">
-                <input
-                    type="color"
-                    value={
-                        current.backgroundColor && current.backgroundColor !== 'transparent'
-                            ? current.backgroundColor
-                            : '#ffffff'
-                    }
-                    onChange={(e) => onChange('backgroundColor', e.target.value)}
+            {alphaBackground ? (
+                <AlphaColorField
+                    label="배경색"
+                    value={current.backgroundColor}
+                    fallback="#ffffff"
+                    onChange={(next) => onChange('backgroundColor', next)}
                 />
-            </Field>
+            ) : (
+                <Field label="배경색">
+                    <input
+                        type="color"
+                        value={
+                            current.backgroundColor && current.backgroundColor !== 'transparent'
+                                ? current.backgroundColor
+                                : '#ffffff'
+                        }
+                        onChange={(e) => onChange('backgroundColor', e.target.value)}
+                    />
+                </Field>
+            )}
 
             <Field label="글자 크기">
                 <input
@@ -96,17 +282,26 @@ function StyleControls({ value, onChange }) {
                 />
             </Field>
 
-            <Field label="테두리색">
-                <input
-                    type="color"
-                    value={
-                        current.borderColor && current.borderColor !== 'transparent'
-                            ? current.borderColor
-                            : '#e5e5e5'
-                    }
-                    onChange={(e) => onChange('borderColor', e.target.value)}
+            {alphaBorder ? (
+                <AlphaColorField
+                    label="테두리색"
+                    value={current.borderColor}
+                    fallback="#e5e5e5"
+                    onChange={(next) => onChange('borderColor', next)}
                 />
-            </Field>
+            ) : (
+                <Field label="테두리색">
+                    <input
+                        type="color"
+                        value={
+                            current.borderColor && current.borderColor !== 'transparent'
+                                ? current.borderColor
+                                : '#e5e5e5'
+                        }
+                        onChange={(e) => onChange('borderColor', e.target.value)}
+                    />
+                </Field>
+            )}
 
             <Field label="모서리">
                 <input
@@ -132,29 +327,19 @@ function CardStyleControls({ value, onChange }) {
 
     return (
         <div className="style-grid compact">
-            <Field label="배경색">
-                <input
-                    type="color"
-                    value={
-                        current.backgroundColor && current.backgroundColor !== 'transparent'
-                            ? current.backgroundColor
-                            : '#ffffff'
-                    }
-                    onChange={(e) => onChange('backgroundColor', e.target.value)}
-                />
-            </Field>
+            <AlphaColorField
+                label="배경색"
+                value={current.backgroundColor}
+                fallback="#ffffff"
+                onChange={(next) => onChange('backgroundColor', next)}
+            />
 
-            <Field label="테두리색">
-                <input
-                    type="color"
-                    value={
-                        current.borderColor && current.borderColor !== 'transparent'
-                            ? current.borderColor
-                            : '#e8e1d7'
-                    }
-                    onChange={(e) => onChange('borderColor', e.target.value)}
-                />
-            </Field>
+            <AlphaColorField
+                label="테두리색"
+                value={current.borderColor}
+                fallback="#e8e1d7"
+                onChange={(next) => onChange('borderColor', next)}
+            />
 
             <Field label="모서리">
                 <input
@@ -277,20 +462,13 @@ export default function StylePanel({ store }) {
                     </section>
 
                     <AccordionItem title="전역 스타일" defaultOpen>
-                        <div className="style-grid compact">
-                            <Field label="외부 배경색">
-                                <input
-                                    type="color"
-                                    value={store.portfolio.styles.page.baseBackgroundColor || '#ece7dc'}
-                                    onChange={(e) =>
-                                        actions.updateGlobalStyle('page', 'baseBackgroundColor', e.target.value)
-                                    }
-                                />
-                            </Field>
-                        </div>
-
                         <StyleControls
                             value={store.portfolio.styles.page}
+                            alphaTargets={{
+                                baseBackgroundColor: true,
+                                backgroundColor: true,
+                                borderColor: true,
+                            }}
                             onChange={(field, value) =>
                                 actions.updateGlobalStyle('page', field, value)
                             }
@@ -311,6 +489,10 @@ export default function StylePanel({ store }) {
                         ) : (
                             <StyleControls
                                 value={current}
+                                alphaTargets={{
+                                    backgroundColor: true,
+                                    borderColor: true,
+                                }}
                                 onChange={(field, value) =>
                                     actions.updateSelectedStyle(field, value)
                                 }
