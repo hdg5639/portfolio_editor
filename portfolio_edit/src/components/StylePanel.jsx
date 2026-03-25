@@ -210,6 +210,18 @@ export default function StylePanel({ store }) {
                     </section>
 
                     <AccordionItem title="전역 스타일" defaultOpen>
+                        <div className="style-grid compact">
+                            <Field label="외부 배경색">
+                                <input
+                                    type="color"
+                                    value={store.portfolio.styles.page.baseBackgroundColor || '#ece7dc'}
+                                    onChange={(e) =>
+                                        actions.updateGlobalStyle('page', 'baseBackgroundColor', e.target.value)
+                                    }
+                                />
+                            </Field>
+                        </div>
+
                         <StyleControls
                             value={store.portfolio.styles.page}
                             onChange={(field, value) =>

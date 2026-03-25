@@ -1123,6 +1123,7 @@ export function usePortfolioStore() {
                 borderColor: portfolio.styles.card.borderColor,
                 borderRadius: `${portfolio.styles.card.borderRadius}px`,
                 padding: `${portfolio.styles.card.padding}px`,
+                color: portfolio.styles.card.color,
             }),
 
             getCustomSectionById: (sectionId) =>

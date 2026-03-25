@@ -305,6 +305,7 @@ export const defaultPortfolio = {
       borderColor: '#e8e1d7',
       borderRadius: 24,
       padding: 28,
+      color: '#1d1d1b',
     },
     elements: {
       'profile.quote': {
