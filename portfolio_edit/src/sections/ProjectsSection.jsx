@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import LayoutSizeControl from './LayoutSizeControl';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -113,36 +114,14 @@ function BlockShell({
                         {block.type} · {block.title}
                     </strong>
 
-                    <div className="profile-block-actions">
-                        {[12, 8, 6, 4, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(block.colSpan || 12) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setProjectBlockSpan(projectId, block.id, value);
-                                }}
-                            >
-                                W{value}
-                            </button>
-                        ))}
-                    </div>
+                    <LayoutSizeControl
+                        widthValue={block.colSpan || 12}
+                        heightValue={block.rowSpan || 1}
+                        onWidthChange={(value) => store.actions.setProjectBlockSpan(projectId, block.id, value)}
+                        onHeightChange={(value) => store.actions.setProjectBlockRowSpan(projectId, block.id, value)}
+                    />
 
                     <div className="profile-block-actions">
-                        {[1, 2, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(block.rowSpan || 1) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setProjectBlockRowSpan(projectId, block.id, value);
-                                }}
-                            >
-                                H{value}
-                            </button>
-                        ))}
                         <button
                             type="button"
                             onClick={(e) => {

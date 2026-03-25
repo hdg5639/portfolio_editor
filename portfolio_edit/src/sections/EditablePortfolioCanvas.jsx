@@ -4,6 +4,7 @@ import SkillSection from './SkillSection';
 import ProjectsSection from './ProjectsSection';
 import TimelineSection from './TimelineSection';
 import CustomSection from './CustomSection';
+import LayoutSizeControl from './LayoutSizeControl';
 
 function SectionTile({
                        store,
@@ -75,37 +76,12 @@ function SectionTile({
 
               <strong>{label}</strong>
 
-              <div className="span-switcher">
-                {[12, 8, 6, 4, 3].map((value) => (
-                    <button
-                        key={value}
-                        type="button"
-                        className={span === value ? 'active' : ''}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          store.actions.setSectionSpan(sectionKey, value);
-                        }}
-                    >
-                      {value}칸
-                    </button>
-                ))}
-              </div>
-
-              <div className="span-switcher">
-                {[1, 2, 3].map((value) => (
-                    <button
-                        key={value}
-                        type="button"
-                        className={(rowSpan || 1) === value ? 'active' : ''}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          store.actions.setSectionRowSpan(sectionKey, value);
-                        }}
-                    >
-                      높이 {value}
-                    </button>
-                ))}
-              </div>
+              <LayoutSizeControl
+                  widthValue={span}
+                  heightValue={rowSpan || 1}
+                  onWidthChange={(value) => store.actions.setSectionSpan(sectionKey, value)}
+                  onHeightChange={(value) => store.actions.setSectionRowSpan(sectionKey, value)}
+              />
             </div>
         ) : null}
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import LayoutSizeControl from './LayoutSizeControl';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -144,36 +145,14 @@ function ItemShell({
 
                     <strong>{item.title || '아이템'}</strong>
 
-                    <div className="profile-block-actions">
-                        {[12, 8, 6, 4, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(item.colSpan || 6) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setCustomSectionItemSpan(sectionId, item.id, value);
-                                }}
-                            >
-                                W{value}
-                            </button>
-                        ))}
-                    </div>
+                    <LayoutSizeControl
+                        widthValue={item.colSpan || 6}
+                        heightValue={item.rowSpan || 1}
+                        onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
+                        onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
+                    />
 
                     <div className="profile-block-actions">
-                        {[1, 2, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(item.rowSpan || 1) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value);
-                                }}
-                            >
-                                H{value}
-                            </button>
-                        ))}
                         <button
                             type="button"
                             onClick={(e) => {
@@ -258,36 +237,18 @@ function ComplexBlockShell({
 
                     <strong>{block.type} · {block.title}</strong>
 
-                    <div className="profile-block-actions">
-                        {[12, 8, 6, 4, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(block.colSpan || 12) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value);
-                                }}
-                            >
-                                W{value}
-                            </button>
-                        ))}
-                    </div>
+                    <LayoutSizeControl
+                        widthValue={block.colSpan || 12}
+                        heightValue={block.rowSpan || 1}
+                        onWidthChange={(value) =>
+                            store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value)
+                        }
+                        onHeightChange={(value) =>
+                            store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value)
+                        }
+                    />
 
                     <div className="profile-block-actions">
-                        {[1, 2, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={(block.rowSpan || 1) === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value);
-                                }}
-                            >
-                                H{value}
-                            </button>
-                        ))}
                         <button
                             type="button"
                             onClick={(e) => {

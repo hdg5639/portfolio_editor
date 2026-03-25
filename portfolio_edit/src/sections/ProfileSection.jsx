@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import LayoutSizeControl from './LayoutSizeControl';
 
 function bind(store, key, label) {
     return {
@@ -153,36 +154,14 @@ function ProfileBlockShell({
 
                     <strong>{label}</strong>
 
-                    <div className="profile-block-actions">
-                        {[12, 8, 6, 4, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={colSpan === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setProfileBlockSpan(blockKey, value);
-                                }}
-                            >
-                                W{value}
-                            </button>
-                        ))}
-                    </div>
+                    <LayoutSizeControl
+                        widthValue={colSpan}
+                        heightValue={rowSpan}
+                        onWidthChange={(value) => store.actions.setProfileBlockSpan(blockKey, value)}
+                        onHeightChange={(value) => store.actions.setProfileBlockRowSpan(blockKey, value)}
+                    />
 
                     <div className="profile-block-actions">
-                        {[1, 2, 3].map((value) => (
-                            <button
-                                key={value}
-                                type="button"
-                                className={rowSpan === value ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.setProfileBlockRowSpan(blockKey, value);
-                                }}
-                            >
-                                H{value}
-                            </button>
-                        ))}
                         <button
                             type="button"
                             onClick={(e) => {
