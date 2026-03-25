@@ -196,14 +196,29 @@ function ListBlock({ block, projectId, store, editable }) {
                         {(block.items || []).map((item, index) => {
                             const itemKey = `projects.${projectId}.blocks.${block.id}.items.${index}`;
                             return (
-                                <input
-                                    key={`${block.id}-${index}`}
-                                    value={item}
-                                    {...selectableInputProps(store, itemKey, `프로젝트 리스트 항목 ${index + 1}`)}
-                                    onChange={(e) =>
-                                        store.actions.updateProjectListItem(projectId, block.id, index, e.target.value)
-                                    }
-                                />
+                                <div key={`${block.id}-${index}`} className="project-list-edit-row">
+                                    <input
+                                        value={item}
+                                        {...selectableInputProps(store, itemKey, `프로젝트 리스트 항목 ${index + 1}`)}
+                                        onChange={(e) =>
+                                            store.actions.updateProjectListItem(
+                                                projectId,
+                                                block.id,
+                                                index,
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                    <button
+                                        type="button"
+                                        className="ghost danger small"
+                                        onClick={() =>
+                                            store.actions.removeProjectListItem(projectId, block.id, index)
+                                        }
+                                    >
+                                        X
+                                    </button>
+                                </div>
                             );
                         })}
                         <button
@@ -237,7 +252,7 @@ function ListBlock({ block, projectId, store, editable }) {
     );
 }
 
-function ImageBlock({ block, projectId, store, editable }) {
+function ImageBlock({block, projectId, store, editable}) {
     const titleKey = `projects.${projectId}.blocks.${block.id}.title`;
     const captionKey = `projects.${projectId}.blocks.${block.id}.caption`;
 

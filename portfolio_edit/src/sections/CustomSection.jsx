@@ -327,20 +327,35 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
                         {(block.items || []).map((entry, index) => {
                             const itemKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.items.${index}`;
                             return (
-                                <input
-                                    key={`${block.id}-${index}`}
-                                    value={entry}
-                                    {...selectableInputProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
-                                    onChange={(e) =>
-                                        store.actions.updateCustomComplexListItem(
-                                            sectionId,
-                                            itemId,
-                                            block.id,
-                                            index,
-                                            e.target.value
-                                        )
-                                    }
-                                />
+                                <div key={`${block.id}-${index}`} className="project-list-edit-row">
+                                    <input
+                                        value={entry}
+                                        {...selectableInputProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
+                                        onChange={(e) =>
+                                            store.actions.updateCustomComplexListItem(
+                                                sectionId,
+                                                itemId,
+                                                block.id,
+                                                index,
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                    <button
+                                        type="button"
+                                        className="ghost danger small"
+                                        onClick={() =>
+                                            store.actions.removeCustomComplexListItem(
+                                                sectionId,
+                                                itemId,
+                                                block.id,
+                                                index
+                                            )
+                                        }
+                                    >
+                                        X
+                                    </button>
+                                </div>
                             );
                         })}
                         <button
@@ -374,7 +389,7 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
     );
 }
 
-function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
+function ComplexImageBlock({store, sectionId, itemId, block, editable}) {
     const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
     const captionKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.caption`;
 
@@ -405,7 +420,7 @@ function ComplexImageBlock({ store, sectionId, itemId, block, editable }) {
                         className="custom-input subtitle"
                     />
                     <div className="project-image-grid">
-                        {(block.images || []).map((image, index) => (
+                    {(block.images || []).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
                                 {image ? (
                                     <img src={image} alt={block.title || 'custom'} />

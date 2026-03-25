@@ -454,6 +454,33 @@ export function usePortfolioStore() {
                     ),
                 })),
 
+            removeCustomComplexListItem: (sectionId, itemId, blockId, index) =>
+                setPortfolio((prev) => ({
+                    ...prev,
+                    customSections: prev.customSections.map((section) =>
+                        section.id === sectionId
+                            ? {
+                                ...section,
+                                items: section.items.map((item) =>
+                                    item.id === itemId
+                                        ? {
+                                            ...item,
+                                            blocks: (item.blocks || []).map((block) =>
+                                                block.id === blockId
+                                                    ? {
+                                                        ...block,
+                                                        items: (block.items || []).filter((_, i) => i !== index),
+                                                    }
+                                                    : block
+                                            ),
+                                        }
+                                        : item
+                                ),
+                            }
+                            : section
+                    ),
+                })),
+
             addCustomComplexImage: (sectionId, itemId, blockId) =>
                 setPortfolio((prev) => ({
                     ...prev,
@@ -789,6 +816,18 @@ export function usePortfolioStore() {
                         blocks: updateById(project.blocks, blockId, (block) => ({
                             ...block,
                             items: block.items.map((item, i) => (i === index ? value : item)),
+                        })),
+                    })),
+                })),
+
+            removeProjectListItem: (projectId, blockId, index) =>
+                setPortfolio((prev) => ({
+                    ...prev,
+                    projects: updateById(prev.projects, projectId, (project) => ({
+                        ...project,
+                        blocks: updateById(project.blocks, blockId, (block) => ({
+                            ...block,
+                            items: (block.items || []).filter((_, i) => i !== index),
                         })),
                     })),
                 })),

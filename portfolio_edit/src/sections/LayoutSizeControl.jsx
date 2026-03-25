@@ -69,7 +69,7 @@ export default function LayoutSizeControl({
                                               onHeightChange,
                                           }) {
     return (
-        <div className="layout-size-control">
+        <div className="layout-size-control" onClick={(e) => e.stopPropagation()}>
             <MiniDropdown
                 label="W"
                 value={widthValue}
