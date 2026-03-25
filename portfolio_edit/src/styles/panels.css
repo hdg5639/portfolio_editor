@@ -431,3 +431,62 @@
     -webkit-appearance: none;
     margin: 0;
 }
+
+.alpha-range-row input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.alpha-range-row input[type='range']::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #d7d0c4;
+}
+
+.alpha-range-row input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -5px;
+    border: none;
+    border-radius: 50%;
+    background: #4d8b85;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.alpha-range-row input[type='range']::-moz-range-track {
+    height: 8px;
+    border: none;
+    border-radius: 999px;
+    background: #d7d0c4;
+}
+
+.alpha-range-row input[type='range']::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #4d8b85;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.alpha-range-row input[type='range']:focus {
+    outline: none;
+}
+
+.alpha-range-row input[type='range']:focus::-webkit-slider-runnable-track {
+    background: #cfc7ba;
+}
+
+.alpha-range-row input[type='range']:focus::-moz-range-track {
+    background: #cfc7ba;
+}

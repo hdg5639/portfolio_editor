@@ -128,18 +128,23 @@ function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
                             type="range"
                             min="0"
                             max="100"
+                            step="1"
                             value={parsed.alpha}
+                            onInput={(e) =>
+                                onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
+                            }
                             onChange={(e) =>
-                                onChange(buildColorWithAlpha(parsed.hex, e.target.value))
+                                onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
                             }
                         />
                         <input
                             type="number"
                             min="0"
                             max="100"
+                            step="1"
                             value={parsed.alpha}
                             onChange={(e) =>
-                                onChange(buildColorWithAlpha(parsed.hex, e.target.value))
+                                onChange(buildColorWithAlpha(parsed.hex, clampAlpha(e.currentTarget.value)))
                             }
                         />
                         <span>%</span>
@@ -150,7 +155,7 @@ function AlphaColorField({ label, value, fallback = '#ffffff', onChange }) {
     );
 }
 
-function Field({ label, children }) {
+function Field({label, children}) {
     return (
         <div className="style-field">
             <span>{label}</span>
@@ -159,7 +164,7 @@ function Field({ label, children }) {
     );
 }
 
-function AccordionItem({ title, children, defaultOpen = false }) {
+function AccordionItem({title, children, defaultOpen = false}) {
     return (
         <details className="style-accordion" open={defaultOpen}>
             <summary>{title}</summary>
@@ -168,7 +173,7 @@ function AccordionItem({ title, children, defaultOpen = false }) {
     );
 }
 
-function StyleControls({ value, onChange, compact = false, alphaTargets = {} }) {
+function StyleControls({value, onChange, compact = false, alphaTargets = {}}) {
     const current = value || {};
     const alphaBackground = Boolean(alphaTargets.backgroundColor);
     const alphaBorder = Boolean(alphaTargets.borderColor);
