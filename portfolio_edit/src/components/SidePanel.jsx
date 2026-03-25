@@ -102,7 +102,7 @@ function ComplexSectionDetail({ section, actions }) {
 
 export default function SidePanel({ store }) {
     const { portfolio, actions, ui } = store;
-    const [newSectionPreset, setNewSectionPreset] = useState('text');
+    const [newSectionPreset, setNewSectionPreset] = useState('simpleList');
 
     const sectionLabels = Object.fromEntries(
         (portfolio.layout?.items || []).map((item) => [item.key, item.label])
@@ -156,7 +156,14 @@ export default function SidePanel({ store }) {
                                 </select>
                                 <button
                                     type="button"
-                                    onClick={() => actions.addCustomSection(newSectionPreset)}
+                                    onClick={() =>
+                                        actions.addCustomSection({
+                                            name: '새 커스텀 섹션',
+                                            template: newSectionPreset,
+                                            span: 12,
+                                            rowSpan: 1,
+                                        })
+                                    }
                                 >
                                     추가
                                 </button>
