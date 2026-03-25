@@ -830,6 +830,85 @@
     }
 }
 
+.mobile-editor-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease, backdrop-filter 0.24s ease;
+    z-index: 74;
+}
+
+.mobile-editor-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mobile-editor-sheet {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(94vw, 720px);
+    max-height: 86vh;
+    transform: translate(-50%, calc(-50% + 22px)) scale(0.98);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+            transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.22s ease,
+            box-shadow 0.28s ease;
+    will-change: transform, opacity;
+    z-index: 75;
+}
+
+.mobile-editor-sheet.is-open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.mobile-editor-sheet-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.mobile-quick-fab {
+    transform: scale(0.96);
+    opacity: 0.92;
+    transition:
+            transform 0.2s ease,
+            opacity 0.2s ease,
+            box-shadow 0.2s ease;
+}
+
+.mobile-quick-fab:hover,
+.mobile-quick-fab:active {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.mobile-selection-chip {
+    transform: translateY(8px);
+    opacity: 0;
+    animation: mobileChipIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes mobileChipIn {
+    from {
+        transform: translateY(8px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 .orientation-picker {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

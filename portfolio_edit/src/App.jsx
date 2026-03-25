@@ -61,7 +61,7 @@ function MobileEditorSheet({ store }) {
                 aria-label="모바일 편집창 닫기"
             />
 
-            <section className="mobile-editor-sheet">
+            <section className={`mobile-editor-sheet ${ui.mobileSheetOpen ? 'is-open' : ''}`}>
                 <div className="mobile-editor-sheet-handle" />
 
                 <div className="mobile-editor-sheet-head">
