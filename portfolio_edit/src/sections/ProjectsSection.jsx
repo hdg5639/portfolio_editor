@@ -55,7 +55,6 @@ function BlockShell({
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
-        event.stopPropagation();
         setDraggingId(block.id);
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', String(block.id));
@@ -64,15 +63,15 @@ function BlockShell({
     const onDragOver = (event) => {
         if (!showHelpers || !draggingId) return;
         event.preventDefault();
-        event.stopPropagation();
         event.dataTransfer.dropEffect = 'move';
-        if (dragOverId !== block.id) setDragOverId(block.id);
+        if (dragOverId !== block.id) {
+            setDragOverId(block.id);
+        }
     };
 
     const onDrop = (event) => {
         if (!showHelpers) return;
         event.preventDefault();
-        event.stopPropagation();
 
         const dragged = event.dataTransfer.getData('text/plain') || draggingId;
         if (dragged && dragged !== block.id) {
@@ -83,8 +82,7 @@ function BlockShell({
         setDragOverId(null);
     };
 
-    const onDragEnd = (event) => {
-        event.stopPropagation();
+    const onDragEnd = () => {
         setDraggingId(null);
         setDragOverId(null);
     };
@@ -94,7 +92,12 @@ function BlockShell({
             className={`project-block-shell span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''}`}
+            draggable={showHelpers}
+            onDragStart={onDragStart}
             onDragOver={onDragOver}
+            onDragLeave={() => {
+                if (dragOverId === block.id) setDragOverId(null);
+            }}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
         >
@@ -103,9 +106,7 @@ function BlockShell({
                     <div
                         className="drag-handle"
                         title="드래그해서 위치 이동"
-                        draggable
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
+                        onMouseDown={(e) => e.stopPropagation()}
                     >
                         ⋮⋮
                     </div>
