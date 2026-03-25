@@ -110,3 +110,60 @@
 .right-panel-closed .right-rail {
     display: none;
 }
+
+.panel-fab {
+    position: absolute;
+    top: 18px;
+    z-index: 45;
+    width: 54px;
+    height: 54px;
+    border: 1px solid rgba(29, 29, 27, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    color: #1d1d1b;
+    backdrop-filter: blur(12px);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.panel-fab:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
+    background: #ffffff;
+}
+
+.panel-fab-left {
+    left: 18px;
+}
+
+.panel-fab-right {
+    right: 18px;
+}
+
+.panel-fab-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.panel-fab-label {
+    position: absolute;
+    inset: auto auto -30px 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 800;
+    color: #1d1d1b;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    white-space: nowrap;
+}
+
+.panel-fab:hover .panel-fab-label {
+    opacity: 1;
+    transform: translateX(-50%) translateY(2px);
+}

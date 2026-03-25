@@ -471,8 +471,7 @@ function CardStyleControls({ value, onChange, visibleGroups = null }) {
     );
 }
 
-export default function StylePanel({ store, mobileTool = null, quickOnly = false, embedded = false }) {
-    const { selected, actions } = store;
+export default function StylePanel({ store, mobileTool = '', embedded = false, quickOnly = false, onRequestClose }) {    const { selected, actions } = store;
     const current = actions.getSelectedStyle();
     const isCardSelection = [
         'profileCard',
@@ -607,10 +606,18 @@ export default function StylePanel({ store, mobileTool = null, quickOnly = false
     return (
         <div className={`sidebar-panel style-panel-shell ${embedded ? 'embedded-panel-shell' : ''}`}>
             <div className="sidebar-panel-header">
-                <div className="sidebar-panel-header-text">
-                    <strong>스타일 편집</strong>
-                    <p>선택 대상: {selected?.label || '없음'}</p>
-                </div>
+                <button
+                    type="button"
+                    className="sidebar-panel-header-hit"
+                    onClick={() => onRequestClose?.()}
+                    title="스타일 패널 닫기"
+                >
+                    <div className="sidebar-panel-header-text">
+                        <strong>스타일 편집</strong>
+                        <p>선택 대상: {selected?.label || '없음'}</p>
+                    </div>
+                    <span className="sidebar-panel-header-close">닫기</span>
+                </button>
             </div>
 
             <div className="sidebar-panel-body">

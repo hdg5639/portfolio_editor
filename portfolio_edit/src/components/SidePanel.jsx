@@ -527,8 +527,7 @@ function renderEmbeddedMobileLayoutTool({
     }
 }
 
-export default function SidePanel({ store, mobileTool = null, embedded = false }) {
-    const { portfolio, actions, ui } = store;
+export default function SidePanel({ store, mobileTool = '', embedded = false, onRequestClose }) {    const { portfolio, actions, ui } = store;
     const [newSectionPreset, setNewSectionPreset] = useState('simpleList');
 
     const sectionLabels = useMemo(
@@ -561,22 +560,33 @@ export default function SidePanel({ store, mobileTool = null, embedded = false }
     return (
         <div className="sidebar-panel side-panel-shell">
             <div className="sidebar-panel-header">
-                <div className="sidebar-panel-header-text">
-                    <strong>구성 편집</strong>
-                    <p>섹션과 프로젝트 구성을 관리합니다.</p>
-                </div>
+                <button
+                    type="button"
+                    className="sidebar-panel-header-hit"
+                    onClick={() => onRequestClose?.()}
+                    title="구성 패널 닫기"
+                >
+                    <div className="sidebar-panel-header-text">
+                        <strong>구성 편집</strong>
+                        <p>섹션과 프로젝트 구성을 관리합니다.</p>
+                    </div>
+                    <span className="sidebar-panel-header-close">닫기</span>
+                </button>
 
                 <button
                     type="button"
                     className={`header-inline-toggle ${ui.showEditHelpers ? 'active' : ''}`}
-                    onClick={actions.toggleEditHelpers}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        actions.toggleEditHelpers();
+                    }}
                     aria-pressed={ui.showEditHelpers}
                     title="배치 핸들 표시 토글"
                 >
                     <span className="header-inline-toggle-label">배치</span>
                     <span className="header-inline-toggle-track">
-                        <span className="header-inline-toggle-thumb" />
-                    </span>
+                <span className="header-inline-toggle-thumb"/>
+            </span>
                 </button>
             </div>
 
@@ -722,7 +732,7 @@ export default function SidePanel({ store, mobileTool = null, embedded = false }
                                     </div>
 
                                     {section.template === 'complex' ? (
-                                        <ComplexSectionDetail section={section} actions={actions} />
+                                        <ComplexSectionDetail section={section} actions={actions}/>
                                     ) : null}
                                 </div>
                             ))}

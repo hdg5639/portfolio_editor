@@ -410,18 +410,6 @@ export default function App() {
                     </div>
 
                     <div className="topbar-right">
-                        {!ui.isMobile ? (
-                            <>
-                                <button type="button" onClick={() => actions.togglePanel('content')}>
-                                    {ui.showContentPanel ? '구성 패널 닫기' : '구성 패널 열기'}
-                                </button>
-
-                                <button type="button" onClick={() => actions.togglePanel('style')}>
-                                    {ui.showStylePanel ? '스타일 패널 닫기' : '스타일 패널 열기'}
-                                </button>
-                            </>
-                        ) : null}
-
                         <button
                             type="button"
                             className={mode === 'edit' ? 'active-toggle' : ''}
@@ -456,19 +444,51 @@ export default function App() {
                     showDesktopStylePanel ? 'has-right-panel' : 'right-panel-closed'
                 } ${ui.isMobile ? 'is-mobile-layout' : ''}`}
             >
+                {!ui.isMobile && !showDesktopContentPanel ? (
+                    <button
+                        type="button"
+                        className="panel-fab panel-fab-left no-print"
+                        onClick={() => actions.togglePanel('content')}
+                        aria-label="구성 패널 열기"
+                        title="구성 패널 열기"
+                    >
+                        <span className="panel-fab-icon">☰</span>
+                        <span className="panel-fab-label">구성</span>
+                    </button>
+                ) : null}
+
+                {!ui.isMobile && !showDesktopStylePanel ? (
+                    <button
+                        type="button"
+                        className="panel-fab panel-fab-right no-print"
+                        onClick={() => actions.togglePanel('style')}
+                        aria-label="스타일 패널 열기"
+                        title="스타일 패널 열기"
+                    >
+                        <span className="panel-fab-label">스타일</span>
+                        <span className="panel-fab-icon">✦</span>
+                    </button>
+                ) : null}
+
                 {showDesktopContentPanel ? (
                     <aside className="sidebar-rail left-rail is-open">
-                        <SidePanel store={store} />
+                        <SidePanel
+                            store={store}
+                            onRequestClose={() => actions.togglePanel('content')}
+                        />
                     </aside>
                 ) : null}
 
                 <section className="layout-main">
-                    <EditablePortfolioCanvas ref={exportRef} store={store} />
+                    <EditablePortfolioCanvas ref={exportRef} store={store}/>
                 </section>
 
                 {showDesktopStylePanel ? (
                     <aside className="sidebar-rail right-rail is-open">
-                        <StylePanel store={store} />
+                        <StylePanel
+                            store={store}
+                            onRequestClose={() => actions.togglePanel('style')}
+                        />
                     </aside>
                 ) : null}
             </main>
@@ -483,10 +503,10 @@ export default function App() {
 
             {ui.isMobile ? (
                 <>
-                    <MobileSelectionChip store={store} />
-                    <MobileQuickFab store={store} current={currentSelectedStyle} />
-                    <MobileBottomDock store={store} />
-                    {ui.mobileSheetOpen ? <MobileEditorSheet store={store} /> : null}
+                    <MobileSelectionChip store={store}/>
+                    <MobileQuickFab store={store} current={currentSelectedStyle}/>
+                    <MobileBottomDock store={store}/>
+                    {ui.mobileSheetOpen ? <MobileEditorSheet store={store}/> : null}
                 </>
             ) : null}
         </div>
