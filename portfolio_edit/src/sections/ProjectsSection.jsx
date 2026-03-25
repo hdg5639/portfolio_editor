@@ -72,6 +72,7 @@ function BlockShell({
     const onDrop = (event) => {
         if (!showHelpers) return;
         event.preventDefault();
+        event.stopPropagation();
 
         const dragged = event.dataTransfer.getData('text/plain') || draggingId;
         if (dragged && dragged !== block.id) {
@@ -320,6 +321,8 @@ export default function ProjectsSection({ store }) {
     const cardStyle = store.actions.cardStyle();
     const isEdit = store.mode === 'edit';
     const titleStyle = store.actions.styleFor('section.projects.title');
+    const [draggingProjectId, setDraggingProjectId] = useState(null);
+    const [dragOverProjectId, setDragOverProjectId] = useState(null);
 
     return (
         <section className="portfolio-card" style={cardStyle}>
@@ -331,14 +334,31 @@ export default function ProjectsSection({ store }) {
 
             <div className="projects-list">
                 {store.portfolio.projects.map((project) => (
-                    <ProjectCard key={project.id} project={project} store={store} editable={isEdit} />
+                    <ProjectCard
+                        key={project.id}
+                        project={project}
+                        store={store}
+                        editable={isEdit}
+                        draggingProjectId={draggingProjectId}
+                        dragOverProjectId={dragOverProjectId}
+                        setDraggingProjectId={setDraggingProjectId}
+                        setDragOverProjectId={setDragOverProjectId}
+                    />
                 ))}
             </div>
         </section>
     );
 }
 
-function ProjectCard({ project, store, editable }) {
+function ProjectCard({
+                         project,
+                         store,
+                         editable,
+                         draggingProjectId,
+                         dragOverProjectId,
+                         setDraggingProjectId,
+                         setDragOverProjectId,
+                     }) {
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
 
@@ -348,8 +368,71 @@ function ProjectCard({ project, store, editable }) {
     const summaryKey = `projects.${project.id}.summary`;
     const linkKey = `projects.${project.id}.link`;
 
+    const showHelpers = editable && store.ui.showEditHelpers;
+    const isProjectDragging = draggingProjectId === project.id;
+    const isProjectDragOver = dragOverProjectId === project.id && draggingProjectId !== project.id;
+
+    const isProjectCardDragEvent = (event) =>
+        Array.from(event.dataTransfer?.types || []).includes('application/x-project-card');
+
     return (
-        <article className="portfolio-card project-card-inner">
+        <article
+            className={`portfolio-card project-card-inner ${
+                isProjectDragging ? 'dragging' : ''
+            } ${isProjectDragOver ? 'drag-over' : ''}`}
+            onDragOver={(event) => {
+                if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (dragOverProjectId !== project.id) {
+                    setDragOverProjectId(project.id);
+                }
+            }}
+            onDragLeave={(event) => {
+                if (!isProjectCardDragEvent(event)) return;
+                if (dragOverProjectId === project.id) {
+                    setDragOverProjectId(null);
+                }
+            }}
+            onDrop={(event) => {
+                if (!showHelpers || !isProjectCardDragEvent(event)) return;
+                event.preventDefault();
+                event.stopPropagation();
+
+                const dragged = event.dataTransfer.getData('application/x-project-card') || draggingProjectId;
+                if (dragged && dragged !== project.id) {
+                    store.actions.moveProject(dragged, project.id);
+                }
+
+                setDraggingProjectId(null);
+                setDragOverProjectId(null);
+            }}
+        >
+            {showHelpers ? (
+                <div className="project-card-toolbar">
+                    <div
+                        className="drag-handle"
+                        draggable
+                        title="프로젝트 카드 순서 변경"
+                        onDragStart={(event) => {
+                            event.stopPropagation();
+                            setDraggingProjectId(project.id);
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('application/x-project-card', String(project.id));
+                        }}
+                        onDragEnd={(event) => {
+                            event.stopPropagation();
+                            setDraggingProjectId(null);
+                            setDragOverProjectId(null);
+                        }}
+                    >
+                        ⋮⋮
+                    </div>
+
+                    <strong>{project.title || '프로젝트'}</strong>
+                </div>
+            ) : null}
+
             <div className="project-top-meta">
                 {editable ? (
                     <>

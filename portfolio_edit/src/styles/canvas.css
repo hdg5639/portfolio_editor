@@ -41,7 +41,8 @@
 .section-tile,
 .profile-layout-item,
 .project-block-shell,
-.custom-item-shell {
+.custom-item-shell,
+.project-card-inner {
     position: relative;
     min-width: 0;
     transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
@@ -57,7 +58,8 @@
 .section-tile.dragging,
 .profile-layout-item.dragging,
 .project-block-shell.dragging,
-.custom-item-shell.dragging {
+.custom-item-shell.dragging,
+.project-card-inner.dragging {
     opacity: 0.42;
     transform: scale(0.98);
 }
@@ -65,7 +67,8 @@
 .section-tile.drag-over::after,
 .profile-layout-item.drag-over::after,
 .project-block-shell.drag-over::after,
-.custom-item-shell.drag-over::after {
+.custom-item-shell.drag-over::after,
+.project-card-inner.drag-over::after {
     content: '';
     position: absolute;
     inset: -6px;

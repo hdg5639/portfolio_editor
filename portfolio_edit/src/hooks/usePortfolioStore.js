@@ -689,6 +689,12 @@ export function usePortfolioStore() {
                     projects: updateById(prev.projects, id, (item) => ({ ...item, [field]: value })),
                 })),
 
+            moveProject: (draggedProjectId, targetProjectId) =>
+                setPortfolio((prev) => ({
+                    ...prev,
+                    projects: moveBefore(prev.projects, draggedProjectId, targetProjectId, 'id'),
+                })),
+
             removeProject: (id) =>
                 setPortfolio((prev) => ({
                     ...prev,
