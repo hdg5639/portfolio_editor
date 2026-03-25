@@ -154,20 +154,32 @@ function MobileBottomDock({ store }) {
     return (
         <div className="mobile-bottom-dock no-print">
             <div className="mobile-bottom-dock-inner">
-                {(isLayout ? MOBILE_LAYOUT_TOOLS : MOBILE_STYLE_TOOLS).map((tool) => (
-                    <MobileDockButton
-                        key={tool.key}
-                        active={isLayout ? ui.mobileLayoutTool === tool.key : ui.mobileStyleTool === tool.key}
-                        label={tool.label}
-                        onClick={() => {
-                            if (isLayout) {
-                                actions.setMobileLayoutTool(tool.key);
-                                return;
-                            }
-                            actions.setMobileStyleTool(tool.key);
-                        }}
-                    />
-                ))}
+                {(isLayout ? MOBILE_LAYOUT_TOOLS : MOBILE_STYLE_TOOLS).map((tool) => {
+                    const isActive =
+                        ui.mobileSheetOpen &&
+                        (isLayout ? ui.mobileLayoutTool === tool.key : ui.mobileStyleTool === tool.key);
+
+                    return (
+                        <MobileDockButton
+                            key={tool.key}
+                            active={isActive}
+                            label={tool.label}
+                            onClick={() => {
+                                if (isActive) {
+                                    actions.toggleMobileSheet(false);
+                                    return;
+                                }
+
+                                if (isLayout) {
+                                    actions.setMobileLayoutTool(tool.key);
+                                    return;
+                                }
+
+                                actions.setMobileStyleTool(tool.key);
+                            }}
+                        />
+                    );
+                })}
 
                 <MobileDockButton
                     active={false}

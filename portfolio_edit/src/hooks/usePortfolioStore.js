@@ -333,10 +333,6 @@ export function usePortfolioStore() {
             setMode,
             select: (next) => {
                 setSelected(next);
-                setUi((prev) => ({
-                    ...prev,
-                    mobileSheetOpen: prev.isMobile && prev.mobileEditorMode === 'style' ? true : prev.mobileSheetOpen,
-                }));
             },
 
             selectPage: () => {
@@ -345,7 +341,6 @@ export function usePortfolioStore() {
                     ...prev,
                     mobileEditorMode: prev.isMobile ? 'style' : prev.mobileEditorMode,
                     mobileStyleTool: prev.isMobile ? 'box' : prev.mobileStyleTool,
-                    mobileSheetOpen: prev.isMobile ? true : prev.mobileSheetOpen,
                 }));
             },
 
@@ -401,7 +396,7 @@ export function usePortfolioStore() {
                 setUi((prev) => ({
                     ...prev,
                     mobileEditorMode: mode,
-                    mobileSheetOpen: true,
+                    mobileSheetOpen: false,
                     mobileQuickOpen: mode === 'style' ? prev.mobileQuickOpen : false,
                 })),
 

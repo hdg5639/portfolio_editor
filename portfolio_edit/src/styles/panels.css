@@ -666,7 +666,7 @@
 .mobile-selection-chip {
     position: fixed;
     right: 16px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 164px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
     z-index: 62;
     display: grid;
     gap: 2px;
