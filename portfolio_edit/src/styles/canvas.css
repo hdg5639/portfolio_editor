@@ -22,6 +22,16 @@
     cursor: grabbing !important;
     user-select: none !important;
 }
+
+.canvas-wrap.edit-canvas-wrap {
+    overscroll-behavior: contain;
+}
+
+.canvas-wrap.edit-canvas-wrap::before,
+.canvas-wrap.edit-canvas-wrap::after {
+    content: '';
+    flex: 0 0 0;
+}
 .layout-shell.has-left-panel .canvas-wrap,
 .layout-shell.has-right-panel .canvas-wrap {
     padding-left: 24px;

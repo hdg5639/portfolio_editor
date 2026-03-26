@@ -210,13 +210,16 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
   const [contentHeight, setContentHeight] = useState(pageMinHeight);
+  const [wrapViewportSize, setWrapViewportSize] = useState({ width: 0, height: 0 });
   const [spacePressed, setSpacePressed] = useState(false);
   const [isSpacePanning, setIsSpacePanning] = useState(false);
   const wrapRef = useRef(null);
   const pageInnerRef = useRef(null);
   const panStateRef = useRef({ active: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
   const scaleRef = useRef(scale);
+  const previousScaleRef = useRef(scale);
   const pinchStateRef = useRef({ active: false, startDistance: 0, startScale: 1 });
+  const previousEditPanGutterRef = useRef(0);
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -260,17 +263,31 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
 
   const handleWheel = useCallback(
       (e) => {
-        if (!(e.ctrlKey || e.metaKey)) return;
+        const wrap = wrapRef.current;
+
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+
+          const minScale = isMobileCanvas ? getFitScale() : 0.3;
+          const zoomOut = e.deltaY > 0;
+
+          setScale((prev) => {
+            const next = zoomOut ? prev - 0.05 : prev + 0.05;
+            return Math.min(Math.max(next, minScale), 2);
+          });
+          return;
+        }
+
+        if (!wrap || isMobileCanvas) return;
+
+        const canPanHorizontally = wrap.scrollWidth > wrap.clientWidth + 1;
+        const horizontalIntent = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
+
+        if (!canPanHorizontally || !horizontalIntent) return;
 
         e.preventDefault();
-
-        const minScale = isMobileCanvas ? getFitScale() : 0.3;
-        const zoomOut = e.deltaY > 0;
-
-        setScale((prev) => {
-          const next = zoomOut ? prev - 0.05 : prev + 0.05;
-          return Math.min(Math.max(next, minScale), 2);
-        });
+        const horizontalDelta = Math.abs(e.deltaX) > 0 ? e.deltaX : e.deltaY;
+        wrap.scrollLeft += horizontalDelta;
       },
       [getFitScale, isMobileCanvas]
   );
@@ -282,6 +299,29 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
     wrap.addEventListener('wheel', handleWheel, { passive: false });
     return () => wrap.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    const updateSize = () => {
+      setWrapViewportSize((current) => {
+        const next = { width: wrap.clientWidth, height: wrap.clientHeight };
+        return current.width === next.width && current.height === next.height ? current : next;
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(wrap);
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (!isMobileCanvas) return;
@@ -323,10 +363,106 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
 
   const scaledWidth = Math.round(baseWidth * scale);
   const scaledHeight = Math.round(contentHeight * scale);
+  const dynamicPanGutter = Math.round(baseWidth * Math.max(0, scale - 1) * 0.95);
+  const editPanGutter = !isMobileCanvas && store.mode === 'edit'
+      ? Math.max(520, Math.round(baseWidth * 0.52) + dynamicPanGutter)
+      : 0;
+
+  const getStageMetrics = useCallback((targetScale) => {
+    const targetScaledWidth = Math.round(baseWidth * targetScale);
+    const targetDynamicPanGutter = Math.round(baseWidth * Math.max(0, targetScale - 1) * 0.95);
+    const targetEditPanGutter = !isMobileCanvas && store.mode === 'edit'
+      ? Math.max(520, Math.round(baseWidth * 0.52) + targetDynamicPanGutter)
+      : 0;
+
+    const minStageWidth = !isMobileCanvas
+      ? Math.max(0, wrapViewportSize.width - 48)
+      : targetScaledWidth;
+
+    const targetStageWidth = !isMobileCanvas && store.mode === 'edit'
+      ? Math.max(targetScaledWidth + targetEditPanGutter * 2, minStageWidth)
+      : targetScaledWidth;
+
+    const stageOffsetX = Math.max(0, Math.round((targetStageWidth - targetScaledWidth) / 2));
+
+    return {
+      scaledWidth: targetScaledWidth,
+      stageWidth: targetStageWidth,
+      stageOffsetX,
+      editPanGutter: targetEditPanGutter,
+    };
+  }, [baseWidth, isMobileCanvas, store.mode, wrapViewportSize.width]);
+
+  const { stageWidth, stageOffsetX } = getStageMetrics(scale);
 
   useEffect(() => {
     scaleRef.current = scale;
   }, [scale]);
+
+  useLayoutEffect(() => {
+    if (isMobileCanvas || store.mode !== 'edit') {
+      previousScaleRef.current = scale;
+      return;
+    }
+
+    const wrap = wrapRef.current;
+    const previousScale = previousScaleRef.current;
+
+    if (!wrap || !previousScale || previousScale === scale) {
+      previousScaleRef.current = scale;
+      return;
+    }
+
+    const prevMetrics = getStageMetrics(previousScale);
+    const nextMetrics = getStageMetrics(scale);
+    const viewportCenterX = wrap.scrollLeft + wrap.clientWidth / 2;
+    const viewportCenterY = wrap.scrollTop + wrap.clientHeight / 2;
+    const contentCenterX = (viewportCenterX - prevMetrics.stageOffsetX) / previousScale;
+    const contentCenterY = viewportCenterY / previousScale;
+
+    requestAnimationFrame(() => {
+      const nextScrollLeft = contentCenterX * scale + nextMetrics.stageOffsetX - wrap.clientWidth / 2;
+      const nextScrollTop = contentCenterY * scale - wrap.clientHeight / 2;
+      const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+      const maxTop = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
+
+      wrap.scrollLeft = Math.max(0, Math.min(maxLeft, nextScrollLeft));
+      wrap.scrollTop = Math.max(0, Math.min(maxTop, nextScrollTop));
+    });
+
+    previousScaleRef.current = scale;
+  }, [getStageMetrics, isMobileCanvas, scale, store.mode]);
+
+  const lastCenterSignatureRef = useRef('');
+
+  useLayoutEffect(() => {
+    if (isMobileCanvas || store.mode !== 'edit') return;
+
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    const nextSignature = `${store.mode}:${baseWidth}:${Math.round(contentHeight)}:${wrap.clientWidth}`;
+    const prevGutter = previousEditPanGutterRef.current;
+    const gutterDelta = editPanGutter - prevGutter;
+    previousEditPanGutterRef.current = editPanGutter;
+
+    if (lastCenterSignatureRef.current !== nextSignature) {
+      lastCenterSignatureRef.current = nextSignature;
+      requestAnimationFrame(() => {
+        const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+        wrap.scrollLeft = Math.max(0, Math.min(maxLeft, Math.round(maxLeft / 2)));
+      });
+      return;
+    }
+
+    if (!gutterDelta) return;
+
+    requestAnimationFrame(() => {
+      const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+      const compensatedLeft = wrap.scrollLeft + gutterDelta / 2;
+      wrap.scrollLeft = Math.max(0, Math.min(maxLeft, compensatedLeft));
+    });
+  }, [baseWidth, contentHeight, editPanGutter, isMobileCanvas, store.mode, wrapViewportSize.width]);
 
   const isEditableTarget = (target) => {
     if (!(target instanceof HTMLElement)) return false;
@@ -422,16 +558,36 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
       setIsSpacePanning(false);
     };
 
-    const handleKeyDown = (event) => {
-      if (event.code !== 'Space' || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isEditableTarget(event.target)) return;
+    const shouldBlockSpace = (event) => {
+      if (event.code !== 'Space' || event.metaKey || event.ctrlKey || event.altKey) return false;
+      if (isEditableTarget(event.target)) return false;
+      return true;
+    };
 
+    const blockSpaceDefault = (event) => {
       event.preventDefault();
-      setSpacePressed(true);
+      event.stopPropagation();
+    };
+
+    const handleKeyDown = (event) => {
+      if (!shouldBlockSpace(event)) return;
+
+      blockSpaceDefault(event);
+      if (!event.repeat) {
+        setSpacePressed(true);
+      }
+    };
+
+    const handleKeyPress = (event) => {
+      if (!shouldBlockSpace(event)) return;
+      blockSpaceDefault(event);
     };
 
     const handleKeyUp = (event) => {
-      if (event.code !== 'Space') return;
+      if (!shouldBlockSpace(event) && event.code !== 'Space') return;
+      if (event.code === 'Space') {
+        blockSpaceDefault(event);
+      }
       setSpacePressed(false);
       stopPanning();
     };
@@ -459,14 +615,16 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
     };
 
     window.addEventListener('keydown', handleKeyDown, { passive: false, capture: true });
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('keypress', handleKeyPress, { passive: false, capture: true });
+    window.addEventListener('keyup', handleKeyUp, { passive: false, capture: true });
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keypress', handleKeyPress, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -493,9 +651,14 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
 
   return (
       <div
-          className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''} ${spacePressed ? 'is-space-pan-ready' : ''} ${isSpacePanning ? 'is-space-panning' : ''}`}
+          className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''} ${store.mode === 'edit' && !isMobileCanvas ? 'edit-canvas-wrap' : ''} ${spacePressed ? 'is-space-pan-ready' : ''} ${isSpacePanning ? 'is-space-panning' : ''}`}
           ref={wrapRef}
-          style={{ backgroundColor: 'transparent' }}
+          style={{
+            backgroundColor: 'transparent',
+            paddingLeft: isMobileCanvas ? undefined : `24px`,
+            paddingRight: isMobileCanvas ? undefined : `24px`,
+            justifyContent: !isMobileCanvas && store.mode === 'edit' ? 'flex-start' : undefined,
+          }}
           onMouseDown={handleCanvasMouseDown}
           onDragStart={(event) => {
             if (spacePressed) {
@@ -507,8 +670,8 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
         <div
             className={`canvas-scale-stage ${isMobileCanvas ? 'mobile-scale-stage' : ''}`}
             style={{
-              width: `${scaledWidth}px`,
-              minWidth: `${scaledWidth}px`,
+              width: `${stageWidth}px`,
+              minWidth: `${stageWidth}px`,
               height: `${scaledHeight}px`,
               minHeight: `${scaledHeight}px`,
             }}
@@ -520,6 +683,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
                 minWidth: `${baseWidth}px`,
                 height: `${contentHeight}px`,
                 minHeight: `${contentHeight}px`,
+                left: `${stageOffsetX}px`,
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
               }}
