@@ -215,6 +215,8 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const wrapRef = useRef(null);
   const pageInnerRef = useRef(null);
   const panStateRef = useRef({ active: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
+  const scaleRef = useRef(scale);
+  const pinchStateRef = useRef({ active: false, startDistance: 0, startScale: 1 });
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -322,12 +324,95 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const scaledWidth = Math.round(baseWidth * scale);
   const scaledHeight = Math.round(contentHeight * scale);
 
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
   const isEditableTarget = (target) => {
     if (!(target instanceof HTMLElement)) return false;
     return Boolean(
       target.closest('input, textarea, select, option, button, [contenteditable="true"], [data-no-space-pan="true"]')
     );
   };
+
+  useEffect(() => {
+    if (!isMobileCanvas) return undefined;
+
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+
+    const getDistance = (touches) => {
+      const [first, second] = touches;
+      return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+    };
+
+    const getMidpoint = (touches) => ({
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2,
+    });
+
+    const handleTouchStart = (event) => {
+      if (event.touches.length < 2) return;
+
+      const minScale = getFitScale();
+      pinchStateRef.current = {
+        active: true,
+        startDistance: getDistance(event.touches),
+        startScale: Math.max(scaleRef.current, minScale),
+      };
+    };
+
+    const handleTouchMove = (event) => {
+      if (!pinchStateRef.current.active || event.touches.length < 2) return;
+
+      event.preventDefault();
+
+      const minScale = getFitScale();
+      const nextDistance = getDistance(event.touches);
+      if (!nextDistance || !pinchStateRef.current.startDistance) return;
+
+      const rect = wrap.getBoundingClientRect();
+      const midpoint = getMidpoint(event.touches);
+      const pointerX = midpoint.x - rect.left + wrap.scrollLeft;
+      const pointerY = midpoint.y - rect.top + wrap.scrollTop;
+      const contentX = pointerX / scaleRef.current;
+      const contentY = pointerY / scaleRef.current;
+
+      const rawScale = pinchStateRef.current.startScale * (nextDistance / pinchStateRef.current.startDistance);
+      const nextScale = Math.min(Math.max(rawScale, minScale), 2.5);
+
+      scaleRef.current = nextScale;
+      setScale(nextScale);
+
+      requestAnimationFrame(() => {
+        wrap.scrollLeft = Math.max(0, contentX * nextScale - (midpoint.x - rect.left));
+        wrap.scrollTop = Math.max(0, contentY * nextScale - (midpoint.y - rect.top));
+      });
+    };
+
+    const handleTouchEnd = () => {
+      if (pinchStateRef.current.active && wrapRef.current) {
+        pinchStateRef.current.active = false;
+        const minScale = getFitScale();
+        if (scaleRef.current < minScale) {
+          scaleRef.current = minScale;
+          setScale(minScale);
+        }
+      }
+    };
+
+    wrap.addEventListener('touchstart', handleTouchStart, { passive: true });
+    wrap.addEventListener('touchmove', handleTouchMove, { passive: false });
+    wrap.addEventListener('touchend', handleTouchEnd, { passive: true });
+    wrap.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      wrap.removeEventListener('touchstart', handleTouchStart);
+      wrap.removeEventListener('touchmove', handleTouchMove);
+      wrap.removeEventListener('touchend', handleTouchEnd);
+      wrap.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [getFitScale, isMobileCanvas]);
 
   useEffect(() => {
     if (isMobileCanvas || typeof window === 'undefined' || typeof document === 'undefined') return undefined;
@@ -373,14 +458,14 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
       stopPanning();
     };
 
-    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keydown', handleKeyDown, { passive: false, capture: true });
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('mousemove', handleMouseMove);
