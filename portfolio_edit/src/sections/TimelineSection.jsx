@@ -43,38 +43,70 @@ export default function TimelineSection({ store, sectionKey, title }) {
                 {items.map((item) => {
                     const rowSelection = getTimelineItemSelectionState(store.selected?.key, sectionKey, item.id);
                     return (
-                    <div className={`timeline-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`} key={item.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            store.actions.select({ key: `${sectionKey}.${item.id}`, label: `${title} 항목` });
-                        }}>
-                        <InlineEditable
-                            value={item.date}
-                            onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'date', value)}
-                            className="timeline-date"
-                            {...bind(store, `${sectionKey}.${item.id}.date`, `${title} 날짜`)}
-                        />
-
-                        <div className="timeline-content">
+                        <div
+                            className={`timeline-row selection-scope selection-item ${rowSelection.selected ? 'is-selected' : ''} ${rowSelection.ancestor ? 'is-ancestor' : ''}`}
+                            key={item.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                store.actions.select({ key: `${sectionKey}.${item.id}`, label: `${title} 항목` });
+                            }}
+                        >
                             <InlineEditable
-                                tag="strong"
-                                value={item.title}
-                                onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'title', value)}
-                                className="timeline-title"
-                                {...bind(store, `${sectionKey}.${item.id}.title`, `${title} 제목`)}
+                                value={item.date}
+                                onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'date', value)}
+                                className="timeline-date"
+                                {...bind(store, `${sectionKey}.${item.id}.date`, `${title} 날짜`)}
                             />
 
-                            <InlineEditable
-                                multiline
-                                value={item.desc}
-                                onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'desc', value)}
-                                className="timeline-desc"
-                                {...bind(store, `${sectionKey}.${item.id}.desc`, `${title} 설명`)}
-                            />
+                            <div className="timeline-content">
+                                <div className="timeline-title-row">
+                                    <InlineEditable
+                                        tag="strong"
+                                        value={item.title}
+                                        onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'title', value)}
+                                        className="timeline-title"
+                                        {...bind(store, `${sectionKey}.${item.id}.title`, `${title} 제목`)}
+                                    />
+
+                                    {store.mode === 'edit' ? (
+                                        <button
+                                            type="button"
+                                            className="timeline-item-remove ghost danger small"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                actions.removeTimelineItem(sectionKey, item.id);
+                                            }}
+                                            aria-label={`${title} 항목 삭제`}
+                                        >
+                                            X
+                                        </button>
+                                    ) : null}
+                                </div>
+
+                                <InlineEditable
+                                    multiline
+                                    value={item.desc}
+                                    onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'desc', value)}
+                                    className="timeline-desc"
+                                    {...bind(store, `${sectionKey}.${item.id}.desc`, `${title} 설명`)}
+                                />
+                            </div>
                         </div>
-                    </div>
                     );
                 })}
+
+                {store.mode === 'edit' ? (
+                    <button
+                        type="button"
+                        className="timeline-add-button ghost small"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            actions.addTimelineItem(sectionKey);
+                        }}
+                    >
+                        {title} 항목 추가
+                    </button>
+                ) : null}
             </div>
         </section>
     );

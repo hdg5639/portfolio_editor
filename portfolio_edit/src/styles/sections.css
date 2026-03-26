@@ -375,6 +375,27 @@
 .timeline-content {
     display: grid;
     gap: 6px;
+    min-width: 0;
+}
+
+.timeline-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.timeline-title-row > .timeline-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-item-remove {
+    flex: 0 0 auto;
+}
+
+.timeline-add-button {
+    width: 100%;
+    justify-self: stretch;
 }
 
 .timeline-title {
@@ -566,6 +587,8 @@
 }
 
 .layout-size-control {
+    position: relative;
+    z-index: 18;
     display: inline-flex;
     align-items: center;
     justify-content: flex-end;
@@ -580,6 +603,10 @@
     flex: 0 1 auto;
     min-width: 0;
     max-width: 100%;
+}
+
+.mini-dropdown.open {
+    z-index: 240;
 }
 
 .mini-dropdown-trigger {
@@ -628,7 +655,7 @@
     position: absolute;
     top: calc(100% + 0.4rem);
     right: 0;
-    z-index: 30;
+    z-index: 260;
     display: flex;
     flex-direction: column;
     min-width: 64px;

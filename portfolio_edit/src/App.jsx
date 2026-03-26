@@ -12,6 +12,7 @@ const MOBILE_LAYOUT_TOOLS = [
     { key: 'custom', label: '커스텀' },
     { key: 'skills', label: '기술' },
     { key: 'projects', label: '프로젝트' },
+    { key: 'timeline', label: '이력' },
 ];
 
 const MOBILE_STYLE_TOOLS = [
@@ -62,6 +63,7 @@ function MobileEditorSheet({ store }) {
             custom: '커스텀 섹션',
             skills: '기술 스택',
             projects: '프로젝트',
+            timeline: '수상 · 자격증',
         }
         : {
             text: '텍스트 스타일',
@@ -408,6 +410,53 @@ export default function App() {
             setIsExporting(false);
         }
     };
+
+    useEffect(() => {
+        if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
+
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        const previousViewport = viewportMeta?.getAttribute('content') || '';
+
+        if (ui.isMobile && viewportMeta) {
+            viewportMeta.setAttribute(
+                'content',
+                'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
+            );
+        }
+
+        if (!ui.isMobile) {
+            if (viewportMeta && previousViewport) {
+                viewportMeta.setAttribute('content', previousViewport);
+            }
+            return undefined;
+        }
+
+        const preventGesture = (event) => {
+            event.preventDefault();
+        };
+
+        const preventMultiTouchZoom = (event) => {
+            if (event.touches && event.touches.length > 1) {
+                event.preventDefault();
+            }
+        };
+
+        document.addEventListener('gesturestart', preventGesture, { passive: false });
+        document.addEventListener('gesturechange', preventGesture, { passive: false });
+        document.addEventListener('gestureend', preventGesture, { passive: false });
+        document.addEventListener('touchmove', preventMultiTouchZoom, { passive: false, capture: true });
+
+        return () => {
+            document.removeEventListener('gesturestart', preventGesture);
+            document.removeEventListener('gesturechange', preventGesture);
+            document.removeEventListener('gestureend', preventGesture);
+            document.removeEventListener('touchmove', preventMultiTouchZoom, true);
+
+            if (viewportMeta && previousViewport) {
+                viewportMeta.setAttribute('content', previousViewport);
+            }
+        };
+    }, [ui.isMobile]);
 
     const showDesktopContentPanel = !ui.isMobile && ui.showContentPanel;
     const showDesktopStylePanel = !ui.isMobile && ui.showStylePanel;

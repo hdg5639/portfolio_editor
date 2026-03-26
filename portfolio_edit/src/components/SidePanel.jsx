@@ -490,6 +490,98 @@ function LayoutProjectsPanel({ portfolio, actions }) {
     );
 }
 
+
+function TimelineManagePanel({ title, sectionKey, items, actions }) {
+    return (
+        <PanelSection
+            title={`${title} ${items.length}개`}
+            action={
+                <button type="button" onClick={() => actions.addTimelineItem(sectionKey)}>
+                    추가
+                </button>
+            }
+            collapsible
+            defaultOpen
+        >
+            <div className="mini-list">
+                {items.length ? (
+                    items.map((item) => (
+                        <div className="mini-card column" key={item.id}>
+                            <div className="row between start">
+                                <div>
+                                    <strong>{item.title || `새 ${title}`}</strong>
+                                    <p>{item.date || '날짜 없음'}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="ghost danger"
+                                    onClick={() => actions.removeTimelineItem(sectionKey, item.id)}
+                                >
+                                    삭제
+                                </button>
+                            </div>
+
+                            <div className="builder-form">
+                                <label className="builder-field">
+                                    <span>날짜</span>
+                                    <input
+                                        value={item.date || ''}
+                                        onChange={(e) => actions.updateTimelineItem(sectionKey, item.id, 'date', e.target.value)}
+                                    />
+                                </label>
+
+                                <label className="builder-field">
+                                    <span>제목</span>
+                                    <input
+                                        value={item.title || ''}
+                                        onChange={(e) => actions.updateTimelineItem(sectionKey, item.id, 'title', e.target.value)}
+                                    />
+                                </label>
+
+                                <label className="builder-field">
+                                    <span>설명</span>
+                                    <textarea
+                                        rows={3}
+                                        value={item.desc || ''}
+                                        onChange={(e) => actions.updateTimelineItem(sectionKey, item.id, 'desc', e.target.value)}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="mobile-empty-state">아직 등록된 {title} 항목이 없습니다.</div>
+                )}
+            </div>
+        </PanelSection>
+    );
+}
+
+function LayoutTimelinePanel({ portfolio, actions }) {
+    return (
+        <>
+            <MobileLayoutIntro
+                title="수상 · 자격증"
+                desc="수상과 자격증 항목을 추가하고 날짜, 제목, 설명을 바로 수정합니다."
+            />
+
+            <TimelineManagePanel
+                title="수상"
+                sectionKey="awards"
+                items={portfolio.awards}
+                actions={actions}
+            />
+
+            <TimelineManagePanel
+                title="자격증"
+                sectionKey="certificates"
+                items={portfolio.certificates}
+                actions={actions}
+            />
+        </>
+    );
+}
+
 function renderEmbeddedMobileLayoutTool({
                                             tool,
                                             portfolio,
@@ -522,6 +614,8 @@ function renderEmbeddedMobileLayoutTool({
             return <LayoutSkillsPanel portfolio={portfolio} actions={actions} />;
         case 'projects':
             return <LayoutProjectsPanel portfolio={portfolio} actions={actions} />;
+        case 'timeline':
+            return <LayoutTimelinePanel portfolio={portfolio} actions={actions} />;
         default:
             return null;
     }
@@ -841,6 +935,20 @@ export default function SidePanel({ store, mobileTool = '', embedded = false, on
                             ))}
                         </div>
                     </PanelSection>
+
+                    <TimelineManagePanel
+                        title="수상"
+                        sectionKey="awards"
+                        items={portfolio.awards}
+                        actions={actions}
+                    />
+
+                    <TimelineManagePanel
+                        title="자격증"
+                        sectionKey="certificates"
+                        items={portfolio.certificates}
+                        actions={actions}
+                    />
                 </div>
             </div>
         </div>

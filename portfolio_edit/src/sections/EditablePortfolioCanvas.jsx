@@ -210,8 +210,11 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
   const [contentHeight, setContentHeight] = useState(pageMinHeight);
+  const [spacePressed, setSpacePressed] = useState(false);
+  const [isSpacePanning, setIsSpacePanning] = useState(false);
   const wrapRef = useRef(null);
   const pageInnerRef = useRef(null);
+  const panStateRef = useRef({ active: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -319,11 +322,101 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const scaledWidth = Math.round(baseWidth * scale);
   const scaledHeight = Math.round(contentHeight * scale);
 
+  const isEditableTarget = (target) => {
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(
+      target.closest('input, textarea, select, option, button, [contenteditable="true"], [data-no-space-pan="true"]')
+    );
+  };
+
+  useEffect(() => {
+    if (isMobileCanvas || typeof window === 'undefined' || typeof document === 'undefined') return undefined;
+
+    const stopPanning = () => {
+      panStateRef.current.active = false;
+      setIsSpacePanning(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.code !== 'Space' || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableTarget(event.target)) return;
+
+      event.preventDefault();
+      setSpacePressed(true);
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.code !== 'Space') return;
+      setSpacePressed(false);
+      stopPanning();
+    };
+
+    const handleWindowBlur = () => {
+      setSpacePressed(false);
+      stopPanning();
+    };
+
+    const handleMouseMove = (event) => {
+      if (!panStateRef.current.active) return;
+
+      const wrap = wrapRef.current;
+      if (!wrap) return;
+
+      const deltaX = event.clientX - panStateRef.current.startX;
+      const deltaY = event.clientY - panStateRef.current.startY;
+
+      wrap.scrollLeft = panStateRef.current.scrollLeft - deltaX;
+      wrap.scrollTop = panStateRef.current.scrollTop - deltaY;
+    };
+
+    const handleMouseUp = () => {
+      stopPanning();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isMobileCanvas]);
+
+  const handleCanvasMouseDown = (event) => {
+    if (isMobileCanvas || !spacePressed || event.button !== 0) return;
+    if (isEditableTarget(event.target)) return;
+
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    event.preventDefault();
+    panStateRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: wrap.scrollLeft,
+      scrollTop: wrap.scrollTop,
+    };
+    setIsSpacePanning(true);
+  };
+
   return (
       <div
-          className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''}`}
+          className={`canvas-wrap ${isMobileCanvas ? 'mobile-canvas-wrap' : ''} ${spacePressed ? 'is-space-pan-ready' : ''} ${isSpacePanning ? 'is-space-panning' : ''}`}
           ref={wrapRef}
           style={{ backgroundColor: 'transparent' }}
+          onMouseDown={handleCanvasMouseDown}
+          onDragStart={(event) => {
+            if (spacePressed) {
+              event.preventDefault();
+            }
+          }}
           onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
       >
         <div

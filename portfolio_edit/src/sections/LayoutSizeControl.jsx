@@ -1,5 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
 
+
+
+const DROPDOWN_HOST_SELECTOR = [
+    '.profile-layout-item',
+    '.project-block-shell',
+    '.custom-item-shell',
+    '.project-card-inner',
+    '.section-tile',
+    '.timeline-row',
+    '.skill-row',
+].join(', ');
+
+function updateDropdownHostState(rootNode, delta) {
+    if (!rootNode) return () => {};
+    const host = rootNode.closest(DROPDOWN_HOST_SELECTOR);
+    if (!host) return () => {};
+
+    const current = Number(host.dataset.dropdownOpenCount || 0);
+    const next = Math.max(0, current + delta);
+
+    if (next > 0) {
+        host.dataset.dropdownOpenCount = String(next);
+        host.classList.add('dropdown-open-host');
+    } else {
+        delete host.dataset.dropdownOpenCount;
+        host.classList.remove('dropdown-open-host');
+    }
+
+    return () => {
+        const latest = Number(host.dataset.dropdownOpenCount || 0);
+        const reduced = Math.max(0, latest - 1);
+        if (reduced > 0) {
+            host.dataset.dropdownOpenCount = String(reduced);
+        } else {
+            delete host.dataset.dropdownOpenCount;
+            host.classList.remove('dropdown-open-host');
+        }
+    };
+}
+
 function MiniDropdown({
                           label,
                           value,
@@ -18,8 +58,17 @@ function MiniDropdown({
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside, { passive: true });
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
     }, []);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        return updateDropdownHostState(rootRef.current, 1);
+    }, [open]);
 
     return (
         <div className={`mini-dropdown ${open ? 'open' : ''}`} ref={rootRef}>
