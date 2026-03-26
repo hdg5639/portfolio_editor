@@ -7,6 +7,138 @@ import SidePanel from './components/SidePanel';
 import StylePanel from './components/StylePanel';
 import EditablePortfolioCanvas from './sections/EditablePortfolioCanvas';
 
+
+const PDF_BREAK_SELECTORS = [
+    '.portfolio-card > .section-head',
+    '.profile-layout-item',
+    '.skill-row',
+    '.timeline-row',
+    '.projects-list > .project-card-inner',
+    '.project-card-inner > .project-top-meta',
+    '.project-card-inner > .chip-list',
+    '.project-card-inner > .project-block-grid > .project-block-shell',
+    '.project-card-inner > .project-add-blocks',
+    '.custom-section-grid > .custom-item-shell',
+    '.custom-item.simple',
+    '.custom-item.timeline',
+];
+
+function collectPdfBreakCandidates(root, pageHeightCss) {
+    if (!root || typeof window === 'undefined') return [];
+
+    const rootRect = root.getBoundingClientRect();
+    const selector = PDF_BREAK_SELECTORS.join(', ');
+    const maxKeepTogetherHeight = pageHeightCss * 0.9;
+    const candidates = [];
+
+    root.querySelectorAll(selector).forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+
+        if (!rect.height || rect.height < 24) return;
+        if (style.display === 'none' || style.visibility === 'hidden') return;
+        if (element.closest('.no-print')) return;
+
+        const top = rect.top - rootRect.top;
+        const bottom = rect.bottom - rootRect.top;
+        const height = rect.height;
+
+        if (height > maxKeepTogetherHeight) return;
+
+        candidates.push({ top, bottom, height });
+    });
+
+    candidates.sort((a, b) => a.top - b.top);
+    return candidates;
+}
+
+
+function measureEffectiveExportHeight(root) {
+    if (!root || typeof window === 'undefined') return 0;
+
+    const rootRect = root.getBoundingClientRect();
+    const rootStyle = window.getComputedStyle(root);
+    const paddingBottom = parseFloat(rootStyle.paddingBottom || '0') || 0;
+    let maxBottom = 0;
+
+    root.querySelectorAll('*').forEach((element) => {
+        if (element.closest('.no-print')) return;
+
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) == 0) return;
+
+        const rect = element.getBoundingClientRect();
+        if (!rect.width && !rect.height) return;
+
+        maxBottom = Math.max(maxBottom, rect.bottom - rootRect.top);
+    });
+
+    const effectiveHeight = Math.ceil(maxBottom + paddingBottom);
+    return Math.max(1, Math.min(root.scrollHeight || effectiveHeight, effectiveHeight || root.scrollHeight || 0));
+}
+
+function buildPdfSlices(totalHeightCss, pageHeightCss, candidates) {
+    if (!totalHeightCss || !pageHeightCss) {
+        return [{ start: 0, end: totalHeightCss || 0 }];
+    }
+
+    const minFillRatio = 0.58;
+    const maxBlankRatio = 0.42;
+    const minBreakGap = 36;
+    const slices = [];
+    let currentTop = 0;
+    let guard = 0;
+
+    while (currentTop < totalHeightCss - 1 && guard < 400) {
+        guard += 1;
+
+        const preferredEnd = currentTop + pageHeightCss;
+        if (preferredEnd >= totalHeightCss) {
+            slices.push({ start: currentTop, end: totalHeightCss });
+            break;
+        }
+
+        const crossing = candidates.filter((candidate) => {
+            if (candidate.top <= currentTop + minBreakGap) return false;
+            if (candidate.top >= preferredEnd) return false;
+            return candidate.bottom > preferredEnd;
+        });
+
+        let nextEnd = preferredEnd;
+
+        if (crossing.length > 0) {
+            const viable = crossing.filter((candidate) => {
+                const used = candidate.top - currentTop;
+                const blank = preferredEnd - candidate.top;
+                return used >= pageHeightCss * minFillRatio && blank <= pageHeightCss * maxBlankRatio;
+            });
+
+            const selected = viable.length > 0 ? viable[viable.length - 1] : null;
+            if (selected) {
+                nextEnd = selected.top;
+            }
+        }
+
+        if (nextEnd <= currentTop + 1) {
+            nextEnd = preferredEnd;
+        }
+
+        slices.push({ start: currentTop, end: Math.min(nextEnd, totalHeightCss) });
+        currentTop = nextEnd;
+    }
+
+    if (slices.length === 0) {
+        slices.push({ start: 0, end: totalHeightCss });
+    }
+
+    return slices.filter((slice, index) => {
+        const height = slice.end - slice.start;
+        if (height <= 2) return false;
+        if (index === slices.length - 1 && height < pageHeightCss * 0.035) return false;
+        return true;
+    });
+}
+
 const MOBILE_LAYOUT_TOOLS = [
     { key: 'sections', label: '섹션' },
     { key: 'custom', label: '커스텀' },
@@ -334,15 +466,21 @@ export default function App() {
 
             await new Promise((resolve) => setTimeout(resolve, 150));
 
+            const effectiveHeightCss = measureEffectiveExportHeight(clone);
+            clone.style.minHeight = `${effectiveHeightCss}px`;
+            clone.style.height = `${effectiveHeightCss}px`;
+            wrapper.style.height = `${effectiveHeightCss}px`;
+            wrapper.style.overflow = 'hidden';
+
             const canvas = await html2canvas(clone, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: portfolio.styles.page.backgroundColor || '#ffffff',
                 logging: false,
                 width: clone.scrollWidth,
-                height: clone.scrollHeight,
+                height: effectiveHeightCss,
                 windowWidth: clone.scrollWidth,
-                windowHeight: clone.scrollHeight,
+                windowHeight: effectiveHeightCss,
             });
 
             const pdf = new jsPDF(
@@ -355,27 +493,37 @@ export default function App() {
 
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
-            const pageHeightPx = Math.floor((canvasWidth * pdfHeight) / pdfWidth);
+            const renderScale = canvasWidth / Math.max(1, clone.scrollWidth);
+            const pageHeightCss = (clone.scrollWidth * pdfHeight) / pdfWidth;
+            const breakCandidates = collectPdfBreakCandidates(clone, pageHeightCss);
+            const cssSlices = buildPdfSlices(effectiveHeightCss, pageHeightCss, breakCandidates);
 
-            let renderedHeight = 0;
             let pageIndex = 0;
 
-            while (renderedHeight < canvasHeight) {
+            for (const slice of cssSlices) {
+                const startPx = Math.max(0, Math.floor(slice.start * renderScale));
+                const endPx = Math.min(canvasHeight, Math.ceil(slice.end * renderScale));
+                const sliceHeightPx = Math.max(1, endPx - startPx);
+
+                if (sliceHeightPx < 8) {
+                    continue;
+                }
+
                 const sliceCanvas = document.createElement('canvas');
                 sliceCanvas.width = canvasWidth;
-                sliceCanvas.height = Math.min(pageHeightPx, canvasHeight - renderedHeight);
+                sliceCanvas.height = sliceHeightPx;
 
                 const ctx = sliceCanvas.getContext('2d');
                 ctx.drawImage(
                     canvas,
                     0,
-                    renderedHeight,
+                    startPx,
                     canvasWidth,
-                    sliceCanvas.height,
+                    sliceHeightPx,
                     0,
                     0,
                     canvasWidth,
-                    sliceCanvas.height
+                    sliceHeightPx
                 );
 
                 const imgData = sliceCanvas.toDataURL('image/png');
@@ -386,8 +534,6 @@ export default function App() {
                 }
 
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, sliceHeightMm, undefined, 'FAST');
-
-                renderedHeight += sliceCanvas.height;
                 pageIndex += 1;
             }
 
