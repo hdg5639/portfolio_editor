@@ -1,1 +1,13 @@
 @import '../../features/editor/styles/index.css';
+@import '../../features/dashboard/styles/dashboard.css';
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f6f3ed;
+}
