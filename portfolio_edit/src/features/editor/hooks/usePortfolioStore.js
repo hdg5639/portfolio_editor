@@ -2,11 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { detectMobileViewport, migratePortfolio, clone } from '../utils/storeHelpers';
 import { defaultPortfolio } from '../utils/defaultPortfolio';
 
-import { useUiActions } from './actions/useUiActions';
-import { useStyleActions } from './actions/useStyleActions';
-import { useProjectActions } from './actions/useProjectActions';
-import { useCustomSectionActions } from './actions/useCustomSectionActions';
-import { useLayoutAndProfileActions } from './actions/useLayoutAndProfileActions';
+import { useUiActions } from './actions/useUiActions.js';
+import { useStyleActions } from './actions/useStyleActions.js';
+import { useProjectActions } from './actions/useProjectActions.js';
+import { useCustomSectionActions } from './actions/useCustomSectionActions.js';
+import { useLayoutAndProfileActions } from './actions/useLayoutAndProfileActions.js';
 
 const STORAGE_KEY = 'portfolio-editor-v5';
 
