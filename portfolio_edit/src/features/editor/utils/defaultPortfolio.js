@@ -154,12 +154,69 @@ export const createCustomSection = ({
   items: [createCustomSectionItem(template)],
 });
 
-export const defaultProfileBlocks = () => autoPlaceGridItems([
+export const createProfileContact = ({ label = '연락처', type = 'text', value = '', visible = true } = {}) => ({
+  id: uid(),
+  label,
+  type,
+  value,
+  visible,
+});
+
+export const defaultProfileContacts = () => ([
+  createProfileContact({ label: 'Email', type: 'email', value: 'doyun.kim@example.com' }),
+  createProfileContact({ label: 'GitHub', type: 'url', value: 'github.com/doyunkim-dev' }),
+  createProfileContact({ label: 'Phone', type: 'phone', value: '010-4821-1934' }),
+]);
+
+export const createProfileExtraBlock = (type = 'text') => {
+  if (type === 'list') {
+    return {
+      id: uid(),
+      type: 'list',
+      title: '추가 리스트',
+      items: ['항목 1', '항목 2'],
+      colSpan: 6,
+      rowSpan: 1,
+    };
+  }
+
+  if (type === 'image') {
+    return {
+      id: uid(),
+      type: 'image',
+      title: '추가 이미지',
+      caption: '이미지 설명',
+      images: [''],
+      colSpan: 6,
+      rowSpan: 2,
+    };
+  }
+
+  return {
+    id: uid(),
+    type: 'text',
+    title: '추가 텍스트',
+    content: '내용을 입력하세요.',
+    colSpan: 6,
+    rowSpan: 1,
+  };
+};
+
+export const createProfileExtraLayoutItem = (block) => ({
+  key: `extra:${block.id}`,
+  colSpan: block.colSpan || 6,
+  rowSpan: block.rowSpan || 1,
+  visible: true,
+  label: block.title || (block.type === 'list' ? '추가 리스트' : block.type === 'image' ? '추가 이미지' : '추가 텍스트'),
+});
+
+export const defaultProfileBlocks = (extraBlocks = []) => autoPlaceGridItems([
   { key: 'image', colSpan: 3, rowSpan: 2, visible: true, label: '프로필 이미지' },
   { key: 'quote', colSpan: 8, rowSpan: 1, visible: true, label: '한 줄 메시지' },
   { key: 'contacts', colSpan: 4, rowSpan: 1, visible: true, label: '연락처' },
   { key: 'identity', colSpan: 8, rowSpan: 1, visible: true, label: '이름 / 직무' },
   { key: 'intro', colSpan: 12, rowSpan: 1, visible: true, label: '자기소개' },
+  ...extraBlocks.map(createProfileExtraLayoutItem),
 ]);
 
 export const defaultSectionLayout = () => [
@@ -175,12 +232,11 @@ export const defaultPortfolio = {
     name: '김도윤',
     role: 'Full Stack Developer',
     quote: '문제를 구조로 풀고, 서비스를 끝까지 완성하는 개발자',
-    email: 'doyun.kim@example.com',
-    github: 'github.com/doyunkim-dev',
-    phone: '010-4821-1934',
     intro:
         '사용자 경험과 운영 안정성을 함께 고려하며 서비스를 설계하는 개발자입니다. 프론트엔드와 백엔드를 넘나들며 기능 구현뿐 아니라 구조 개선, 성능 최적화, 유지보수성까지 함께 고민해왔습니다.',
     image: '',
+    contacts: defaultProfileContacts(),
+    extraBlocks: [],
     layoutMode: 'manual',
     layout: defaultProfileBlocks(),
   },

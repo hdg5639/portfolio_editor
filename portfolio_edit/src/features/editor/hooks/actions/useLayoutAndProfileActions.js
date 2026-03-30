@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { updateById, moveBefore } from '../../utils/storeHelpers';
 import { autoPlaceGridItems, mergeGridDraftIntoSource, normalizeGridItems, placeManualGridItem, sortGridItemsByPosition } from '../../utils/layoutGrid.js';
-import { createSkill, createTimelineItem } from '../../utils/defaultPortfolio';
+import { createSkill, createTimelineItem, createProfileContact, createProfileExtraBlock, createProfileExtraLayoutItem } from '../../utils/defaultPortfolio';
 
 export function useLayoutAndProfileActions(setPortfolio) {
     return useMemo(() => ({
@@ -38,6 +38,76 @@ export function useLayoutAndProfileActions(setPortfolio) {
         // 프로필 조작
         updateProfile: (field, value) =>
             setPortfolio((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } })),
+        addProfileContact: (type = 'text') =>
+            setPortfolio((prev) => {
+                const presets = {
+                    email: { label: 'Email', type: 'email', value: '' },
+                    phone: { label: 'Phone', type: 'phone', value: '' },
+                    url: { label: 'Website', type: 'url', value: '' },
+                    text: { label: 'Custom', type: 'text', value: '' },
+                };
+                const contact = createProfileContact(presets[type] || presets.text);
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        contacts: [...(prev.profile.contacts || []), contact],
+                    },
+                };
+            }),
+        updateProfileContact: (contactId, field, value) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    contacts: (prev.profile.contacts || []).map((contact) =>
+                        contact.id === contactId ? { ...contact, [field]: value } : contact
+                    ),
+                },
+            })),
+        removeProfileContact: (contactId) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    contacts: (prev.profile.contacts || []).filter((contact) => contact.id !== contactId),
+                },
+            })),
+        addProfileExtraBlock: (type = 'text') =>
+            setPortfolio((prev) => {
+                const block = createProfileExtraBlock(type);
+                const layoutItem = createProfileExtraLayoutItem(block);
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        extraBlocks: [...(prev.profile.extraBlocks || []), block],
+                        layout: autoPlaceGridItems([...(prev.profile.layout || []), layoutItem]),
+                    },
+                };
+            }),
+        updateProfileExtraBlock: (blockId, field, value) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    extraBlocks: (prev.profile.extraBlocks || []).map((block) =>
+                        block.id === blockId ? { ...block, [field]: value } : block
+                    ),
+                    layout: (prev.profile.layout || []).map((item) =>
+                        item.key === `extra:${blockId}` && field === 'title' ? { ...item, label: value || item.label } : item
+                    ),
+                },
+            })),
+        removeProfileExtraBlock: (blockId) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    extraBlocks: (prev.profile.extraBlocks || []).filter((block) => block.id !== blockId),
+                    layout: (prev.profile.layout || []).filter((item) => item.key !== `extra:${blockId}`),
+                },
+            })),
         setProfileLayoutMode: (layoutMode, layoutItemsOverride = null) =>
             setPortfolio((prev) => {
                 const sourceItems = prev.profile.layout || [];

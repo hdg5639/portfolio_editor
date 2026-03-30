@@ -6,6 +6,13 @@ import { getCardSelectionState, getProfileBlockSelectionState } from '../utils/s
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 
+const CONTACT_TYPE_OPTIONS = [
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'url', label: 'URL' },
+    { value: 'text', label: 'Custom' },
+];
+
 function bind(store, key, label) {
     return {
         style: store.actions.styleFor(key),
@@ -43,20 +50,22 @@ function readFileAsDataUrl(file, callback) {
 }
 
 function EditableInput({
-                           value,
-                           placeholder,
-                           onChange,
-                           className = '',
-                           as = 'input',
-                           disabled = false,
-                           style,
-                           onClick,
-                       }) {
-    if (disabled) return (
-        <div className={className} style={style} onClick={onClick}>
-            {value || placeholder}
-        </div>
-    );
+    value,
+    placeholder,
+    onChange,
+    className = '',
+    as = 'input',
+    disabled = false,
+    style,
+    onClick,
+}) {
+    if (disabled) {
+        return (
+            <div className={className} style={style} onClick={onClick}>
+                {value || placeholder}
+            </div>
+        );
+    }
 
     if (as === 'textarea') {
         return (
@@ -88,22 +97,23 @@ function SelectionBadge({ label, tone = 'block' }) {
 }
 
 function ProfileBlockShell({
-                               store,
-                               blockKey,
-                               label,
-                               colSpan,
-                               rowSpan,
-                               draggingKey,
-                               dragOverKey,
-                               setDraggingKey,
-                               setDragOverKey,
-                               layoutMode,
-                               placementStyle,
-                               measureRef,
-                               minRowSpan,
-                               layoutItemsOverride,
-                               children,
-                           }) {
+    store,
+    blockKey,
+    label,
+    colSpan,
+    rowSpan,
+    draggingKey,
+    dragOverKey,
+    setDraggingKey,
+    setDragOverKey,
+    layoutMode,
+    placementStyle,
+    measureRef,
+    minRowSpan,
+    layoutItemsOverride,
+    actions,
+    children,
+}) {
     const isEdit = store.mode === 'edit';
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingKey === blockKey;
@@ -173,7 +183,6 @@ function ProfileBlockShell({
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
         >
-
             {showHelpers ? (
                 <LayoutChrome
                     label={label}
@@ -215,19 +224,7 @@ function ProfileBlockShell({
                             compact
                         />
                     }
-                    actions={
-                        <div className="profile-block-actions">
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.toggleProfileBlock(blockKey);
-                                }}
-                            >
-                                숨김
-                            </button>
-                        </div>
-                    }
+                    actions={actions}
                 />
             ) : null}
 
@@ -246,6 +243,11 @@ function ProfileBlockShell({
     );
 }
 
+function renderContactValue(contact) {
+    if (!contact?.value) return '값을 입력하세요.';
+    return contact.value;
+}
+
 export default function ProfileSection({ store }) {
     const { profile } = store.portfolio;
     const isEdit = store.mode === 'edit';
@@ -258,6 +260,8 @@ export default function ProfileSection({ store }) {
 
     const layoutMode = profile.layoutMode || 'manual';
     const showHelpers = isEdit && store.ui.showEditHelpers;
+    const contacts = profile.contacts || [];
+    const extraBlocks = profile.extraBlocks || [];
     const measuredProfileLayout = useMeasuredGridItems(profile.layout || [], (item) => item.key);
     const resolvedProfileLayout = useMemo(() => {
         const visible = measuredProfileLayout.resolvedItems.filter((item) => item.visible !== false);
@@ -276,7 +280,7 @@ export default function ProfileSection({ store }) {
         : null;
     const gridRows = getGridRowExtent(visibleBlocks, packedPreviewState?.preview || manualPreviewState?.preview, 4);
 
-    const blockMap = {
+    const fixedBlockMap = {
         image: {
             label: '프로필 이미지',
             node: (
@@ -297,14 +301,27 @@ export default function ProfileSection({ store }) {
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
                                     readFileAsDataUrl(file, (value) => store.actions.updateProfile('image', value));
+                                    e.target.value = '';
                                 }}
                             />
                         </label>
                     ) : null}
                 </div>
             ),
+            actions: (
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.toggleProfileBlock('image');
+                        }}
+                    >
+                        숨김
+                    </button>
+                </div>
+            ),
         },
-
         quote: {
             label: '한 줄 메시지',
             node: (
@@ -324,65 +341,101 @@ export default function ProfileSection({ store }) {
                     )}
                 </div>
             ),
+            actions: (
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.toggleProfileBlock('quote');
+                        }}
+                    >
+                        숨김
+                    </button>
+                </div>
+            ),
         },
-
         contacts: {
             label: '연락처',
             node: (
                 <div className="profile-block profile-contacts-block">
                     {isEdit ? (
                         <div className="profile-contacts-edit">
-                            <div className="contact-edit-row">
-                                <span {...viewProps(store, 'profile.contacts.email.label', '이메일 라벨')}>EMAIL</span>
-                                <input
-                                    value={profile.email}
-                                    onChange={(e) => store.actions.updateProfile('email', e.target.value)}
-                                    {...inputProps(store, 'profile.contacts.email.value', '이메일 값')}
-                                />
+                            <div className="profile-contacts-edit-list">
+                                {contacts.map((contact, index) => (
+                                    <div key={contact.id} className="profile-contact-edit-row">
+                                        <div className="profile-contact-edit-fields">
+                                            <select
+                                                value={contact.type}
+                                                onChange={(e) => store.actions.updateProfileContact(contact.id, 'type', e.target.value)}
+                                                {...inputProps(store, `profile.contacts.${contact.id}.type`, '연락처 타입')}
+                                            >
+                                                {CONTACT_TYPE_OPTIONS.map((option) => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
+                                            <input
+                                                value={contact.label || ''}
+                                                placeholder="라벨"
+                                                onChange={(e) => store.actions.updateProfileContact(contact.id, 'label', e.target.value)}
+                                                {...inputProps(store, `profile.contacts.${contact.id}.label`, '연락처 라벨')}
+                                            />
+                                            <input
+                                                value={contact.value || ''}
+                                                placeholder="값"
+                                                onChange={(e) => store.actions.updateProfileContact(contact.id, 'value', e.target.value)}
+                                                {...inputProps(store, `profile.contacts.${contact.id}.value`, '연락처 값')}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="timeline-item-remove ghost danger small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.removeProfileContact(contact.id);
+                                            }}
+                                            aria-label={`${contact.label || '연락처'} 삭제`}
+                                        >
+                                            X
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="contact-edit-row">
-                                <span {...viewProps(store, 'profile.contacts.github.label', '깃허브 라벨')}>GITHUB</span>
-                                <input
-                                    value={profile.github}
-                                    onChange={(e) => store.actions.updateProfile('github', e.target.value)}
-                                    {...inputProps(store, 'profile.contacts.github.value', '깃허브 값')}
-                                />
-                            </div>
-                            <div className="contact-edit-row">
-                                <span {...viewProps(store, 'profile.contacts.phone.label', '전화번호 라벨')}>PHONE</span>
-                                <input
-                                    value={profile.phone}
-                                    onChange={(e) => store.actions.updateProfile('phone', e.target.value)}
-                                    {...inputProps(store, 'profile.contacts.phone.value', '전화번호 값')}
-                                />
+                            <div className="profile-contact-add-row">
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('email')}>이메일 추가</button>
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('phone')}>전화 추가</button>
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('url')}>링크 추가</button>
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('text')}>직접 추가</button>
                             </div>
                         </div>
                     ) : (
                         <div className="profile-contact-list">
-                            <div className="profile-contact-row">
-                                <span {...viewProps(store, 'profile.contacts.email.label', '이메일 라벨')}>EMAIL</span>
-                                <strong {...viewProps(store, 'profile.contacts.email.value', '이메일 값')}>
-                                    {profile.email}
-                                </strong>
-                            </div>
-                            <div className="profile-contact-row">
-                                <span {...viewProps(store, 'profile.contacts.github.label', '깃허브 라벨')}>GITHUB</span>
-                                <strong {...viewProps(store, 'profile.contacts.github.value', '깃허브 값')}>
-                                    {profile.github}
-                                </strong>
-                            </div>
-                            <div className="profile-contact-row">
-                                <span {...viewProps(store, 'profile.contacts.phone.label', '전화번호 라벨')}>PHONE</span>
-                                <strong {...viewProps(store, 'profile.contacts.phone.value', '전화번호 값')}>
-                                    {profile.phone}
-                                </strong>
-                            </div>
+                            {contacts.length ? contacts.filter((contact) => contact.visible !== false).map((contact) => (
+                                <div key={contact.id} className="profile-contact-row">
+                                    <span {...viewProps(store, `profile.contacts.${contact.id}.label`, `${contact.label} 라벨`)}>{contact.label || 'CONTACT'}</span>
+                                    <strong {...viewProps(store, `profile.contacts.${contact.id}.value`, `${contact.label} 값`)}>
+                                        {renderContactValue(contact)}
+                                    </strong>
+                                </div>
+                            )) : <div className="profile-contact-empty">표시할 연락처가 없습니다.</div>}
                         </div>
                     )}
                 </div>
             ),
+            actions: (
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.toggleProfileBlock('contacts');
+                        }}
+                    >
+                        숨김
+                    </button>
+                </div>
+            ),
         },
-
         identity: {
             label: '이름 / 직무',
             node: (
@@ -420,8 +473,20 @@ export default function ProfileSection({ store }) {
                     </div>
                 </div>
             ),
+            actions: (
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.toggleProfileBlock('identity');
+                        }}
+                    >
+                        숨김
+                    </button>
+                </div>
+            ),
         },
-
         intro: {
             label: '자기소개',
             node: (
@@ -442,7 +507,186 @@ export default function ProfileSection({ store }) {
                     )}
                 </div>
             ),
+            actions: (
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.toggleProfileBlock('intro');
+                        }}
+                    >
+                        숨김
+                    </button>
+                </div>
+            ),
         },
+    };
+
+    const extraBlockEntries = extraBlocks.reduce((acc, block) => {
+        const baseKey = `profile.extraBlocks.${block.id}`;
+        const label = block.title || (block.type === 'list' ? '추가 리스트' : block.type === 'image' ? '추가 이미지' : '추가 텍스트');
+        const commonActions = (
+            <div className="profile-block-actions">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        store.actions.removeProfileExtraBlock(block.id);
+                    }}
+                >
+                    제거
+                </button>
+            </div>
+        );
+
+        if (block.type === 'list') {
+            acc[`extra:${block.id}`] = {
+                label,
+                node: (
+                    <div className="project-inner-card project-block">
+                        {isEdit ? (
+                            <>
+                                <input
+                                    value={block.title || ''}
+                                    placeholder="리스트 제목"
+                                    className="custom-input title"
+                                    onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'title', e.target.value)}
+                                    {...inputProps(store, `${baseKey}.title`, '프로필 추가 리스트 제목')}
+                                />
+                                <textarea
+                                    rows={6}
+                                    value={(block.items || []).join('\n')}
+                                    className="custom-input description"
+                                    onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'items', e.target.value.split('\n'))}
+                                    {...inputProps(store, `${baseKey}.items`, '프로필 추가 리스트 항목')}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 리스트 제목')}>{block.title}</h5>
+                                <ul className="project-list-view">
+                                    {(block.items || []).filter(Boolean).map((item, index) => (
+                                        <li key={`${block.id}-${index}`} {...viewProps(store, `${baseKey}.items.${index}`, '프로필 추가 리스트 항목')}>{item}</li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                ),
+                actions: commonActions,
+            };
+            return acc;
+        }
+
+        if (block.type === 'image') {
+            const imageSrc = block.images?.[0] || '';
+            acc[`extra:${block.id}`] = {
+                label,
+                node: (
+                    <div className="project-inner-card project-block project-images-wrap">
+                        {isEdit ? (
+                            <>
+                                <input
+                                    value={block.title || ''}
+                                    placeholder="이미지 제목"
+                                    className="custom-input title"
+                                    onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'title', e.target.value)}
+                                    {...inputProps(store, `${baseKey}.title`, '프로필 추가 이미지 제목')}
+                                />
+                                <div className="project-image-editor-slot">
+                                    <div className="project-image-slot">
+                                        {imageSrc ? <img src={imageSrc} alt={block.title || 'profile extra'} /> : <div className="project-image-placeholder">IMAGE</div>}
+                                    </div>
+                                    <div className="project-image-slot-actions">
+                                        <label className="ghost small upload-label">
+                                            이미지 업로드
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                hidden
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    readFileAsDataUrl(file, (value) => store.actions.updateProfileExtraBlock(block.id, 'images', [value]));
+                                                    e.target.value = '';
+                                                }}
+                                            />
+                                        </label>
+                                        {imageSrc ? (
+                                            <button
+                                                type="button"
+                                                className="ghost danger small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    store.actions.updateProfileExtraBlock(block.id, 'images', ['']);
+                                                }}
+                                            >
+                                                제거
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <input
+                                    value={block.caption || ''}
+                                    placeholder="캡션"
+                                    className="custom-input"
+                                    onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'caption', e.target.value)}
+                                    {...inputProps(store, `${baseKey}.caption`, '프로필 추가 이미지 캡션')}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 이미지 제목')}>{block.title}</h5>
+                                <div className="project-image-slot">
+                                    {imageSrc ? <img src={imageSrc} alt={block.title || 'profile extra'} /> : <div className="project-image-placeholder">IMAGE</div>}
+                                </div>
+                                {block.caption ? <p className="image-caption" {...viewProps(store, `${baseKey}.caption`, '프로필 추가 이미지 캡션')}>{block.caption}</p> : null}
+                            </>
+                        )}
+                    </div>
+                ),
+                actions: commonActions,
+            };
+            return acc;
+        }
+
+        acc[`extra:${block.id}`] = {
+            label,
+            node: (
+                <div className="project-inner-card project-block">
+                    {isEdit ? (
+                        <>
+                            <input
+                                value={block.title || ''}
+                                placeholder="텍스트 제목"
+                                className="custom-input title"
+                                onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'title', e.target.value)}
+                                {...inputProps(store, `${baseKey}.title`, '프로필 추가 텍스트 제목')}
+                            />
+                            <textarea
+                                rows={6}
+                                value={block.content || ''}
+                                className="custom-input description"
+                                onChange={(e) => store.actions.updateProfileExtraBlock(block.id, 'content', e.target.value)}
+                                {...inputProps(store, `${baseKey}.content`, '프로필 추가 텍스트 내용')}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 텍스트 제목')}>{block.title}</h5>
+                            <p className="project-paragraph" {...viewProps(store, `${baseKey}.content`, '프로필 추가 텍스트 내용')}>{block.content}</p>
+                        </>
+                    )}
+                </div>
+            ),
+            actions: commonActions,
+        };
+        return acc;
+    }, {});
+
+    const blockMap = {
+        ...fixedBlockMap,
+        ...extraBlockEntries,
     };
 
     return (
@@ -454,9 +698,7 @@ export default function ProfileSection({ store }) {
                 store.actions.select({ key: 'profileCard', label: '프로필 카드' });
             }}
         >
-            {cardSelection.selected ? (
-                <SelectionBadge label="프로필 카드 선택됨" tone="card" />
-            ) : null}
+            {cardSelection.selected ? <SelectionBadge label="프로필 카드 선택됨" tone="card" /> : null}
 
             <div className="section-head section-head-with-layout-controls">
                 <div className="profile-layout-head">
@@ -559,44 +801,62 @@ export default function ProfileSection({ store }) {
                     />
                 ) : null}
 
-                {visibleBlocks.map((block) => (
-                    <ProfileBlockShell
-                        key={block.key}
-                        store={store}
-                        blockKey={block.key}
-                        label={block.label}
-                        colSpan={block.colSpan || 12}
-                        rowSpan={block.rowSpan || 1}
-                        minRowSpan={block.minRowSpan || 1}
-                        draggingKey={draggingKey}
-                        dragOverKey={dragOverKey}
-                        setDraggingKey={setDraggingKey}
-                        setDragOverKey={setDragOverKey}
-                        layoutMode={layoutMode}
-                        placementStyle={getGridItemPlacementStyle(block, layoutMode)}
-                        measureRef={measuredProfileLayout.registerMeasureRef(block.key)}
-                        layoutItemsOverride={resolvedProfileLayout}
-                    >
-                        {blockMap[block.key]?.node}
-                    </ProfileBlockShell>
-                ))}
+                {visibleBlocks.map((block) => {
+                    const current = blockMap[block.key];
+                    if (!current) return null;
+                    return (
+                        <ProfileBlockShell
+                            key={block.key}
+                            store={store}
+                            blockKey={block.key}
+                            label={current.label || block.label}
+                            colSpan={block.colSpan || 12}
+                            rowSpan={block.rowSpan || 1}
+                            minRowSpan={block.minRowSpan || 1}
+                            draggingKey={draggingKey}
+                            dragOverKey={dragOverKey}
+                            setDraggingKey={setDraggingKey}
+                            setDragOverKey={setDragOverKey}
+                            layoutMode={layoutMode}
+                            placementStyle={getGridItemPlacementStyle(block, layoutMode)}
+                            measureRef={measuredProfileLayout.registerMeasureRef(block.key)}
+                            layoutItemsOverride={resolvedProfileLayout}
+                            actions={current.actions}
+                        >
+                            {current.node}
+                        </ProfileBlockShell>
+                    );
+                })}
             </div>
 
             {isEdit ? (
-                <div className="profile-hidden-tools">
-                    {(profile.layout || [])
-                        .filter((block) => block.visible === false)
-                        .map((block) => (
-                            <button
-                                key={block.key}
-                                type="button"
-                                className="ghost small"
-                                onClick={() => store.actions.toggleProfileBlock(block.key)}
-                            >
-                                {block.label} 다시 표시
-                            </button>
-                        ))}
-                </div>
+                <>
+                    <div className="profile-add-tools">
+                        <div className="profile-add-group">
+                            <strong>추가 블럭</strong>
+                            <div className="profile-add-actions">
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileExtraBlock('text')}>텍스트 박스</button>
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileExtraBlock('list')}>리스트 박스</button>
+                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileExtraBlock('image')}>이미지 박스</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="profile-hidden-tools">
+                        {(profile.layout || [])
+                            .filter((block) => block.visible === false)
+                            .map((block) => (
+                                <button
+                                    key={block.key}
+                                    type="button"
+                                    className="ghost small"
+                                    onClick={() => store.actions.toggleProfileBlock(block.key)}
+                                >
+                                    {block.label} 다시 표시
+                                </button>
+                            ))}
+                    </div>
+                </>
             ) : null}
         </section>
     );

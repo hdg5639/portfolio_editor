@@ -350,6 +350,75 @@
     word-break: break-all;
 }
 
+.profile-contact-empty {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.profile-contacts-edit-list {
+    display: grid;
+    gap: 16px;
+}
+
+.profile-contact-edit-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding-top: 14px;
+    border-top: 1px solid rgba(229, 221, 210, 0.7);
+}
+
+.profile-contact-edit-row:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.profile-contact-edit-fields {
+    display: grid;
+    grid-template-columns: 116px minmax(120px, 0.42fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+
+.profile-contact-edit-fields select,
+.profile-contact-edit-fields input {
+    min-width: 0;
+}
+
+.profile-contact-add-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(229, 221, 210, 0.7);
+}
+
+.profile-contact-add-row .ghost.small {
+    min-height: 32px;
+}
+
+.profile-add-tools {
+    margin-top: 18px;
+    display: grid;
+    gap: 12px;
+}
+
+.profile-add-group {
+    display: grid;
+    gap: 8px;
+}
+
+.profile-add-group strong {
+    font-size: 13px;
+}
+
+.profile-add-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .profile-name-text,
 .profile-name-input {
     font-size: 44px;
@@ -392,6 +461,19 @@
     border-color: var(--line);
     background: #fff;
     padding: 10px 12px;
+}
+
+.profile-contacts-block select,
+.profile-contacts-block input,
+.profile-contacts-block textarea {
+    min-width: 0;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .profile-contact-edit-fields {
+        grid-template-columns: 1fr;
+    }
 }
 
 .profile-hidden-tools {

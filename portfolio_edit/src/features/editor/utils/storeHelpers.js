@@ -3,6 +3,7 @@ import {
     defaultSectionLayout,
     defaultProfileBlocks,
     createComplexCustomItem, createTextBlock, createListBlock, createImageBlock,
+    createProfileContact, createProfileExtraBlock, defaultProfileContacts,
     defaultStyle,
 } from './defaultPortfolio.js';
 import { normalizeGridItems } from './layoutGrid.js';
@@ -136,7 +137,9 @@ export function getProfileBlockSelectionState(selectedKey, blockKey) {
         identity: ['profile.name', 'profile.role'],
         intro: ['profile.intro'],
     };
-    const prefixes = scopes[blockKey] || [];
+    const prefixes = blockKey.startsWith('extra:')
+        ? [`profile.extraBlocks.${blockKey.replace('extra:', '')}`]
+        : (scopes[blockKey] || []);
     const selected = selectedKey === shellKey;
     const ancestor = !selected && prefixes.some((prefix) => matchesSelectionScope(selectedKey, prefix));
     return { selected, ancestor, active: selected || ancestor };
@@ -240,12 +243,45 @@ export function syncCustomSections(portfolio) {
 export function migratePortfolio(rawPortfolio) {
     const next = syncCustomSections(rawPortfolio || defaultPortfolio);
 
+    next.profile = next.profile || clone(defaultPortfolio.profile);
     next.profile.layoutMode = next.profile.layoutMode || 'manual';
 
-    if (!next.profile.layout || !Array.isArray(next.profile.layout) || !next.profile.layout.length) {
-        next.profile.layout = defaultProfileBlocks();
+    if (!Array.isArray(next.profile.contacts)) {
+        const migratedContacts = [
+            next.profile.email ? createProfileContact({ label: 'Email', type: 'email', value: next.profile.email }) : null,
+            next.profile.github ? createProfileContact({ label: 'GitHub', type: 'url', value: next.profile.github }) : null,
+            next.profile.phone ? createProfileContact({ label: 'Phone', type: 'phone', value: next.profile.phone }) : null,
+        ].filter(Boolean);
+        next.profile.contacts = migratedContacts.length ? migratedContacts : defaultProfileContacts();
     } else {
-        const defaults = defaultProfileBlocks();
+        next.profile.contacts = next.profile.contacts.map((contact) => ({
+            id: contact.id || createProfileContact().id,
+            label: contact.label || '연락처',
+            type: contact.type || 'text',
+            value: contact.value || '',
+            visible: contact.visible !== false,
+        }));
+    }
+
+    delete next.profile.email;
+    delete next.profile.github;
+    delete next.profile.phone;
+
+    next.profile.extraBlocks = Array.isArray(next.profile.extraBlocks)
+        ? next.profile.extraBlocks.map((block) => {
+            const defaults = createProfileExtraBlock(block.type);
+            return {
+                ...defaults,
+                ...block,
+                id: block.id || defaults.id,
+            };
+        })
+        : [];
+
+    if (!next.profile.layout || !Array.isArray(next.profile.layout) || !next.profile.layout.length) {
+        next.profile.layout = defaultProfileBlocks(next.profile.extraBlocks);
+    } else {
+        const defaults = defaultProfileBlocks(next.profile.extraBlocks);
         const existingMap = new Map(next.profile.layout.map((item) => [item.key, item]));
         next.profile.layout = normalizeGridItems(
             defaults.map((item) => ({

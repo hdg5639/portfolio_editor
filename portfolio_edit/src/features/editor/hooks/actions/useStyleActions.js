@@ -35,6 +35,7 @@ function getAncestorElementKeys(key) {
         if (field === 'intro') ancestors.push('profileBlock.intro');
         if (field === 'name' || field === 'role') ancestors.push('profileBlock.identity');
         if (field === 'contacts') ancestors.push('profile.contacts', 'profileBlock.contacts');
+        if (field === 'extraBlocks' && parts[2]) ancestors.push(`profileBlock.extra:${parts[2]}`);
         return [...new Set(ancestors)];
     }
 
