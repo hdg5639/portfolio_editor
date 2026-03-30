@@ -47,6 +47,9 @@ function resolveCellFromPointer(event, rows) {
 export default function GridPlacementOverlay({
   rows,
   preview,
+  items = [],
+  activeItemId = null,
+  showOccupiedRanges = false,
   interactive = false,
   active = false,
   confirmBeforePlace = false,
@@ -61,6 +64,22 @@ export default function GridPlacementOverlay({
 }) {
   const safeRows = Math.max(1, rows || 1);
   const [pendingCell, setPendingCell] = useState(null);
+
+
+  const occupiedItems = useMemo(() => {
+    if (!(showOccupiedRanges && active)) return [];
+    return (items || [])
+      .filter((item) => item?.visible !== false)
+      .filter((item) => String(item?.id ?? item?.key) !== String(activeItemId))
+      .map((item) => ({
+        id: String(item?.id ?? item?.key),
+        gridX: Number(item?.gridX) || 1,
+        gridY: Number(item?.gridY) || 1,
+        colSpan: Math.max(1, Number(item?.colSpan) || 1),
+        rowSpan: Math.max(1, Number(item?.rowSpan) || 1),
+      }));
+  }, [active, activeItemId, items, showOccupiedRanges]);
+
   const confirmUi = useMemo(() => {
     if (!(confirmBeforePlace && interactive && active && pendingCell)) return null;
 
@@ -172,6 +191,17 @@ export default function GridPlacementOverlay({
         }}
       >
         <div className="grid-placement-lines" />
+
+        {occupiedItems.map((item) => (
+          <div
+            key={item.id}
+            className="grid-occupied-range"
+            style={{
+              gridColumn: `${item.gridX} / span ${item.colSpan}`,
+              gridRow: `${item.gridY} / span ${item.rowSpan}`,
+            }}
+          />
+        ))}
 
         {preview ? (
           <div

@@ -759,6 +759,9 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                     <GridPlacementOverlay
                         rows={blockGridRows}
                         preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
+                        items={resolvedComplexBlocks.filter((block) => block.visible !== false)}
+                        activeItemId={draggingBlockId}
+                        showOccupiedRanges={blockLayoutMode === 'manual'}
                         active={!!draggingBlockId}
                         interactive={blockLayoutMode === 'manual' && !!draggingBlockId}
                         confirmBeforePlace={!!store.ui?.isMobile}

@@ -512,6 +512,9 @@ export default function ProfileSection({ store }) {
                     <GridPlacementOverlay
                         rows={gridRows}
                         preview={packedPreviewState?.preview || manualPreviewState?.preview}
+                        items={visibleBlocks}
+                        activeItemId={draggingKey}
+                        showOccupiedRanges={layoutMode === 'manual'}
                         active={!!draggingKey}
                         interactive={layoutMode === 'manual' && !!draggingKey}
                         confirmBeforePlace={!!store.ui?.isMobile}

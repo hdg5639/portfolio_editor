@@ -1418,3 +1418,20 @@
         max-width: 92px;
     }
 }
+
+.grid-occupied-range {
+    z-index: 2;
+    border-radius: 16px;
+    border: 1.5px dashed rgba(91, 140, 255, 0.36);
+    background: rgba(91, 140, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(91, 140, 255, 0.04);
+    pointer-events: none;
+}
+
+.grid-placement-overlay.is-active .grid-placement-lines {
+    opacity: max(var(--grid-guide-opacity, 0.28), 0.36);
+}
+
+.grid-placement-overlay.is-active .grid-occupied-range {
+    opacity: 1;
+}

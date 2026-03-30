@@ -724,6 +724,9 @@ function ProjectCard({
                     <GridPlacementOverlay
                         rows={blockGridRows}
                         preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
+                        items={resolvedProjectBlocks.filter((block) => block.visible !== false)}
+                        activeItemId={draggingId}
+                        showOccupiedRanges={blockLayoutMode === 'manual'}
                         active={!!draggingId}
                         interactive={blockLayoutMode === 'manual' && !!draggingId}
                         confirmBeforePlace={!!store.ui?.isMobile}
