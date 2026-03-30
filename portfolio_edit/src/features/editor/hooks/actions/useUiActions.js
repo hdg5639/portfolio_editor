@@ -2,9 +2,17 @@ import { useMemo } from 'react';
 import { clone } from '../../utils/storeHelpers';
 import { defaultPortfolio } from '../../utils/defaultPortfolio';
 
-export function useUiActions(setUi, setMode, setSelected, setPortfolio, STORAGE_KEY) {
+export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY) {
     return useMemo(() => ({
-        setMode,
+        setMode: (nextMode) => {
+            setModeState(nextMode);
+            if (nextMode === 'preview') {
+                setSelected(null);
+            }
+        },
+        clearSelection: () => {
+            setSelected(null);
+        },
         select: (next) => {
             setSelected(next);
         },
@@ -70,5 +78,5 @@ export function useUiActions(setUi, setMode, setSelected, setPortfolio, STORAGE_
             setSelected({ key: 'page', label: '페이지 전체' });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         },
-    }), [setUi, setMode, setSelected, setPortfolio, STORAGE_KEY]);
+    }), [setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY]);
 }

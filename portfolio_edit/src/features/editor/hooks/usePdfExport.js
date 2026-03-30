@@ -28,6 +28,9 @@ export function usePdfExport({ store }) {
         setIsExporting(true);
         setIsExportSheetOpen(false);
 
+        actions.clearSelection?.();
+        await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+
         await exportPortfolioPdf({
           target,
           portfolio,
