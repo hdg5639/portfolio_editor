@@ -740,13 +740,13 @@
     color: #fff;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 921px) {
     .mobile-placement-confirm {
         display: none;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 920px) {
     .mobile-placement-confirm {
         right: 16px;
         left: auto;
