@@ -1,11 +1,40 @@
 import { useMemo } from 'react';
 import { updateById, moveBefore } from '../../utils/storeHelpers';
+import { autoPlaceGridItems, mergeGridDraftIntoSource, normalizeGridItems, placeManualGridItem, sortGridItemsByPosition } from '../../utils/layoutGrid.js';
 import { createProject, createTextBlock, createListBlock, createImageBlock } from '../../utils/defaultPortfolio';
 
 export function useProjectActions(setPortfolio) {
     return useMemo(() => ({
         addProject: () =>
             setPortfolio((prev) => ({ ...prev, projects: [...prev.projects, createProject()] })),
+        setProjectLayoutMode: (projectId, layoutMode, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                projects: updateById(prev.projects, projectId, (project) => {
+                    const sourceBlocks = project.blocks || [];
+                    const draftBlocks = blockItemsOverride || sourceBlocks;
+                    const laidOut = layoutMode === 'packed'
+                        ? sortGridItemsByPosition(draftBlocks)
+                        : autoPlaceGridItems(draftBlocks);
+                    return {
+                        ...project,
+                        layoutMode,
+                        blocks: mergeGridDraftIntoSource(sourceBlocks, laidOut),
+                    };
+                }),
+            })),
+        autoArrangeProjectBlocks: (projectId, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                projects: updateById(prev.projects, projectId, (project) => {
+                    const sourceBlocks = project.blocks || [];
+                    const laidOut = autoPlaceGridItems(blockItemsOverride || sourceBlocks);
+                    return {
+                        ...project,
+                        blocks: mergeGridDraftIntoSource(sourceBlocks, laidOut),
+                    };
+                }),
+            })),
         updateProject: (id, field, value) =>
             setPortfolio((prev) => ({ ...prev, projects: updateById(prev.projects, id, (item) => ({ ...item, [field]: value })) })),
         moveProject: (draggedProjectId, targetProjectId) =>
@@ -18,7 +47,7 @@ export function useProjectActions(setPortfolio) {
                 ...prev,
                 projects: updateById(prev.projects, projectId, (project) => ({
                     ...project,
-                    blocks: [...project.blocks, type === 'text' ? createTextBlock() : type === 'list' ? createListBlock() : createImageBlock()],
+                    blocks: normalizeGridItems([...project.blocks, type === 'text' ? createTextBlock() : type === 'list' ? createListBlock() : createImageBlock()]),
                 })),
             })),
         moveProjectBlock: (projectId, draggedBlockId, targetBlockId) =>
@@ -26,19 +55,42 @@ export function useProjectActions(setPortfolio) {
                 ...prev,
                 projects: updateById(prev.projects, projectId, (project) => ({ ...project, blocks: moveBefore(project.blocks, draggedBlockId, targetBlockId, 'id') })),
             })),
-        setProjectBlockSpan: (projectId, blockId, colSpan) =>
+        placeProjectBlock: (projectId, draggedBlockId, gridX, gridY, blockItemsOverride = null) =>
             setPortfolio((prev) => ({
                 ...prev,
-                projects: updateById(prev.projects, projectId, (project) => ({
-                    ...project, blocks: project.blocks.map((block) => block.id === blockId ? { ...block, colSpan } : block),
-                })),
+                projects: updateById(prev.projects, projectId, (project) => {
+                    const sourceBlocks = project.blocks || [];
+                    const draftBlocks = blockItemsOverride || sourceBlocks;
+                    const placed = placeManualGridItem(draftBlocks, draggedBlockId, gridX, gridY);
+                    return {
+                        ...project,
+                        blocks: mergeGridDraftIntoSource(sourceBlocks, placed),
+                    };
+                }),
             })),
-        setProjectBlockRowSpan: (projectId, blockId, rowSpan) =>
+        setProjectBlockSpan: (projectId, blockId, colSpan, blockItemsOverride = null) =>
             setPortfolio((prev) => ({
                 ...prev,
-                projects: updateById(prev.projects, projectId, (project) => ({
-                    ...project, blocks: project.blocks.map((block) => block.id === blockId ? { ...block, rowSpan } : block),
-                })),
+                projects: updateById(prev.projects, projectId, (project) => {
+                    const sourceBlocks = project.blocks || [];
+                    const draftBlocks = normalizeGridItems((blockItemsOverride || sourceBlocks).map((block) => block.id === blockId ? { ...block, colSpan } : block));
+                    return {
+                        ...project,
+                        blocks: mergeGridDraftIntoSource(sourceBlocks, draftBlocks, { copySpanIds: [blockId] }),
+                    };
+                }),
+            })),
+        setProjectBlockRowSpan: (projectId, blockId, rowSpan, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                projects: updateById(prev.projects, projectId, (project) => {
+                    const sourceBlocks = project.blocks || [];
+                    const draftBlocks = normalizeGridItems((blockItemsOverride || sourceBlocks).map((block) => block.id === blockId ? { ...block, rowSpan } : block));
+                    return {
+                        ...project,
+                        blocks: mergeGridDraftIntoSource(sourceBlocks, draftBlocks, { copySpanIds: [blockId] }),
+                    };
+                }),
             })),
         updateProjectBlock: (projectId, blockId, field, value) =>
             setPortfolio((prev) => ({

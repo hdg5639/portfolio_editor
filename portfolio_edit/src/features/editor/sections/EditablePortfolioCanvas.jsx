@@ -209,6 +209,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
 
   const [scale, setScale] = useState(1);
   const [showZoomUI, setShowZoomUI] = useState(true);
+  const [mobileZoomPosition, setMobileZoomPosition] = useState({ x: null, y: null });
   const [contentHeight, setContentHeight] = useState(pageMinHeight);
   const [wrapViewportSize, setWrapViewportSize] = useState({ width: 0, height: 0 });
   const [spacePressed, setSpacePressed] = useState(false);
@@ -220,6 +221,53 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   const previousScaleRef = useRef(scale);
   const pinchStateRef = useRef({ active: false, startDistance: 0, startScale: 1 });
   const previousEditPanGutterRef = useRef(0);
+  const mobileZoomDragRef = useRef(null);
+
+  const getDefaultMobileZoomPosition = useCallback(() => {
+    if (typeof window === 'undefined') return { x: 16, y: 160 };
+    const collapsedWidth = 88;
+    const fallbackHeight = showZoomUI ? 48 : 40;
+    return {
+      x: Math.max(12, window.innerWidth - collapsedWidth - 16),
+      y: Math.max(96, window.innerHeight - fallbackHeight - 124),
+    };
+  }, [showZoomUI]);
+
+  const clampMobileZoomPosition = useCallback((x, y) => {
+    if (typeof window === 'undefined') return { x, y };
+    const estimatedWidth = showZoomUI ? 220 : 92;
+    const estimatedHeight = 48;
+    return {
+      x: Math.min(Math.max(12, x), Math.max(12, window.innerWidth - estimatedWidth - 12)),
+      y: Math.min(Math.max(88, y), Math.max(88, window.innerHeight - estimatedHeight - 96)),
+    };
+  }, [showZoomUI]);
+
+  useEffect(() => {
+    if (!isMobileCanvas) return;
+    setMobileZoomPosition((current) => {
+      if (Number.isFinite(current.x) && Number.isFinite(current.y)) {
+        return clampMobileZoomPosition(current.x, current.y);
+      }
+      return getDefaultMobileZoomPosition();
+    });
+  }, [clampMobileZoomPosition, getDefaultMobileZoomPosition, isMobileCanvas]);
+
+  useEffect(() => {
+    if (!isMobileCanvas) return undefined;
+
+    const handleResize = () => {
+      setMobileZoomPosition((current) => {
+        if (Number.isFinite(current.x) && Number.isFinite(current.y)) {
+          return clampMobileZoomPosition(current.x, current.y);
+        }
+        return getDefaultMobileZoomPosition();
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [clampMobileZoomPosition, getDefaultMobileZoomPosition, isMobileCanvas]);
 
   const canvasStyle = {
     backgroundColor: pageStyle.backgroundColor,
@@ -634,6 +682,51 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
     };
   }, [isMobileCanvas]);
 
+  const handleMobileZoomDragStart = (event) => {
+    if (!isMobileCanvas) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const origin = (Number.isFinite(mobileZoomPosition.x) && Number.isFinite(mobileZoomPosition.y))
+      ? mobileZoomPosition
+      : getDefaultMobileZoomPosition();
+
+    mobileZoomDragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: origin.x,
+      originY: origin.y,
+    };
+  };
+
+  useEffect(() => {
+    if (!isMobileCanvas) return undefined;
+
+    const handlePointerMove = (event) => {
+      const dragState = mobileZoomDragRef.current;
+      if (!dragState) return;
+      const next = clampMobileZoomPosition(
+        dragState.originX + (event.clientX - dragState.startX),
+        dragState.originY + (event.clientY - dragState.startY)
+      );
+      setMobileZoomPosition((current) => (current.x === next.x && current.y === next.y ? current : next));
+    };
+
+    const stopDragging = () => {
+      mobileZoomDragRef.current = null;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', stopDragging, { passive: true });
+    window.addEventListener('pointercancel', stopDragging, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopDragging);
+      window.removeEventListener('pointercancel', stopDragging);
+    };
+  }, [clampMobileZoomPosition, isMobileCanvas]);
+
   const handleCanvasMouseDown = (event) => {
     if (isMobileCanvas || !spacePressed || event.button !== 0) return;
     if (isEditableTarget(event.target)) return;
@@ -725,9 +818,22 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
 
         {!hideZoomControls ? (
             <div
-                className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'}`}
+                className={`zoom-controls no-print ${showZoomUI ? 'expanded' : 'collapsed'} ${isMobileCanvas ? 'is-mobile-draggable' : ''}`}
+                style={isMobileCanvas && Number.isFinite(mobileZoomPosition.x) && Number.isFinite(mobileZoomPosition.y)
+                  ? { left: `${mobileZoomPosition.x}px`, top: `${mobileZoomPosition.y}px`, right: 'auto', bottom: 'auto', transform: 'none' }
+                  : undefined}
                 onClick={(e) => e.stopPropagation()}
             >
+              {isMobileCanvas ? (
+                <button
+                  type="button"
+                  className="zoom-drag-handle"
+                  onPointerDown={handleMobileZoomDragStart}
+                  title="줌 버튼 이동"
+                >
+                  ⋮⋮
+                </button>
+              ) : null}
               {showZoomUI ? (
                   <>
                     <button onClick={handleZoomOut} title="축소">-
@@ -738,7 +844,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
                     <button onClick={handleZoomIn} title="확대">+
                     </button>
                     <div className="zoom-divider" />
-                    <button onClick={() => setShowZoomUI(false)} title="숨기기">✕
+                    <button onClick={() => setShowZoomUI(false)} title={isMobileCanvas ? '접기' : '숨기기'}>✕
                     </button>
                   </>
               ) : (

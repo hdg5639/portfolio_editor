@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
+import LayoutChrome from '../components/LayoutChrome.jsx';
+import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getProjectSelectionState, getProjectBlockSelectionState } from '../utils/storeHelpers';
+import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
+import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -51,15 +55,20 @@ function BlockShell({
                         dragOverId,
                         setDraggingId,
                         setDragOverId,
+                        layoutMode,
+                        placementStyle,
+                        measureRef,
+                        minRowSpan,
+                        layoutItemsOverride,
                         children,
                     }) {
     const isEdit = store.mode === 'edit';
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingId === block.id;
-    const isDragOver = dragOverId === block.id && draggingId !== block.id;
+    const isDragOver = layoutMode === 'packed' && dragOverId === block.id && draggingId !== block.id;
     const blockSelection = getProjectBlockSelectionState(store.selected?.key, projectId, block.id);
     const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== block.id;
+    const showTapOverlay = layoutMode === 'packed' && useTapReorder && !!draggingId && draggingId !== block.id;
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -69,7 +78,7 @@ function BlockShell({
     };
 
     const onDragOver = (event) => {
-        if (!showHelpers || !draggingId) return;
+        if (layoutMode !== 'packed' || !showHelpers || !draggingId) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
         if (dragOverId !== block.id) {
@@ -78,7 +87,7 @@ function BlockShell({
     };
 
     const onDrop = (event) => {
-        if (!showHelpers) return;
+        if (layoutMode !== 'packed' || !showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
 
@@ -108,16 +117,15 @@ function BlockShell({
 
     return (
         <div
-            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
-            draggable={showHelpers}
+            style={placementStyle}
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `projects.${projectId}.blocks.${block.id}`, label: `${block.title || '프로젝트'} 블럭` });
             }}
-            onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragLeave={() => {
                 if (dragOverId === block.id) setDragOverId(null);
@@ -127,45 +135,61 @@ function BlockShell({
         >
 
             {showHelpers ? (
-                <div className="project-block-toolbar">
-                    <div
-                        className="drag-handle"
-                        title="드래그해서 위치 이동"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(event) => {
-                            if (!useTapReorder) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setDraggingId((current) => (current === block.id ? null : block.id));
-                            setDragOverId(null);
-                        }}
-                    >
-                        ⋮⋮
-                    </div>
+                <LayoutChrome
+                    label={`${block.type} · ${block.title}`}
+                    summary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
+                    defaultExpanded={!store.ui?.isMobile}
+                    dragHandle={
+                        <div
+                            className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`}
+                            title={layoutMode === 'manual' ? '드래그 후 격자 위치 선택' : '드래그해서 순서 이동'}
+                            draggable
+                            onDragStart={onDragStart}
+                            onDragEnd={onDragEnd}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(event) => {
+                                if (layoutMode === 'manual') {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setDraggingId((current) => (current === block.id ? null : block.id));
+                                    setDragOverId(null);
+                                    return;
+                                }
 
-                    <strong>
-                        {block.type} · {block.title}
-                    </strong>
-
-                    <LayoutSizeControl
-                        widthValue={block.colSpan || 12}
-                        heightValue={block.rowSpan || 1}
-                        onWidthChange={(value) => store.actions.setProjectBlockSpan(projectId, block.id, value)}
-                        onHeightChange={(value) => store.actions.setProjectBlockRowSpan(projectId, block.id, value)}
-                    />
-
-                    <div className="profile-block-actions">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                store.actions.removeProjectBlock(projectId, block.id);
+                                if (!useTapReorder) return;
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setDraggingId((current) => (current === block.id ? null : block.id));
+                                setDragOverId(null);
                             }}
                         >
-                            제거
-                        </button>
-                    </div>
-                </div>
+                            ⋮⋮
+                        </div>
+                    }
+                    controls={
+                        <LayoutSizeControl
+                            widthValue={block.colSpan || 12}
+                            heightValue={block.rowSpan || 1}
+                            minHeightValue={minRowSpan}
+                            onWidthChange={(value) => store.actions.setProjectBlockSpan(projectId, block.id, value, layoutItemsOverride)}
+                            onHeightChange={(value) => store.actions.setProjectBlockRowSpan(projectId, block.id, value, layoutItemsOverride)}
+                            compact
+                        />
+                    }
+                    actions={
+                        <div className="profile-block-actions">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    store.actions.removeProjectBlock(projectId, block.id);
+                                }}
+                            >
+                                제거
+                            </button>
+                        </div>
+                    }
+                />
             ) : null}
 
             {showTapOverlay ? (
@@ -174,7 +198,11 @@ function BlockShell({
                 </button>
             ) : null}
 
-            {children}
+            <div className="layout-item-body">
+                <div className="layout-item-measure" ref={measureRef}>
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }
@@ -432,6 +460,7 @@ function ProjectCard({
                      }) {
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
+    const [manualPreviewCell, setManualPreviewCell] = useState(null);
 
     const titleKey = `projects.${project.id}.title`;
     const roleKey = `projects.${project.id}.role`;
@@ -449,6 +478,19 @@ function ProjectCard({
     const showProjectDropOverlay = showHelpers && !!draggingProjectId && draggingProjectId !== project.id;
     const projectSelection = getProjectSelectionState(store.selected?.key, project.id);
     const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const blockLayoutMode = project.layoutMode || 'manual';
+    const measuredProjectBlocks = useMeasuredGridItems(project.blocks || [], (block) => block.id);
+    const resolvedProjectBlocks = useMemo(() => {
+        const normalized = blockLayoutMode === 'manual' ? normalizeGridItems(measuredProjectBlocks.resolvedItems) : measuredProjectBlocks.resolvedItems;
+        return normalized;
+    }, [blockLayoutMode, measuredProjectBlocks.resolvedItems]);
+    const blockPreviewPacked = blockLayoutMode === 'packed'
+        ? getPackedPlacementPreview(resolvedProjectBlocks, draggingId, dragOverId)
+        : null;
+    const blockPreviewManual = blockLayoutMode === 'manual' && manualPreviewCell
+        ? getManualPlacementPreview(resolvedProjectBlocks, draggingId, manualPreviewCell.x, manualPreviewCell.y)
+        : null;
+    const blockGridRows = getGridRowExtent(resolvedProjectBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
 
     return (
         <article
@@ -514,7 +556,7 @@ function ProjectCard({
         >
 
             {showHelpers ? (
-                <div className="project-card-toolbar">
+                <div className="project-card-toolbar project-card-toolbar-wrap">
                     <div
                         className="drag-handle"
                         draggable
@@ -545,6 +587,44 @@ function ProjectCard({
                     </div>
 
                     <strong>{project.title || '프로젝트'}</strong>
+
+                    <div className="layout-mode-controls compact no-print">
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${blockLayoutMode === 'manual' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setProjectLayoutMode(project.id, 'manual', resolvedProjectBlocks);
+                                setDragOverId(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            자유형
+                        </button>
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${blockLayoutMode === 'packed' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setProjectLayoutMode(project.id, 'packed', resolvedProjectBlocks);
+                                setDraggingId(null);
+                                setDragOverId(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            정리형
+                        </button>
+                        <button
+                            type="button"
+                            className="layout-mode-action"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.autoArrangeProjectBlocks(project.id, resolvedProjectBlocks);
+                            }}
+                        >
+                            자동 정리
+                        </button>
+                    </div>
                 </div>
             ) : null}
 
@@ -639,8 +719,56 @@ function ProjectCard({
                 )}
             </div>
 
-            <div className="project-block-grid">
-                {(project.blocks || []).map((block) => (
+            <div className={`project-block-grid layout-mode-${blockLayoutMode} ${showHelpers ? 'show-grid-guides' : ''} ${blockLayoutMode === 'manual' && draggingId ? 'manual-placement-active' : ''}`}>
+                {showHelpers ? (
+                    <GridPlacementOverlay
+                        rows={blockGridRows}
+                        preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
+                        active={!!draggingId}
+                        interactive={blockLayoutMode === 'manual' && !!draggingId}
+                        confirmBeforePlace={!!store.ui?.isMobile}
+                        onCellEnter={(cell) => {
+                            if (blockLayoutMode !== 'manual' || !draggingId) return;
+                            setManualPreviewCell(cell);
+                        }}
+                        onCellDrop={(cell) => {
+                            if (blockLayoutMode !== 'manual' || !draggingId) return;
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            setDraggingId(null);
+                            setDragOverId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellClick={(cell, event) => {
+                            if (blockLayoutMode !== 'manual' || !draggingId) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            setDraggingId(null);
+                            setDragOverId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellConfirm={(cell, event) => {
+                            if (blockLayoutMode !== 'manual' || !draggingId) return;
+                            event?.preventDefault?.();
+                            event?.stopPropagation?.();
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            setDraggingId(null);
+                            setDragOverId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onPointerLeave={() => {
+                            if (blockLayoutMode === 'manual') setManualPreviewCell(null);
+                        }}
+                        onCancel={() => {
+                            setManualPreviewCell(null);
+                            setDraggingId(null);
+                            setDragOverId(null);
+                            store.actions.selectPage();
+                        }}
+                    />
+                ) : null}
+
+                {resolvedProjectBlocks.map((block) => (
                     <BlockShell
                         key={block.id}
                         store={store}
@@ -650,6 +778,11 @@ function ProjectCard({
                         dragOverId={dragOverId}
                         setDraggingId={setDraggingId}
                         setDragOverId={setDragOverId}
+                        layoutMode={blockLayoutMode}
+                        placementStyle={getGridItemPlacementStyle(block, blockLayoutMode)}
+                        measureRef={measuredProjectBlocks.registerMeasureRef(block.id)}
+                        minRowSpan={block.minRowSpan || 1}
+                        layoutItemsOverride={resolvedProjectBlocks}
                     >
                         {block.type === 'text' ? (
                             <TextBlock block={block} projectId={project.id} store={store} editable={editable} />

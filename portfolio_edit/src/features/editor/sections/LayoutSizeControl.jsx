@@ -1,135 +1,153 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-
-
-const DROPDOWN_HOST_SELECTOR = [
-    '.profile-layout-item',
-    '.project-block-shell',
-    '.custom-item-shell',
-    '.project-card-inner',
-    '.section-tile',
-    '.timeline-row',
-    '.skill-row',
-].join(', ');
-
-function updateDropdownHostState(rootNode, delta) {
-    if (!rootNode) return () => {};
-    const host = rootNode.closest(DROPDOWN_HOST_SELECTOR);
-    if (!host) return () => {};
-
-    const current = Number(host.dataset.dropdownOpenCount || 0);
-    const next = Math.max(0, current + delta);
-
-    if (next > 0) {
-        host.dataset.dropdownOpenCount = String(next);
-        host.classList.add('dropdown-open-host');
-    } else {
-        delete host.dataset.dropdownOpenCount;
-        host.classList.remove('dropdown-open-host');
-    }
-
-    return () => {
-        const latest = Number(host.dataset.dropdownOpenCount || 0);
-        const reduced = Math.max(0, latest - 1);
-        if (reduced > 0) {
-            host.dataset.dropdownOpenCount = String(reduced);
-        } else {
-            delete host.dataset.dropdownOpenCount;
-            host.classList.remove('dropdown-open-host');
-        }
-    };
+function clampNumber(value, min, max) {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
 }
 
-function MiniDropdown({
-                          label,
-                          value,
-                          options,
-                          onSelect,
-                      }) {
-    const [open, setOpen] = useState(false);
-    const rootRef = useRef(null);
+function LayoutStepper({
+    label,
+    value,
+    min,
+    max,
+    suffix,
+    onChange,
+    compact = false,
+}) {
+    const [draft, setDraft] = useState(String(value));
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (!rootRef.current) return;
-            if (!rootRef.current.contains(event.target)) {
-                setOpen(false);
-            }
-        };
+        setDraft(String(value));
+    }, [value]);
 
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside, { passive: true });
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
-        };
-    }, []);
+    const commitDraft = () => {
+        const parsed = Number(draft);
+        const nextValue = clampNumber(Number.isFinite(parsed) ? parsed : Number(value), min, max);
+        setDraft(String(nextValue));
+        if (nextValue !== value) {
+            onChange(nextValue);
+        }
+    };
 
-    useEffect(() => {
-        if (!open) return undefined;
-        return updateDropdownHostState(rootRef.current, 1);
-    }, [open]);
+    const adjustValue = (delta) => {
+        const nextValue = clampNumber(Number(value) + delta, min, max);
+        setDraft(String(nextValue));
+        if (nextValue !== value) {
+            onChange(nextValue);
+        }
+    };
 
     return (
-        <div className={`mini-dropdown ${open ? 'open' : ''}`} ref={rootRef}>
-            <button
-                type="button"
-                className="mini-dropdown-trigger"
-                onClick={(event) => {
-                    event.stopPropagation();
-                    setOpen((prev) => !prev);
-                }}
-            >
-                <span className="mini-dropdown-label">{label}</span>
-                <span className="mini-dropdown-value">{value}</span>
-                <span className="mini-dropdown-caret">▾</span>
-            </button>
-
-            {open ? (
-                <div
-                    className="mini-dropdown-menu"
-                    onClick={(event) => event.stopPropagation()}
+        <div className={`mini-stepper ${compact ? 'is-compact' : ''}`}>
+            <span className="mini-stepper-label">{label}</span>
+            <div className="mini-stepper-controls">
+                <button
+                    type="button"
+                    className="mini-stepper-button"
+                    onClick={() => adjustValue(-1)}
+                    disabled={value <= min}
+                    aria-label={`${label} 감소`}
                 >
-                    {options.map((option) => (
-                        <button
-                            key={option}
-                            type="button"
-                            className={`mini-dropdown-item ${value === option ? 'active' : ''}`}
-                            onClick={() => {
-                                onSelect(option);
-                                setOpen(false);
-                            }}
-                        >
-                            {option}
-                        </button>
-                    ))}
-                </div>
-            ) : null}
+                    −
+                </button>
+                <input
+                    type="number"
+                    min={min}
+                    max={max}
+                    step="1"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="mini-stepper-input"
+                    value={draft}
+                    onChange={(event) => {
+                        const next = event.target.value;
+                        if (next === '' || /^\d+$/.test(next)) {
+                            setDraft(next);
+                        }
+                    }}
+                    onBlur={commitDraft}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                            event.currentTarget.blur();
+                        }
+                    }}
+                    aria-label={`${label} 수치 입력`}
+                />
+                <span className="mini-stepper-suffix">{suffix}</span>
+                <button
+                    type="button"
+                    className="mini-stepper-button"
+                    onClick={() => adjustValue(1)}
+                    disabled={value >= max}
+                    aria-label={`${label} 증가`}
+                >
+                    +
+                </button>
+            </div>
         </div>
     );
 }
 
 export default function LayoutSizeControl({
-                                              widthValue,
-                                              heightValue,
-                                              widthOptions = [12, 8, 6, 4, 3],
-                                              heightOptions = [1, 2, 3],
-                                              onWidthChange,
-                                              onHeightChange,
-                                          }) {
+    widthValue,
+    heightValue,
+    widthOptions = [12, 8, 6, 4, 3],
+    heightOptions = [1, 2, 3, 4, 5, 6, 7, 8, 10, 12],
+    minWidthValue,
+    minHeightValue,
+    onWidthChange,
+    onHeightChange,
+    compact = false,
+}) {
+    const resolvedMinWidth = Math.max(
+        1,
+        Number.isFinite(Number(minWidthValue)) ? Number(minWidthValue) : Math.min(...widthOptions),
+    );
+    const resolvedMinHeight = Math.max(
+        1,
+        Number.isFinite(Number(minHeightValue)) ? Number(minHeightValue) : Math.min(...heightOptions),
+    );
+
+    const resolvedWidthOptions = useMemo(
+        () => Array.from(new Set([...widthOptions, widthValue, resolvedMinWidth]))
+            .filter((option) => Number.isFinite(Number(option)))
+            .sort((a, b) => Number(a) - Number(b)),
+        [resolvedMinWidth, widthOptions, widthValue],
+    );
+
+    const resolvedHeightOptions = useMemo(
+        () => Array.from(new Set([...heightOptions, heightValue, resolvedMinHeight]))
+            .filter((option) => Number.isFinite(Number(option)))
+            .sort((a, b) => Number(a) - Number(b)),
+        [heightOptions, heightValue, resolvedMinHeight],
+    );
+
+    const maxWidth = Math.max(resolvedMinWidth, ...resolvedWidthOptions);
+    const maxHeight = Math.max(resolvedMinHeight, ...resolvedHeightOptions);
+
     return (
-        <div className="layout-size-control" onClick={(e) => e.stopPropagation()}>
-            <MiniDropdown
-                label="W"
-                value={widthValue}
-                options={widthOptions}
-                onSelect={onWidthChange}
+        <div className={`layout-size-control ${compact ? 'is-compact' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className="layout-size-meta">
+                <span className="layout-size-footprint">현재 {widthValue} × {heightValue}</span>
+                <span className="layout-size-min">최소 {resolvedMinWidth} × {resolvedMinHeight}</span>
+            </div>
+            <LayoutStepper
+                label="가로"
+                value={Number(widthValue)}
+                min={resolvedMinWidth}
+                max={maxWidth}
+                suffix="칸"
+                compact={compact}
+                onChange={onWidthChange}
             />
-            <MiniDropdown
-                label="H"
-                value={heightValue}
-                options={heightOptions}
-                onSelect={onHeightChange}
+            <LayoutStepper
+                label="세로"
+                value={Number(heightValue)}
+                min={resolvedMinHeight}
+                max={maxHeight}
+                suffix="줄"
+                compact={compact}
+                onChange={onHeightChange}
             />
         </div>
     );

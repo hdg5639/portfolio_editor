@@ -5,6 +5,7 @@ import {
     createComplexCustomItem, createTextBlock, createListBlock, createImageBlock,
     defaultStyle,
 } from './defaultPortfolio.js';
+import { normalizeGridItems } from './layoutGrid.js';
 
 export const MOBILE_BREAKPOINT = 920;
 
@@ -74,6 +75,11 @@ export function moveBefore(list, draggedKey, targetKey, keyName = 'key') {
     return next;
 }
 
+function stripTransientGridState(item) {
+    if (!item || typeof item !== 'object') return item;
+    const { minRowSpan, ...rest } = item;
+    return rest;
+}
 
 
 function matchesSelectionScope(selectedKey, prefix) {
@@ -234,15 +240,19 @@ export function syncCustomSections(portfolio) {
 export function migratePortfolio(rawPortfolio) {
     const next = syncCustomSections(rawPortfolio || defaultPortfolio);
 
+    next.profile.layoutMode = next.profile.layoutMode || 'manual';
+
     if (!next.profile.layout || !Array.isArray(next.profile.layout) || !next.profile.layout.length) {
         next.profile.layout = defaultProfileBlocks();
     } else {
         const defaults = defaultProfileBlocks();
         const existingMap = new Map(next.profile.layout.map((item) => [item.key, item]));
-        next.profile.layout = defaults.map((item) => ({
-            ...item,
-            ...(existingMap.get(item.key) || {}),
-        }));
+        next.profile.layout = normalizeGridItems(
+            defaults.map((item) => ({
+                ...item,
+                ...stripTransientGridState(existingMap.get(item.key) || {}),
+            }))
+        );
     }
 
     next.styles = next.styles || {};
@@ -325,11 +335,12 @@ export function migratePortfolio(rawPortfolio) {
 
     next.projects = (next.projects || []).map((project) => ({
         ...project,
-        blocks: (project.blocks || []).map((block) => ({
+        layoutMode: project.layoutMode || 'manual',
+        blocks: normalizeGridItems((project.blocks || []).map((block) => ({
             colSpan: 12,
             rowSpan: 1,
-            ...block,
-        })),
+            ...stripTransientGridState(block),
+        }))),
     }));
 
     next.customSections = (next.customSections || []).map((section) => ({
@@ -356,12 +367,13 @@ export function migratePortfolio(rawPortfolio) {
                     subtitle: base.subtitle || '부제목 / 담당 역할',
                     date: base.date || '2026.01 ~ 2026.03',
                     summary: base.summary || base.description || '복합 프로젝트 요약을 입력하세요.',
+                    layoutMode: base.layoutMode || 'manual',
                     techStack: Array.isArray(base.techStack)
                         ? base.techStack
                         : Array.isArray(base.tags)
                             ? base.tags
                             : ['React', 'Spring'],
-                    blocks: [
+                    blocks: normalizeGridItems([
                         {
                             ...createTextBlock(),
                             title: '상세 설명',
@@ -389,18 +401,19 @@ export function migratePortfolio(rawPortfolio) {
                             colSpan: 8,
                             rowSpan: 1,
                         },
-                    ],
+                    ]),
                 };
             }
 
             return {
                 ...base,
+                layoutMode: base.layoutMode || 'manual',
                 techStack: Array.isArray(base.techStack) ? base.techStack : [],
-                blocks: (base.blocks || []).map((block) => ({
+                blocks: normalizeGridItems((base.blocks || []).map((block) => ({
                     colSpan: 12,
                     rowSpan: 1,
-                    ...block,
-                })),
+                    ...stripTransientGridState(block),
+                }))),
             };
         }),
     }));

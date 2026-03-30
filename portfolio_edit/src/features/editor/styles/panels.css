@@ -535,8 +535,8 @@
 }
 
 .mobile-bottom-dock-inner {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    display: flex;
+    align-items: stretch;
     gap: 8px;
     padding: 8px;
     border-radius: 22px;
@@ -545,6 +545,15 @@
     backdrop-filter: blur(16px);
     box-shadow: 0 18px 48px rgba(17, 12, 5, 0.16);
     pointer-events: auto;
+}
+
+.mobile-bottom-dock-tools {
+    --tool-count: 4;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--tool-count), minmax(0, 1fr));
+    gap: 8px;
 }
 
 .mobile-dock-button {
@@ -556,6 +565,10 @@
     font-size: 12px;
     font-weight: 700;
     color: #5f584f;
+}
+
+.mobile-dock-button-mode {
+    flex: 0 0 78px;
 }
 
 .mobile-dock-button.active {

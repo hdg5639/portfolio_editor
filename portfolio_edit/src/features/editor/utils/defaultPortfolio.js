@@ -1,3 +1,5 @@
+import { autoPlaceGridItems } from './layoutGrid.js';
+
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const defaultStyle = () => ({
@@ -57,11 +59,12 @@ export const createProject = () => ({
   summary: '프로젝트 요약을 입력하세요.',
   techStack: ['React', 'Spring Boot'],
   link: 'https://github.com/',
-  blocks: [
+  layoutMode: 'manual',
+  blocks: autoPlaceGridItems([
     { ...createTextBlock(), colSpan: 8, rowSpan: 1 },
     { ...createListBlock(), colSpan: 4, rowSpan: 2 },
     { ...createImageBlock(), colSpan: 8, rowSpan: 1 },
-  ],
+  ]),
 });
 
 export const createComplexCustomItem = () => ({
@@ -74,11 +77,12 @@ export const createComplexCustomItem = () => ({
   link: 'https://example.com',
   colSpan: 6,
   rowSpan: 1,
-  blocks: [
+  layoutMode: 'manual',
+  blocks: autoPlaceGridItems([
     { ...createTextBlock(), colSpan: 8, rowSpan: 1 },
     { ...createListBlock(), colSpan: 4, rowSpan: 2 },
     { ...createImageBlock(), colSpan: 8, rowSpan: 1 },
-  ],
+  ]),
 });
 
 export const createSkill = () => ({
@@ -146,13 +150,13 @@ export const createCustomSection = ({
   items: [createCustomSectionItem(template)],
 });
 
-export const defaultProfileBlocks = () => [
+export const defaultProfileBlocks = () => autoPlaceGridItems([
   { key: 'image', colSpan: 3, rowSpan: 2, visible: true, label: '프로필 이미지' },
   { key: 'quote', colSpan: 8, rowSpan: 1, visible: true, label: '한 줄 메시지' },
   { key: 'contacts', colSpan: 4, rowSpan: 1, visible: true, label: '연락처' },
   { key: 'identity', colSpan: 8, rowSpan: 1, visible: true, label: '이름 / 직무' },
   { key: 'intro', colSpan: 12, rowSpan: 1, visible: true, label: '자기소개' },
-];
+]);
 
 export const defaultSectionLayout = () => [
   { key: 'profile', span: 12, rowSpan: 1, label: '프로필', kind: 'base' },
@@ -173,6 +177,7 @@ export const defaultPortfolio = {
     intro:
         '사용자 경험과 운영 안정성을 함께 고려하며 서비스를 설계하는 개발자입니다. 프론트엔드와 백엔드를 넘나들며 기능 구현뿐 아니라 구조 개선, 성능 최적화, 유지보수성까지 함께 고민해왔습니다.',
     image: '',
+    layoutMode: 'manual',
     layout: defaultProfileBlocks(),
   },
 

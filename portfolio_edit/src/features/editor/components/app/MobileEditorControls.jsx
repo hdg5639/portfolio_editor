@@ -9,11 +9,11 @@ import {
 } from '../../constants/editorTools';
 import { getSelectionTypeLabel } from '../../utils/storeHelpers';
 
-function MobileDockButton({ active, label, onClick, emphasized = false }) {
+function MobileDockButton({ active, label, onClick, emphasized = false, className = '' }) {
   return (
     <button
       type="button"
-      className={`mobile-dock-button ${active ? 'active' : ''} ${emphasized ? 'emphasized' : ''}`}
+      className={`mobile-dock-button ${active ? 'active' : ''} ${emphasized ? 'emphasized' : ''} ${className}`}
       onClick={onClick}
     >
       <span>{label}</span>
@@ -133,35 +133,39 @@ export function MobileBottomDock({ store }) {
   return (
     <div className="mobile-bottom-dock no-print">
       <div className="mobile-bottom-dock-inner">
-        {tools.map((tool) => {
-          const isActive = ui.mobileSheetOpen && (isLayout ? ui.mobileLayoutTool === tool.key : ui.mobileStyleTool === tool.key);
+        <div className="mobile-bottom-dock-tools" style={{ '--tool-count': tools.length }}>
+          {tools.map((tool) => {
+            const isActive = ui.mobileSheetOpen && (isLayout ? ui.mobileLayoutTool === tool.key : ui.mobileStyleTool === tool.key);
 
-          return (
-            <MobileDockButton
-              key={tool.key}
-              active={isActive}
-              label={tool.label}
-              onClick={() => {
-                if (isActive) {
-                  actions.toggleMobileSheet(false);
-                  return;
-                }
+            return (
+              <MobileDockButton
+                key={tool.key}
+                active={isActive}
+                label={tool.label}
+                className="mobile-dock-button-tool"
+                onClick={() => {
+                  if (isActive) {
+                    actions.toggleMobileSheet(false);
+                    return;
+                  }
 
-                if (isLayout) {
-                  actions.setMobileLayoutTool(tool.key);
-                  return;
-                }
+                  if (isLayout) {
+                    actions.setMobileLayoutTool(tool.key);
+                    return;
+                  }
 
-                actions.setMobileStyleTool(tool.key);
-              }}
-            />
-          );
-        })}
+                  actions.setMobileStyleTool(tool.key);
+                }}
+              />
+            );
+          })}
+        </div>
 
         <MobileDockButton
-          active={false}
-          label={isLayout ? '스타일' : '구성'}
+          active
+          label={isLayout ? '구성' : '스타일'}
           emphasized
+          className="mobile-dock-button-mode"
           onClick={() => actions.setMobileEditorMode(isLayout ? 'style' : 'layout')}
         />
       </div>

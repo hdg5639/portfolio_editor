@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { clone, moveBefore, syncCustomSections } from '../../utils/storeHelpers';
+import { autoPlaceGridItems, mergeGridDraftIntoSource, normalizeGridItems, placeManualGridItem, sortGridItemsByPosition } from '../../utils/layoutGrid.js';
 import { createTextBlock, createListBlock, createImageBlock, createCustomSection, createCustomSectionItem } from '../../utils/defaultPortfolio';
 
 export function useCustomSectionActions(setPortfolio, portfolio) {
@@ -94,11 +95,52 @@ export function useCustomSectionActions(setPortfolio, portfolio) {
             })),
 
         // 복합 커스텀 블록 (Complex) 조작 로직
+        setCustomComplexLayoutMode: (sectionId, itemId, layoutMode, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                customSections: prev.customSections.map((section) =>
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) => {
+                                if (item.id !== itemId) return item;
+                                const sourceBlocks = item.blocks || [];
+                                const draftBlocks = blockItemsOverride || sourceBlocks;
+                                const laidOut = layoutMode === 'packed'
+                                    ? sortGridItemsByPosition(draftBlocks)
+                                    : autoPlaceGridItems(draftBlocks);
+                                return {
+                                    ...item,
+                                    layoutMode,
+                                    blocks: mergeGridDraftIntoSource(sourceBlocks, laidOut),
+                                };
+                            }),
+                        }
+                        : section
+                ),
+            })),
+        autoArrangeCustomComplexBlocks: (sectionId, itemId, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                customSections: prev.customSections.map((section) =>
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) => {
+                                if (item.id !== itemId) return item;
+                                const sourceBlocks = item.blocks || [];
+                                const laidOut = autoPlaceGridItems(blockItemsOverride || sourceBlocks);
+                                return { ...item, blocks: mergeGridDraftIntoSource(sourceBlocks, laidOut) };
+                            }),
+                        }
+                        : section
+                ),
+            })),
         addCustomComplexBlock: (sectionId, itemId, type) =>
             setPortfolio((prev) => ({
                 ...prev,
                 customSections: prev.customSections.map((section) =>
-                    section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: [...(item.blocks || []), type === 'text' ? createTextBlock() : type === 'list' ? createListBlock() : createImageBlock()] } : item) } : section
+                    section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: normalizeGridItems([...(item.blocks || []), type === 'text' ? createTextBlock() : type === 'list' ? createListBlock() : createImageBlock()]) } : item) } : section
                 ),
             })),
         moveCustomComplexBlock: (sectionId, itemId, draggedBlockId, targetBlockId) =>
@@ -108,18 +150,56 @@ export function useCustomSectionActions(setPortfolio, portfolio) {
                     section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: moveBefore(item.blocks || [], draggedBlockId, targetBlockId, 'id') } : item) } : section
                 ),
             })),
-        setCustomComplexBlockSpan: (sectionId, itemId, blockId, colSpan) =>
+        placeCustomComplexBlock: (sectionId, itemId, draggedBlockId, gridX, gridY, blockItemsOverride = null) =>
             setPortfolio((prev) => ({
                 ...prev,
                 customSections: prev.customSections.map((section) =>
-                    section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: (item.blocks || []).map((block) => block.id === blockId ? { ...block, colSpan } : block) } : item) } : section
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) => {
+                                if (item.id !== itemId) return item;
+                                const sourceBlocks = item.blocks || [];
+                                const draftBlocks = blockItemsOverride || sourceBlocks;
+                                const placed = placeManualGridItem(draftBlocks, draggedBlockId, gridX, gridY);
+                                return { ...item, blocks: mergeGridDraftIntoSource(sourceBlocks, placed) };
+                            }),
+                        }
+                        : section
                 ),
             })),
-        setCustomComplexBlockRowSpan: (sectionId, itemId, blockId, rowSpan) =>
+        setCustomComplexBlockSpan: (sectionId, itemId, blockId, colSpan, blockItemsOverride = null) =>
             setPortfolio((prev) => ({
                 ...prev,
                 customSections: prev.customSections.map((section) =>
-                    section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: (item.blocks || []).map((block) => block.id === blockId ? { ...block, rowSpan } : block) } : item) } : section
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) => {
+                                if (item.id !== itemId) return item;
+                                const sourceBlocks = item.blocks || [];
+                                const draftBlocks = normalizeGridItems((blockItemsOverride || sourceBlocks).map((block) => block.id === blockId ? { ...block, colSpan } : block));
+                                return { ...item, blocks: mergeGridDraftIntoSource(sourceBlocks, draftBlocks, { copySpanIds: [blockId] }) };
+                            }),
+                        }
+                        : section
+                ),
+            })),
+        setCustomComplexBlockRowSpan: (sectionId, itemId, blockId, rowSpan, blockItemsOverride = null) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                customSections: prev.customSections.map((section) =>
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) => {
+                                if (item.id !== itemId) return item;
+                                const sourceBlocks = item.blocks || [];
+                                const draftBlocks = normalizeGridItems((blockItemsOverride || sourceBlocks).map((block) => block.id === blockId ? { ...block, rowSpan } : block));
+                                return { ...item, blocks: mergeGridDraftIntoSource(sourceBlocks, draftBlocks, { copySpanIds: [blockId] }) };
+                            }),
+                        }
+                        : section
                 ),
             })),
         updateCustomComplexBlock: (sectionId, itemId, blockId, field, value) =>

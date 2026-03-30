@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
+import LayoutChrome from '../components/LayoutChrome.jsx';
+import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getCustomItemSelectionState, getCustomBlockSelectionState } from '../utils/storeHelpers';
+import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
+import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -162,38 +166,44 @@ function ItemShell({
         >
 
             {showHelpers ? (
-                <div className="project-block-toolbar">
-                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
-                        if (!useTapReorder) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setDraggingId((current) => (current === item.id ? null : item.id));
-                        setDragOverId(null);
-                    }}>
-                        ⋮⋮
-                    </div>
-
-                    <strong>{item.title || '아이템'}</strong>
-
-                    <LayoutSizeControl
-                        widthValue={item.colSpan || 6}
-                        heightValue={item.rowSpan || 1}
-                        onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
-                        onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
-                    />
-
-                    <div className="profile-block-actions">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                store.actions.removeCustomSectionItem(sectionId, item.id);
-                            }}
-                        >
-                            제거
-                        </button>
-                    </div>
-                </div>
+                <LayoutChrome
+                    label={item.title || '아이템'}
+                    summary={`${item.colSpan || 6} × ${item.rowSpan || 1}`}
+                    defaultExpanded={!store.ui?.isMobile}
+                    dragHandle={
+                        <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
+                            if (!useTapReorder) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDraggingId((current) => (current === item.id ? null : item.id));
+                            setDragOverId(null);
+                        }}>
+                            ⋮⋮
+                        </div>
+                    }
+                    controls={
+                        <LayoutSizeControl
+                            widthValue={item.colSpan || 6}
+                            heightValue={item.rowSpan || 1}
+                            onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
+                            onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
+                            compact
+                        />
+                    }
+                    actions={
+                        <div className="profile-block-actions">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    store.actions.removeCustomSectionItem(sectionId, item.id);
+                                }}
+                            >
+                                제거
+                            </button>
+                        </div>
+                    }
+                />
             ) : null}
 
             {showTapOverlay ? (
@@ -202,13 +212,9 @@ function ItemShell({
                 </button>
             ) : null}
 
-            {showTapOverlay ? (
-                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
-                    여기로 이동
-                </button>
-            ) : null}
-
-            {children}
+            <div className="layout-item-body">
+                {children}
+            </div>
         </div>
     );
 }
@@ -222,15 +228,20 @@ function ComplexBlockShell({
                                dragOverId,
                                setDraggingId,
                                setDragOverId,
+                               layoutMode,
+                               placementStyle,
+                               measureRef,
+                               minRowSpan,
+                               layoutItemsOverride,
                                children,
                            }) {
     const editable = store.mode === 'edit';
     const showHelpers = editable && store.ui.showEditHelpers;
     const isDragging = draggingId === block.id;
-    const isDragOver = dragOverId === block.id && draggingId !== block.id;
+    const isDragOver = layoutMode === 'packed' && dragOverId === block.id && draggingId !== block.id;
     const blockSelection = getCustomBlockSelectionState(store.selected?.key, sectionId, itemId, block.id);
     const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== block.id;
+    const showTapOverlay = layoutMode === 'packed' && useTapReorder && !!draggingId && draggingId !== block.id;
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -241,14 +252,14 @@ function ComplexBlockShell({
     };
 
     const onDragOver = (event) => {
-        if (!showHelpers || !draggingId) return;
+        if (layoutMode !== 'packed' || !showHelpers || !draggingId) return;
         event.preventDefault();
         event.stopPropagation();
         if (dragOverId !== block.id) setDragOverId(block.id);
     };
 
     const onDrop = (event) => {
-        if (!showHelpers) return;
+        if (layoutMode !== 'packed' || !showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
         const dragged = event.dataTransfer.getData('text/plain') || draggingId;
@@ -269,7 +280,7 @@ function ComplexBlockShell({
         if (!showTapOverlay) return false;
         event.preventDefault();
         event.stopPropagation();
-        store.actions.moveCustomSectionItem(sectionId, draggingId, item.id);
+        store.actions.moveCustomComplexBlock(sectionId, itemId, draggingId, block.id);
         setDraggingId(null);
         setDragOverId(null);
         return true;
@@ -277,9 +288,10 @@ function ComplexBlockShell({
 
     return (
         <div
-            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
+            style={placementStyle}
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
@@ -291,45 +303,69 @@ function ComplexBlockShell({
         >
 
             {showHelpers ? (
-                <div className="project-block-toolbar">
-                    <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
-                        if (!useTapReorder) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setDraggingId((current) => (current === item.id ? null : item.id));
-                        setDragOverId(null);
-                    }}>
-                        ⋮⋮
-                    </div>
-
-                    <strong>{block.type} · {block.title}</strong>
-
-                    <LayoutSizeControl
-                        widthValue={block.colSpan || 12}
-                        heightValue={block.rowSpan || 1}
-                        onWidthChange={(value) =>
-                            store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value)
-                        }
-                        onHeightChange={(value) =>
-                            store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value)
-                        }
-                    />
-
-                    <div className="profile-block-actions">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                store.actions.removeCustomComplexBlock(sectionId, itemId, block.id);
-                            }}
-                        >
-                            제거
-                        </button>
-                    </div>
-                </div>
+                <LayoutChrome
+                    label={`${block.type} · ${block.title}`}
+                    summary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
+                    defaultExpanded={!store.ui?.isMobile}
+                    dragHandle={
+                        <div className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`} draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
+                            if (layoutMode === 'manual') {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setDraggingId((current) => (current === block.id ? null : block.id));
+                                setDragOverId(null);
+                                return;
+                            }
+                            if (!useTapReorder) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDraggingId((current) => (current === block.id ? null : block.id));
+                            setDragOverId(null);
+                        }}>
+                            ⋮⋮
+                        </div>
+                    }
+                    controls={
+                        <LayoutSizeControl
+                            widthValue={block.colSpan || 12}
+                            heightValue={block.rowSpan || 1}
+                            minHeightValue={minRowSpan}
+                            onWidthChange={(value) =>
+                                store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value, layoutItemsOverride)
+                            }
+                            onHeightChange={(value) =>
+                                store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value, layoutItemsOverride)
+                            }
+                            compact
+                        />
+                    }
+                    actions={
+                        <div className="profile-block-actions">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    store.actions.removeCustomComplexBlock(sectionId, itemId, block.id);
+                                }}
+                            >
+                                제거
+                            </button>
+                        </div>
+                    }
+                />
             ) : null}
 
-            {children}
+            {showTapOverlay ? (
+                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+                    여기로 이동
+                </button>
+            ) : null}
+
+            <div className="layout-item-body">
+                <div className="layout-item-measure" ref={measureRef}>
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }
@@ -550,15 +586,72 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable}) {
 function ComplexProjectItem({ sectionId, item, store, editable }) {
     const [draggingBlockId, setDraggingBlockId] = useState(null);
     const [dragOverBlockId, setDragOverBlockId] = useState(null);
+    const [manualPreviewCell, setManualPreviewCell] = useState(null);
 
     const titleKey = `custom.${sectionId}.${item.id}.title`;
     const subtitleKey = `custom.${sectionId}.${item.id}.subtitle`;
     const dateKey = `custom.${sectionId}.${item.id}.date`;
     const summaryKey = `custom.${sectionId}.${item.id}.summary`;
     const linkKey = `custom.${sectionId}.${item.id}.link`;
+    const blockLayoutMode = item.layoutMode || 'manual';
+    const measuredComplexBlocks = useMeasuredGridItems(item.blocks || [], (block) => block.id);
+    const resolvedComplexBlocks = useMemo(() => {
+        const normalized = blockLayoutMode === 'manual' ? normalizeGridItems(measuredComplexBlocks.resolvedItems) : measuredComplexBlocks.resolvedItems;
+        return normalized;
+    }, [blockLayoutMode, measuredComplexBlocks.resolvedItems]);
+    const blockPreviewPacked = blockLayoutMode === 'packed'
+        ? getPackedPlacementPreview(resolvedComplexBlocks, draggingBlockId, dragOverBlockId)
+        : null;
+    const blockPreviewManual = blockLayoutMode === 'manual' && manualPreviewCell
+        ? getManualPlacementPreview(resolvedComplexBlocks, draggingBlockId, manualPreviewCell.x, manualPreviewCell.y)
+        : null;
+    const blockGridRows = getGridRowExtent(resolvedComplexBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
 
     return (
         <article className="portfolio-card project-card-inner">
+            {editable ? (
+                <div className="project-card-toolbar project-card-toolbar-wrap no-print">
+                    <strong>{item.title || '복합 프로젝트'}</strong>
+
+                    <div className="layout-mode-controls compact">
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${blockLayoutMode === 'manual' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setCustomComplexLayoutMode(sectionId, item.id, 'manual', resolvedComplexBlocks);
+                                setDragOverBlockId(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            자유형
+                        </button>
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${blockLayoutMode === 'packed' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setCustomComplexLayoutMode(sectionId, item.id, 'packed', resolvedComplexBlocks);
+                                setDraggingBlockId(null);
+                                setDragOverBlockId(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            정리형
+                        </button>
+                        <button
+                            type="button"
+                            className="layout-mode-action"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.autoArrangeCustomComplexBlocks(sectionId, item.id, resolvedComplexBlocks);
+                            }}
+                        >
+                            자동 정리
+                        </button>
+                    </div>
+                </div>
+            ) : null}
             <div className="project-top-meta">
                 {editable ? (
                     <>
@@ -661,8 +754,56 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                 </div>
             )}
 
-            <div className="project-block-grid">
-                {(item.blocks || []).map((block) => (
+            <div className={`project-block-grid layout-mode-${blockLayoutMode} ${editable && store.ui.showEditHelpers ? 'show-grid-guides' : ''} ${blockLayoutMode === 'manual' && draggingBlockId ? 'manual-placement-active' : ''}`}>
+                {editable && store.ui.showEditHelpers ? (
+                    <GridPlacementOverlay
+                        rows={blockGridRows}
+                        preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
+                        active={!!draggingBlockId}
+                        interactive={blockLayoutMode === 'manual' && !!draggingBlockId}
+                        confirmBeforePlace={!!store.ui?.isMobile}
+                        onCellEnter={(cell) => {
+                            if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
+                            setManualPreviewCell(cell);
+                        }}
+                        onCellDrop={(cell) => {
+                            if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            setDraggingBlockId(null);
+                            setDragOverBlockId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellClick={(cell, event) => {
+                            if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            setDraggingBlockId(null);
+                            setDragOverBlockId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellConfirm={(cell, event) => {
+                            if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
+                            event?.preventDefault?.();
+                            event?.stopPropagation?.();
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            setDraggingBlockId(null);
+                            setDragOverBlockId(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onPointerLeave={() => {
+                            if (blockLayoutMode === 'manual') setManualPreviewCell(null);
+                        }}
+                        onCancel={() => {
+                            setManualPreviewCell(null);
+                            setDraggingBlockId(null);
+                            setDragOverBlockId(null);
+                            store.actions.selectPage();
+                        }}
+                    />
+                ) : null}
+
+                {resolvedComplexBlocks.map((block) => (
                     <ComplexBlockShell
                         key={block.id}
                         store={store}
@@ -673,6 +814,11 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         dragOverId={dragOverBlockId}
                         setDraggingId={setDraggingBlockId}
                         setDragOverId={setDragOverBlockId}
+                        layoutMode={blockLayoutMode}
+                        placementStyle={getGridItemPlacementStyle(block, blockLayoutMode)}
+                        measureRef={measuredComplexBlocks.registerMeasureRef(block.id)}
+                        minRowSpan={block.minRowSpan || 1}
+                        layoutItemsOverride={resolvedComplexBlocks}
                     >
                         {block.type === 'text' ? (
                             <ComplexTextBlock

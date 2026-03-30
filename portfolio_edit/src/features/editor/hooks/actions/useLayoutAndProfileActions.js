@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { updateById, moveBefore } from '../../utils/storeHelpers';
+import { autoPlaceGridItems, mergeGridDraftIntoSource, normalizeGridItems, placeManualGridItem, sortGridItemsByPosition } from '../../utils/layoutGrid.js';
 import { createSkill, createTimelineItem } from '../../utils/defaultPortfolio';
 
 export function useLayoutAndProfileActions(setPortfolio) {
@@ -37,21 +38,74 @@ export function useLayoutAndProfileActions(setPortfolio) {
         // 프로필 조작
         updateProfile: (field, value) =>
             setPortfolio((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } })),
+        setProfileLayoutMode: (layoutMode, layoutItemsOverride = null) =>
+            setPortfolio((prev) => {
+                const sourceItems = prev.profile.layout || [];
+                const draftItems = layoutItemsOverride || sourceItems;
+                const laidOut =
+                    layoutMode === 'packed'
+                        ? sortGridItemsByPosition(draftItems)
+                        : autoPlaceGridItems(draftItems);
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        layoutMode,
+                        layout: mergeGridDraftIntoSource(sourceItems, laidOut),
+                    },
+                };
+            }),
+        autoArrangeProfileBlocks: (layoutItemsOverride = null) =>
+            setPortfolio((prev) => {
+                const sourceItems = prev.profile.layout || [];
+                const laidOut = autoPlaceGridItems(layoutItemsOverride || sourceItems);
+                return {
+                    ...prev,
+                    profile: { ...prev.profile, layout: mergeGridDraftIntoSource(sourceItems, laidOut) },
+                };
+            }),
         moveProfileBlock: (draggedKey, targetKey) =>
             setPortfolio((prev) => ({
                 ...prev,
                 profile: { ...prev.profile, layout: moveBefore(prev.profile.layout, draggedKey, targetKey, 'key') },
             })),
-        setProfileBlockSpan: (key, colSpan) =>
-            setPortfolio((prev) => ({
-                ...prev,
-                profile: { ...prev.profile, layout: prev.profile.layout.map((item) => item.key === key ? { ...item, colSpan } : item) },
-            })),
-        setProfileBlockRowSpan: (key, rowSpan) =>
-            setPortfolio((prev) => ({
-                ...prev,
-                profile: { ...prev.profile, layout: prev.profile.layout.map((item) => item.key === key ? { ...item, rowSpan } : item) },
-            })),
+        placeProfileBlock: (draggedKey, gridX, gridY, layoutItemsOverride = null) =>
+            setPortfolio((prev) => {
+                const sourceItems = prev.profile.layout || [];
+                const draftItems = layoutItemsOverride || sourceItems;
+                const placed = placeManualGridItem(draftItems, draggedKey, gridX, gridY);
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        layout: mergeGridDraftIntoSource(sourceItems, placed),
+                    },
+                };
+            }),
+        setProfileBlockSpan: (key, colSpan, layoutItemsOverride = null) =>
+            setPortfolio((prev) => {
+                const sourceItems = prev.profile.layout || [];
+                const draftItems = normalizeGridItems((layoutItemsOverride || sourceItems).map((item) => item.key === key ? { ...item, colSpan } : item));
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        layout: mergeGridDraftIntoSource(sourceItems, draftItems, { copySpanIds: [key] }),
+                    },
+                };
+            }),
+        setProfileBlockRowSpan: (key, rowSpan, layoutItemsOverride = null) =>
+            setPortfolio((prev) => {
+                const sourceItems = prev.profile.layout || [];
+                const draftItems = normalizeGridItems((layoutItemsOverride || sourceItems).map((item) => item.key === key ? { ...item, rowSpan } : item));
+                return {
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        layout: mergeGridDraftIntoSource(sourceItems, draftItems, { copySpanIds: [key] }),
+                    },
+                };
+            }),
         toggleProfileBlock: (key) =>
             setPortfolio((prev) => ({
                 ...prev,

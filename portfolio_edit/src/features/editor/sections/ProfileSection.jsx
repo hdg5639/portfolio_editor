@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
+import LayoutChrome from '../components/LayoutChrome.jsx';
+import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getProfileBlockSelectionState } from '../utils/storeHelpers';
+import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
+import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 
 function bind(store, key, label) {
     return {
@@ -93,15 +97,20 @@ function ProfileBlockShell({
                                dragOverKey,
                                setDraggingKey,
                                setDragOverKey,
+                               layoutMode,
+                               placementStyle,
+                               measureRef,
+                               minRowSpan,
+                               layoutItemsOverride,
                                children,
                            }) {
     const isEdit = store.mode === 'edit';
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const isDragging = draggingKey === blockKey;
-    const isDragOver = dragOverKey === blockKey && draggingKey !== blockKey;
+    const isDragOver = layoutMode === 'packed' && dragOverKey === blockKey && draggingKey !== blockKey;
     const blockSelection = getProfileBlockSelectionState(store.selected?.key, blockKey);
     const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = useTapReorder && !!draggingKey && draggingKey !== blockKey;
+    const showTapOverlay = layoutMode === 'packed' && useTapReorder && !!draggingKey && draggingKey !== blockKey;
 
     const handleDragStart = (event) => {
         if (!showHelpers) return;
@@ -112,7 +121,7 @@ function ProfileBlockShell({
     };
 
     const handleDragOver = (event) => {
-        if (!showHelpers || !draggingKey) return;
+        if (layoutMode !== 'packed' || !showHelpers || !draggingKey) return;
         event.preventDefault();
         event.stopPropagation();
         event.dataTransfer.dropEffect = 'move';
@@ -120,7 +129,7 @@ function ProfileBlockShell({
     };
 
     const handleDrop = (event) => {
-        if (!showHelpers) return;
+        if (layoutMode !== 'packed' || !showHelpers) return;
         event.preventDefault();
         event.stopPropagation();
 
@@ -151,9 +160,10 @@ function ProfileBlockShell({
 
     return (
         <div
-            className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} ${isDragging ? 'dragging' : ''} ${
+            className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} layout-mode-${layoutMode} ${isDragging ? 'dragging' : ''} ${
                 isDragOver ? 'drag-over' : ''
             } ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
+            style={placementStyle}
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
@@ -165,45 +175,60 @@ function ProfileBlockShell({
         >
 
             {showHelpers ? (
-                <div className="profile-block-toolbar no-print">
-                    <div
-                        className="drag-handle"
-                        title="드래그해서 위치 이동"
-                        draggable
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                        onClick={(event) => {
-                            if (!useTapReorder) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setDraggingKey((current) => (current === blockKey ? null : blockKey));
-                            setDragOverKey(null);
-                        }}
-                    >
-                        ⋮⋮
-                    </div>
+                <LayoutChrome
+                    label={label}
+                    summary={`${colSpan} × ${rowSpan}`}
+                    defaultExpanded={!store.ui?.isMobile}
+                    dragHandle={
+                        <div
+                            className={`drag-handle ${layoutMode === 'manual' && draggingKey === blockKey ? 'is-armed' : ''}`}
+                            title={layoutMode === 'manual' ? '드래그 후 격자 위치 선택' : '드래그해서 순서 이동'}
+                            draggable
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                            onClick={(event) => {
+                                if (layoutMode === 'manual') {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setDraggingKey((current) => (current === blockKey ? null : blockKey));
+                                    setDragOverKey(null);
+                                    return;
+                                }
 
-                    <strong>{label}</strong>
-
-                    <LayoutSizeControl
-                        widthValue={colSpan}
-                        heightValue={rowSpan}
-                        onWidthChange={(value) => store.actions.setProfileBlockSpan(blockKey, value)}
-                        onHeightChange={(value) => store.actions.setProfileBlockRowSpan(blockKey, value)}
-                    />
-
-                    <div className="profile-block-actions">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                store.actions.toggleProfileBlock(blockKey);
+                                if (!useTapReorder) return;
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setDraggingKey((current) => (current === blockKey ? null : blockKey));
+                                setDragOverKey(null);
                             }}
                         >
-                            숨김
-                        </button>
-                    </div>
-                </div>
+                            ⋮⋮
+                        </div>
+                    }
+                    controls={
+                        <LayoutSizeControl
+                            widthValue={colSpan}
+                            heightValue={rowSpan}
+                            minHeightValue={minRowSpan}
+                            onWidthChange={(value) => store.actions.setProfileBlockSpan(blockKey, value, layoutItemsOverride)}
+                            onHeightChange={(value) => store.actions.setProfileBlockRowSpan(blockKey, value, layoutItemsOverride)}
+                            compact
+                        />
+                    }
+                    actions={
+                        <div className="profile-block-actions">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    store.actions.toggleProfileBlock(blockKey);
+                                }}
+                            >
+                                숨김
+                            </button>
+                        </div>
+                    }
+                />
             ) : null}
 
             {showTapOverlay ? (
@@ -212,7 +237,11 @@ function ProfileBlockShell({
                 </button>
             ) : null}
 
-            {children}
+            <div className="layout-item-body">
+                <div className="layout-item-measure" ref={measureRef}>
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }
@@ -225,8 +254,27 @@ export default function ProfileSection({ store }) {
 
     const [draggingKey, setDraggingKey] = useState(null);
     const [dragOverKey, setDragOverKey] = useState(null);
+    const [manualPreviewCell, setManualPreviewCell] = useState(null);
 
-    const visibleBlocks = (profile.layout || []).filter((item) => item.visible !== false);
+    const layoutMode = profile.layoutMode || 'manual';
+    const showHelpers = isEdit && store.ui.showEditHelpers;
+    const measuredProfileLayout = useMeasuredGridItems(profile.layout || [], (item) => item.key);
+    const resolvedProfileLayout = useMemo(() => {
+        const visible = measuredProfileLayout.resolvedItems.filter((item) => item.visible !== false);
+        const normalizedVisible = layoutMode === 'manual' ? normalizeGridItems(visible) : visible;
+        const visibleByKey = new Map(normalizedVisible.map((item) => [item.key, item]));
+        return measuredProfileLayout.resolvedItems.map((item) =>
+            item.visible === false ? item : (visibleByKey.get(item.key) || item)
+        );
+    }, [layoutMode, measuredProfileLayout.resolvedItems]);
+    const visibleBlocks = resolvedProfileLayout.filter((item) => item.visible !== false);
+    const packedPreviewState = layoutMode === 'packed'
+        ? getPackedPlacementPreview(visibleBlocks, draggingKey, dragOverKey)
+        : null;
+    const manualPreviewState = layoutMode === 'manual' && manualPreviewCell
+        ? getManualPlacementPreview(visibleBlocks, draggingKey, manualPreviewCell.x, manualPreviewCell.y)
+        : null;
+    const gridRows = getGridRowExtent(visibleBlocks, packedPreviewState?.preview || manualPreviewState?.preview, 4);
 
     const blockMap = {
         image: {
@@ -410,16 +458,104 @@ export default function ProfileSection({ store }) {
                 <SelectionBadge label="프로필 카드 선택됨" tone="card" />
             ) : null}
 
-            <div className="section-head">
+            <div className="section-head section-head-with-layout-controls">
                 <div className="profile-layout-head">
                     <div>
                         <h2 className="section-title" style={store.actions.styleFor('section.profile.title')}>프로필</h2>
-                        {isEdit ? <p className="profile-layout-help">내부 블럭도 드래그 + 격자 배치 가능</p> : null}
+                        {isEdit ? <p className="profile-layout-help">핸들 클릭 후 칸 선택 또는 드래그로 배치 가능</p> : null}
                     </div>
                 </div>
+
+                {showHelpers ? (
+                    <div className="layout-mode-controls no-print">
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${layoutMode === 'manual' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setProfileLayoutMode('manual', resolvedProfileLayout);
+                                setDragOverKey(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            자유형
+                        </button>
+                        <button
+                            type="button"
+                            className={`layout-mode-chip ${layoutMode === 'packed' ? 'active' : ''}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.setProfileLayoutMode('packed', resolvedProfileLayout);
+                                setDraggingKey(null);
+                                setDragOverKey(null);
+                                setManualPreviewCell(null);
+                            }}
+                        >
+                            정리형
+                        </button>
+                        <button
+                            type="button"
+                            className="layout-mode-action"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                store.actions.autoArrangeProfileBlocks(resolvedProfileLayout);
+                            }}
+                        >
+                            자동 정리
+                        </button>
+                    </div>
+                ) : null}
             </div>
 
-            <div className="profile-layout-grid">
+            <div className={`profile-layout-grid layout-mode-${layoutMode} ${showHelpers ? 'show-grid-guides' : ''} ${layoutMode === 'manual' && draggingKey ? 'manual-placement-active' : ''}`}>
+                {showHelpers ? (
+                    <GridPlacementOverlay
+                        rows={gridRows}
+                        preview={packedPreviewState?.preview || manualPreviewState?.preview}
+                        active={!!draggingKey}
+                        interactive={layoutMode === 'manual' && !!draggingKey}
+                        confirmBeforePlace={!!store.ui?.isMobile}
+                        onCellEnter={(cell) => {
+                            if (layoutMode !== 'manual' || !draggingKey) return;
+                            setManualPreviewCell(cell);
+                        }}
+                        onCellDrop={(cell) => {
+                            if (layoutMode !== 'manual' || !draggingKey) return;
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            setDraggingKey(null);
+                            setDragOverKey(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellClick={(cell, event) => {
+                            if (layoutMode !== 'manual' || !draggingKey) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            setDraggingKey(null);
+                            setDragOverKey(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onCellConfirm={(cell, event) => {
+                            if (layoutMode !== 'manual' || !draggingKey) return;
+                            event?.preventDefault?.();
+                            event?.stopPropagation?.();
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            setDraggingKey(null);
+                            setDragOverKey(null);
+                            setManualPreviewCell(null);
+                        }}
+                        onPointerLeave={() => {
+                            if (layoutMode === 'manual') setManualPreviewCell(null);
+                        }}
+                        onCancel={() => {
+                            setManualPreviewCell(null);
+                            setDraggingKey(null);
+                            setDragOverKey(null);
+                            store.actions.selectPage();
+                        }}
+                    />
+                ) : null}
+
                 {visibleBlocks.map((block) => (
                     <ProfileBlockShell
                         key={block.key}
@@ -428,10 +564,15 @@ export default function ProfileSection({ store }) {
                         label={block.label}
                         colSpan={block.colSpan || 12}
                         rowSpan={block.rowSpan || 1}
+                        minRowSpan={block.minRowSpan || 1}
                         draggingKey={draggingKey}
                         dragOverKey={dragOverKey}
                         setDraggingKey={setDraggingKey}
                         setDragOverKey={setDragOverKey}
+                        layoutMode={layoutMode}
+                        placementStyle={getGridItemPlacementStyle(block, layoutMode)}
+                        measureRef={measuredProfileLayout.registerMeasureRef(block.key)}
+                        layoutItemsOverride={resolvedProfileLayout}
                     >
                         {blockMap[block.key]?.node}
                     </ProfileBlockShell>
