@@ -178,7 +178,7 @@ function ProfileBlockShell({
                 <LayoutChrome
                     label={label}
                     summary={`${colSpan} × ${rowSpan}`}
-                    defaultExpanded={!store.ui?.isMobile}
+                    defaultExpanded={false}
                     dragHandle={
                         <div
                             className={`drag-handle ${layoutMode === 'manual' && draggingKey === blockKey ? 'is-armed' : ''}`}

@@ -138,7 +138,7 @@ function BlockShell({
                 <LayoutChrome
                     label={`${block.type} · ${block.title}`}
                     summary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
-                    defaultExpanded={!store.ui?.isMobile}
+                    defaultExpanded={false}
                     dragHandle={
                         <div
                             className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`}

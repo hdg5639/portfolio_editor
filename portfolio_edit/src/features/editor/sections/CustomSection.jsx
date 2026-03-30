@@ -169,7 +169,7 @@ function ItemShell({
                 <LayoutChrome
                     label={item.title || '아이템'}
                     summary={`${item.colSpan || 6} × ${item.rowSpan || 1}`}
-                    defaultExpanded={!store.ui?.isMobile}
+                    defaultExpanded={false}
                     dragHandle={
                         <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
                             if (!useTapReorder) return;
@@ -306,7 +306,7 @@ function ComplexBlockShell({
                 <LayoutChrome
                     label={`${block.type} · ${block.title}`}
                     summary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
-                    defaultExpanded={!store.ui?.isMobile}
+                    defaultExpanded={false}
                     dragHandle={
                         <div className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`} draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
                             if (layoutMode === 'manual') {
