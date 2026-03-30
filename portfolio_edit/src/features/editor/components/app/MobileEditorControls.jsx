@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import SidePanel from '../SidePanel';
 import StylePanel from '../StylePanel';
 import {
-  MOBILE_CARD_KEYS,
   MOBILE_LAYOUT_TITLE_MAP,
   MOBILE_LAYOUT_TOOLS,
   MOBILE_STYLE_TITLE_MAP,
   MOBILE_STYLE_TOOLS,
 } from '../../constants/editorTools';
+import { getSelectionTypeLabel } from '../../utils/storeHelpers';
 
 function MobileDockButton({ active, label, onClick, emphasized = false }) {
   return (
@@ -107,7 +107,7 @@ export function MobileSelectionChip({ store }) {
 
   if (ui.mobileEditorMode !== 'style') return null;
 
-  const typeLabel = selected?.key === 'page' ? '페이지' : MOBILE_CARD_KEYS.includes(selected?.key) ? '카드' : '요소';
+  const typeLabel = getSelectionTypeLabel(selected?.key);
 
   return (
     <button

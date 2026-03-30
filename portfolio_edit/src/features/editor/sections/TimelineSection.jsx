@@ -34,7 +34,14 @@ export default function TimelineSection({ store, sectionKey, title }) {
             ) : null}
 
             <div className="section-head">
-                <h2 className="section-title" style={actions.styleFor(`section.${sectionKey}.title`)}>
+                <h2
+                    className="section-title"
+                    style={actions.styleFor(`section.${sectionKey}.title`)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        store.actions.select({ key: `section.${sectionKey}.title`, label: `${title} 섹션 제목` });
+                    }}
+                >
                     {title}
                 </h2>
             </div>

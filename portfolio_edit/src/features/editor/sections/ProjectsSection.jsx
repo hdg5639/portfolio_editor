@@ -391,7 +391,14 @@ export default function ProjectsSection({ store }) {
             ) : null}
 
             <div className="section-head">
-                <h2 className="section-title" style={titleStyle}>
+                <h2
+                    className="section-title"
+                    style={titleStyle}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        store.actions.select({ key: 'section.projects.title', label: '프로젝트 섹션 제목' });
+                    }}
+                >
                     프로젝트
                 </h2>
             </div>

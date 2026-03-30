@@ -413,7 +413,7 @@ export default function ProfileSection({ store }) {
             <div className="section-head">
                 <div className="profile-layout-head">
                     <div>
-                        <h2 className="section-title">프로필</h2>
+                        <h2 className="section-title" style={store.actions.styleFor('section.profile.title')}>프로필</h2>
                         {isEdit ? <p className="profile-layout-help">내부 블럭도 드래그 + 격자 배치 가능</p> : null}
                     </div>
                 </div>

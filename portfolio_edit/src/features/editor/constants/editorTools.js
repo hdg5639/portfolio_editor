@@ -32,7 +32,6 @@ export const MOBILE_CARD_KEYS = [
   'profileCard',
   'projectsCard',
   'skillsCard',
-  'timelineCard',
   'awardsCard',
   'certificatesCard',
   'customCard',

@@ -2,7 +2,8 @@ import {
     defaultPortfolio,
     defaultSectionLayout,
     defaultProfileBlocks,
-    createComplexCustomItem, createTextBlock, createListBlock, createImageBlock
+    createComplexCustomItem, createTextBlock, createListBlock, createImageBlock,
+    defaultStyle,
 } from './defaultPortfolio.js';
 
 export const MOBILE_BREAKPOINT = 920;
@@ -24,6 +25,34 @@ export function detectMobileViewport() {
     }
 
     return width <= MOBILE_BREAKPOINT;
+}
+
+
+const CARD_SELECTION_KEYS = new Set([
+    'profileCard',
+    'projectsCard',
+    'skillsCard',
+    'awardsCard',
+    'certificatesCard',
+    'customCard',
+]);
+
+export function isCardSelectionKey(selectedKey) {
+    return CARD_SELECTION_KEYS.has(selectedKey);
+}
+
+export function getSelectionTypeLabel(selectedKey) {
+    if (!selectedKey) return '선택 없음';
+    if (selectedKey === 'page') return '페이지';
+    if (isCardSelectionKey(selectedKey)) return '카드';
+    if (selectedKey.startsWith('profileBlock.')) return '블럭';
+    if (/^projects\.[^.]+\.blocks\.[^.]+$/.test(selectedKey)) return '블럭';
+    if (/^custom\.[^.]+\.[^.]+\.blocks\.[^.]+$/.test(selectedKey)) return '블럭';
+    if (/^projects\.[^.]+$/.test(selectedKey)) return '블럭';
+    if (/^skills\.[^.]+$/.test(selectedKey)) return '블럭';
+    if (/^(awards|certificates)\.[^.]+$/.test(selectedKey)) return '블럭';
+    if (/^custom\.[^.]+\.[^.]+$/.test(selectedKey)) return '블럭';
+    return '요소';
 }
 
 export function clone(value) {
@@ -50,6 +79,21 @@ export function moveBefore(list, draggedKey, targetKey, keyName = 'key') {
 function matchesSelectionScope(selectedKey, prefix) {
     if (!selectedKey || !prefix) return false;
     return selectedKey === prefix || selectedKey.startsWith(`${prefix}.`);
+}
+
+function stripDefaultStyleValues(style) {
+    if (!style || typeof style !== 'object') return style;
+
+    const defaults = defaultStyle();
+    const cleaned = { ...style };
+
+    Object.keys(defaults).forEach((key) => {
+        if (cleaned[key] === defaults[key]) {
+            delete cleaned[key];
+        }
+    });
+
+    return cleaned;
 }
 
 export function getCardSelectionState(selectedKey, cardKey, prefixes = []) {
@@ -203,6 +247,7 @@ export function migratePortfolio(rawPortfolio) {
 
     next.styles = next.styles || {};
     next.styles.page = {
+        ...defaultStyle(),
         backgroundColor: '#f4f1ea',
         baseBackgroundColor: '#ece7dc',
         color: '#1d1d1b',
@@ -243,13 +288,23 @@ export function migratePortfolio(rawPortfolio) {
         ...(next.styles.skillsCard || {}),
     };
 
-    next.styles.timelineCard = {
+    const legacyTimelineCard = {
         backgroundColor: '#ffffff',
         borderColor: '#e8e1d7',
         borderRadius: 24,
         padding: 28,
         ...legacyCard,
         ...(next.styles.timelineCard || {}),
+    };
+
+    next.styles.awardsCard = {
+        ...legacyTimelineCard,
+        ...(next.styles.awardsCard || {}),
+    };
+
+    next.styles.certificatesCard = {
+        ...legacyTimelineCard,
+        ...(next.styles.certificatesCard || {}),
     };
 
     next.styles.customCard = {
@@ -261,7 +316,12 @@ export function migratePortfolio(rawPortfolio) {
         ...(next.styles.customCard || {}),
     };
 
+    next.styles.elements = Object.fromEntries(
+        Object.entries(next.styles.elements || {}).map(([key, value]) => [key, stripDefaultStyleValues(value)])
+    );
+
     delete next.styles.card;
+    delete next.styles.timelineCard;
 
     next.projects = (next.projects || []).map((project) => ({
         ...project,

@@ -1,3 +1,5 @@
+import { getSelectionTypeLabel, isCardSelectionKey } from '../utils/storeHelpers';
+
 function clampAlpha(value) {
     const next = Number(value);
     if (Number.isNaN(next)) return 100;
@@ -176,15 +178,6 @@ function AccordionItem({title, children, defaultOpen = false}) {
     );
 }
 
-const CARD_SELECTION_KEYS = [
-    'profileCard',
-    'projectsCard',
-    'skillsCard',
-    'timelineCard',
-    'awardsCard',
-    'certificatesCard',
-    'customCard',
-];
 
 function isGroupVisible(visibleGroups, group) {
     return !visibleGroups || visibleGroups.includes(group);
@@ -192,11 +185,7 @@ function isGroupVisible(visibleGroups, group) {
 
 function SelectionBadge({ selected }) {
     const typeLabel =
-        selected?.key === 'page'
-            ? '페이지'
-            : CARD_SELECTION_KEYS.includes(selected?.key)
-                ? '카드'
-                : '요소';
+        getSelectionTypeLabel(selected?.key);
 
     return (
         <div className="mobile-selection-badge">
@@ -472,58 +461,142 @@ function CardStyleControls({ value, onChange, visibleGroups = null }) {
     );
 }
 
-export default function StylePanel({ store, mobileTool = '', embedded = false, quickOnly = false, onRequestClose }) {    const { selected, actions } = store;
+export default function StylePanel({ store, mobileTool = '', embedded = false, quickOnly = false, onRequestClose }) {
+    const { selected, actions } = store;
     const current = actions.getSelectedStyle();
-    const isCardSelection = [
-        'profileCard',
-        'projectsCard',
-        'skillsCard',
-        'timelineCard',
-        'awardsCard',
-        'certificatesCard',
-        'customCard',
-    ].includes(selected?.key);
+    const selectionMeta = actions.getSelectionStyleMeta?.() || { kind: 'element' };
+    const selectionTypeLabel = getSelectionTypeLabel(selected?.key);
+    const isCardSelection = isCardSelectionKey(selected?.key);
+    const isBlockSelection = selectionMeta.kind === 'block';
+    const isPageSelection = selectionMeta.kind === 'page';
 
     const quickPanel = (
         <div className="style-quick-grid">
-            <label className="style-field">
-                <span>빠른 글자색</span>
-                <input
-                    type="color"
-                    value={current?.color || '#1d1d1b'}
-                    onChange={(e) => actions.updateSelectedStyle('color', e.target.value)}
-                />
-            </label>
-            <label className="style-field">
-                <span>빠른 배경색</span>
-                <input
-                    type="color"
-                    value={current?.backgroundColor || '#ffffff'}
-                    onChange={(e) => actions.updateSelectedStyle('backgroundColor', e.target.value)}
-                />
-            </label>
-            <label className="style-field">
-                <span>빠른 크기</span>
-                <input
-                    type="number"
-                    value={parseInt(current?.fontSize, 10) || 16}
-                    onChange={(e) => actions.updateSelectedStyle('fontSize', Number(e.target.value))}
-                />
-            </label>
-            <label className="style-field">
-                <span>빠른 굵기</span>
-                <select
-                    value={String(current?.fontWeight ?? '400')}
-                    onChange={(e) => actions.updateSelectedStyle('fontWeight', e.target.value)}
-                >
-                    <option value="300">300</option>
-                    <option value="400">400</option>
-                    <option value="500">500</option>
-                    <option value="600">600</option>
-                    <option value="700">700</option>
-                    <option value="800">800</option>
-                </select>
-            </label>
+            {isPageSelection ? (
+                <>
+                    <label className="style-field">
+                        <span>외부 배경색</span>
+                        <input
+                            type="color"
+                            value={current?.baseBackgroundColor && current.baseBackgroundColor !== 'transparent' ? current.baseBackgroundColor : '#ffffff'}
+                            onChange={(e) => actions.updateSelectedStyle('baseBackgroundColor', e.target.value)}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>내부 배경색</span>
+                        <input
+                            type="color"
+                            value={current?.backgroundColor && current.backgroundColor !== 'transparent' ? current.backgroundColor : '#ffffff'}
+                            onChange={(e) => actions.updateSelectedStyle('backgroundColor', e.target.value)}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>줄간격</span>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={current?.lineHeight ?? 1.6}
+                            onChange={(e) => actions.updateSelectedStyle('lineHeight', Number(e.target.value))}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>정렬</span>
+                        <select
+                            value={current?.textAlign || 'left'}
+                            onChange={(e) => actions.updateSelectedStyle('textAlign', e.target.value)}
+                        >
+                            <option value="left">left</option>
+                            <option value="center">center</option>
+                            <option value="right">right</option>
+                        </select>
+                    </label>
+                </>
+            ) : isBlockSelection ? (
+                <>
+                    <label className="style-field">
+                        <span>빠른 글자색</span>
+                        <input
+                            type="color"
+                            value={current?.color || '#1d1d1b'}
+                            onChange={(e) => actions.updateSelectedStyle('color', e.target.value)}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>빠른 크기</span>
+                        <input
+                            type="number"
+                            value={parseInt(current?.fontSize, 10) || 16}
+                            onChange={(e) => actions.updateSelectedStyle('fontSize', Number(e.target.value))}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>빠른 굵기</span>
+                        <select
+                            value={String(current?.fontWeight ?? '400')}
+                            onChange={(e) => actions.updateSelectedStyle('fontWeight', e.target.value)}
+                        >
+                            <option value="300">300</option>
+                            <option value="400">400</option>
+                            <option value="500">500</option>
+                            <option value="600">600</option>
+                            <option value="700">700</option>
+                            <option value="800">800</option>
+                        </select>
+                    </label>
+                    <label className="style-field">
+                        <span>정렬</span>
+                        <select
+                            value={current?.textAlign || 'left'}
+                            onChange={(e) => actions.updateSelectedStyle('textAlign', e.target.value)}
+                        >
+                            <option value="left">left</option>
+                            <option value="center">center</option>
+                            <option value="right">right</option>
+                        </select>
+                    </label>
+                </>
+            ) : (
+                <>
+                    <label className="style-field">
+                        <span>빠른 글자색</span>
+                        <input
+                            type="color"
+                            value={current?.color || '#1d1d1b'}
+                            onChange={(e) => actions.updateSelectedStyle('color', e.target.value)}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>빠른 배경색</span>
+                        <input
+                            type="color"
+                            value={current?.backgroundColor && current.backgroundColor !== 'transparent' ? current.backgroundColor : '#ffffff'}
+                            onChange={(e) => actions.updateSelectedStyle('backgroundColor', e.target.value)}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>빠른 크기</span>
+                        <input
+                            type="number"
+                            value={parseInt(current?.fontSize, 10) || 16}
+                            onChange={(e) => actions.updateSelectedStyle('fontSize', Number(e.target.value))}
+                        />
+                    </label>
+                    <label className="style-field">
+                        <span>빠른 굵기</span>
+                        <select
+                            value={String(current?.fontWeight ?? '400')}
+                            onChange={(e) => actions.updateSelectedStyle('fontWeight', e.target.value)}
+                        >
+                            <option value="300">300</option>
+                            <option value="400">400</option>
+                            <option value="500">500</option>
+                            <option value="600">600</option>
+                            <option value="700">700</option>
+                            <option value="800">800</option>
+                        </select>
+                    </label>
+                </>
+            )}
         </div>
     );
 
@@ -533,7 +606,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                 <div className="panel-section style-panel-summary compact-floating-panel">
                     <div className="panel-section-head compact-floating-panel-head">
                         <strong>빠른 설정</strong>
-                        <span>{selected?.label || '선택 없음'}</span>
+                        <span>{selected?.label || '선택 없음'} · {selectionTypeLabel}</span>
                     </div>
                     <div className="panel-section-body style-panel-summary-body">{quickPanel}</div>
                 </div>
@@ -547,7 +620,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
     if (isEmbeddedMobileTool) {
         const selectedStylePanel = selectedTool === 'select' ? (
             <MobileSelectTool selected={selected} actions={actions}/>
-        ) : isCardSelection && selectedTool !== 'box' ? (
+        ) : isBlockSelection && selectedTool === 'box' ? (
             <section className="panel-section">
                 <div className="panel-section-head">
                     <strong>{selected?.label || '선택 대상'}</strong>
@@ -555,8 +628,8 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                 <div className="panel-section-body">
                     <SelectionBadge selected={selected}/>
                     <StyleToolHint
-                        title="이 대상은 박스 스타일만 편집할 수 있음"
-                        description="현재 선택은 카드입니다. 텍스트/정렬 대신 ‘박스’ 탭에서 배경색, 테두리, 모서리, 패딩을 수정하세요."
+                        title="블럭 선택은 내부 기본 텍스트를 조절합니다"
+                        description="현재 선택은 블럭입니다. 박스 탭 대신 텍스트/정렬 탭에서 내부 요소들의 기본 스타일을 맞춰주세요."
                     />
                 </div>
             </section>
@@ -568,7 +641,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                 <div className="panel-section-body style-panel-summary-body">
                     <SelectionBadge selected={selected}/>
 
-                    {isCardSelection ? (
+                    {isCardSelection && selectedTool === 'box' ? (
                         <CardStyleControls
                             value={current}
                             visibleGroups={['box']}
@@ -579,7 +652,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                     ) : (
                         <StyleControls
                             value={current}
-                            visibleGroups={[selectedTool]}
+                            visibleGroups={isPageSelection && selectedTool === 'text' ? ['align'] : [selectedTool]}
                             alphaTargets={{
                                 backgroundColor: true,
                                 borderColor: true,
@@ -603,7 +676,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
         );
     }
 
-    const showGlobal = !mobileTool;
+    const showGlobal = false;
     const showSelected = true;
 
     return (
@@ -617,7 +690,7 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                 >
                     <div className="sidebar-panel-header-text">
                         <strong>스타일 편집</strong>
-                        <p>선택 대상: {selected?.label || '없음'}</p>
+                        <p>선택 대상: {selected?.label || '없음'} · {selectionTypeLabel}</p>
                     </div>
                     <span className="sidebar-panel-header-close">닫기</span>
                 </button>
@@ -632,13 +705,13 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                     ) : null}
 
                     {showGlobal ? (
-                        <AccordionItem title="전역 스타일" defaultOpen>
+                        <AccordionItem title="페이지 기본 스타일" defaultOpen>
                             <StyleControls
                                 value={store.portfolio.styles.page}
+                                visibleGroups={['align', 'box']}
                                 alphaTargets={{
                                     baseBackgroundColor: true,
                                     backgroundColor: true,
-                                    borderColor: true,
                                 }}
                                 onChange={(field, value) =>
                                     actions.updateGlobalStyle('page', field, value)
@@ -648,18 +721,52 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                     ) : null}
 
                     {showSelected ? (
-                        <AccordionItem
-                            title={isCardSelection ? '선택 카드 스타일' : '선택 요소 스타일'}
-                            defaultOpen
-                        >
-                            {isCardSelection ? (
-                                <CardStyleControls
+                        isCardSelection ? (
+                            <>
+                                <AccordionItem title="선택 카드 박스 스타일" defaultOpen>
+                                    <CardStyleControls
+                                        value={current}
+                                        onChange={(field, value) =>
+                                            actions.updateSelectedStyle(field, value)
+                                        }
+                                    />
+                                </AccordionItem>
+                                <AccordionItem title="선택 카드 내부 기본 텍스트" defaultOpen>
+                                    <StyleControls
+                                        value={current}
+                                        visibleGroups={['text', 'align']}
+                                        onChange={(field, value) =>
+                                            actions.updateSelectedStyle(field, value)
+                                        }
+                                    />
+                                </AccordionItem>
+                            </>
+                        ) : isBlockSelection ? (
+                            <AccordionItem title="선택 블럭 내부 기본 텍스트" defaultOpen>
+                                <StyleControls
                                     value={current}
+                                    visibleGroups={['text', 'align']}
                                     onChange={(field, value) =>
                                         actions.updateSelectedStyle(field, value)
                                     }
                                 />
-                            ) : (
+                            </AccordionItem>
+                        ) : isPageSelection ? (
+                            <AccordionItem title="페이지 기본 흐름" defaultOpen>
+                                <StyleControls
+                                    value={current}
+                                    visibleGroups={['align', 'box']}
+                                    alphaTargets={{
+                                        backgroundColor: true,
+                                        baseBackgroundColor: true,
+                                    }}
+                                    onChange={(field, value) =>
+                                        actions.updateSelectedStyle(field, value)
+                                    }
+                                />
+                            </AccordionItem>
+                        ) : (
+                            <AccordionItem title="선택 요소 스타일" defaultOpen>
                                 <StyleControls
                                     value={current}
                                     alphaTargets={{
@@ -670,8 +777,8 @@ export default function StylePanel({ store, mobileTool = '', embedded = false, q
                                         actions.updateSelectedStyle(field, value)
                                     }
                                 />
-                            )}
-                        </AccordionItem>
+                            </AccordionItem>
+                        )
                     ) : null}
                 </div>
             </div>

@@ -32,7 +32,14 @@ export default function SkillSection({ store }) {
             ) : null}
 
             <div className="section-head">
-                <h2 className="section-title" style={actions.styleFor('section.skills.title')}>
+                <h2
+                    className="section-title"
+                    style={actions.styleFor('section.skills.title')}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        store.actions.select({ key: 'section.skills.title', label: '기술 스택 섹션 제목' });
+                    }}
+                >
                     기술 스택
                 </h2>
             </div>
