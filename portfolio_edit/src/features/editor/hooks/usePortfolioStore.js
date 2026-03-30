@@ -1,5 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
-import { detectMobileViewport, migratePortfolio, clone } from '../utils/storeHelpers';
+import {
+    EDITOR_LAYOUT_MODE_STORAGE_KEY,
+    detectMobileViewport,
+    getStoredEditorLayoutMode,
+    migratePortfolio,
+    clone,
+    resolveEditorLayoutMode,
+} from '../utils/storeHelpers';
 import { defaultPortfolio } from '../utils/defaultPortfolio';
 
 import { useUiActions } from './actions/useUiActions.js';
@@ -18,17 +25,25 @@ export function usePortfolioStore() {
 
     const [mode, setMode] = useState('edit');
     const [selected, setSelected] = useState({ key: 'page', label: '페이지 전체' });
-    const [ui, setUi] = useState(() => ({
-        showContentPanel: true,
-        showStylePanel: true,
-        showEditHelpers: true,
-        isMobile: detectMobileViewport(),
-        mobileEditorMode: 'layout',
-        mobileLayoutTool: 'sections',
-        mobileStyleTool: 'text',
-        mobileSheetOpen: false,
-        mobileQuickOpen: false,
-    }));
+    const [ui, setUi] = useState(() => {
+        const viewportIsMobile = detectMobileViewport();
+        const editorLayoutMode = getStoredEditorLayoutMode();
+        const isMobile = resolveEditorLayoutMode(editorLayoutMode, viewportIsMobile);
+
+        return {
+            showContentPanel: true,
+            showStylePanel: true,
+            showEditHelpers: true,
+            viewportIsMobile,
+            editorLayoutMode,
+            isMobile,
+            mobileEditorMode: 'layout',
+            mobileLayoutTool: 'sections',
+            mobileStyleTool: 'text',
+            mobileSheetOpen: false,
+            mobileQuickOpen: false,
+        };
+    });
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
@@ -37,20 +52,24 @@ export function usePortfolioStore() {
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
         const syncViewport = () => {
-            const isMobile = detectMobileViewport();
-            setUi((prev) => ({
-                ...prev,
-                isMobile,
-                mobileSheetOpen: isMobile ? prev.mobileSheetOpen : false,
-                mobileQuickOpen: isMobile ? prev.mobileQuickOpen : false,
-            }));
+            const viewportIsMobile = detectMobileViewport();
+            setUi((prev) => {
+                const isMobile = resolveEditorLayoutMode(prev.editorLayoutMode, viewportIsMobile);
+                return {
+                    ...prev,
+                    viewportIsMobile,
+                    isMobile,
+                    mobileSheetOpen: isMobile ? prev.mobileSheetOpen : false,
+                    mobileQuickOpen: isMobile ? prev.mobileQuickOpen : false,
+                };
+            });
         };
         syncViewport();
         window.addEventListener('resize', syncViewport);
         return () => window.removeEventListener('resize', syncViewport);
     }, []);
 
-    const uiActions = useUiActions(setUi, setMode, setSelected, setPortfolio, STORAGE_KEY);
+    const uiActions = useUiActions(setUi, setMode, setSelected, setPortfolio, STORAGE_KEY, EDITOR_LAYOUT_MODE_STORAGE_KEY);
     const styleActions = useStyleActions(portfolio, setPortfolio, selected);
     const projectActions = useProjectActions(setPortfolio);
     const customSectionActions = useCustomSectionActions(setPortfolio, portfolio);

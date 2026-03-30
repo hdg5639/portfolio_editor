@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { clone } from '../../utils/storeHelpers';
+import { clone, normalizeEditorLayoutMode, resolveEditorLayoutMode } from '../../utils/storeHelpers';
 import { defaultPortfolio } from '../../utils/defaultPortfolio';
 
-export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY) {
+export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY, LAYOUT_MODE_STORAGE_KEY) {
     return useMemo(() => ({
         setMode: (nextMode) => {
             setModeState(nextMode);
@@ -40,6 +40,26 @@ export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STO
                 ...prev,
                 showEditHelpers: Boolean(visible),
             })),
+
+        setEditorLayoutMode: (nextLayoutMode) => {
+            const normalizedLayoutMode = normalizeEditorLayoutMode(nextLayoutMode);
+            setUi((prev) => {
+                const viewportIsMobile = prev.viewportIsMobile ?? prev.isMobile;
+                const isMobile = resolveEditorLayoutMode(normalizedLayoutMode, viewportIsMobile);
+
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(LAYOUT_MODE_STORAGE_KEY, normalizedLayoutMode);
+                }
+
+                return {
+                    ...prev,
+                    editorLayoutMode: normalizedLayoutMode,
+                    isMobile,
+                    mobileSheetOpen: isMobile ? prev.mobileSheetOpen : false,
+                    mobileQuickOpen: isMobile ? prev.mobileQuickOpen : false,
+                };
+            });
+        },
         setMobileEditorMode: (mode) =>
             setUi((prev) => ({
                 ...prev,
@@ -78,5 +98,5 @@ export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STO
             setSelected({ key: 'page', label: '페이지 전체' });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         },
-    }), [setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY]);
+    }), [setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY, LAYOUT_MODE_STORAGE_KEY]);
 }

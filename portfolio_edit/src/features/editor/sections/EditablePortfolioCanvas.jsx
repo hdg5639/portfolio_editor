@@ -602,7 +602,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   }, [getFitScale, isMobileCanvas]);
 
   useEffect(() => {
-    if (isMobileCanvas || typeof window === 'undefined' || typeof document === 'undefined') return undefined;
+    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
 
     const stopPanning = () => {
       panStateRef.current.active = false;
@@ -728,7 +728,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
   }, [clampMobileZoomPosition, isMobileCanvas]);
 
   const handleCanvasMouseDown = (event) => {
-    if (isMobileCanvas || !spacePressed || event.button !== 0) return;
+    if (!spacePressed || event.button !== 0) return;
     if (isEditableTarget(event.target)) return;
 
     const wrap = wrapRef.current;
@@ -753,7 +753,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas(
             backgroundColor: 'transparent',
             paddingLeft: isMobileCanvas ? undefined : `24px`,
             paddingRight: isMobileCanvas ? undefined : `24px`,
-            justifyContent: !isMobileCanvas && store.mode === 'edit' ? 'flex-start' : undefined,
+            justifyContent: isMobileCanvas ? 'center' : store.mode === 'edit' ? 'flex-start' : undefined,
           }}
           onMouseDown={handleCanvasMouseDown}
           onDragStart={(event) => {

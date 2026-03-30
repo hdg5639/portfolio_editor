@@ -1,3 +1,28 @@
+function EditorLayoutModeSwitch({ value, onChange, compact = false }) {
+  const options = [
+    { key: 'auto', label: compact ? '자동' : '자동' },
+    { key: 'desktop', label: compact ? '데탑' : '데스크탑' },
+    { key: 'mobile', label: compact ? '모바일' : '모바일' },
+  ];
+
+  return (
+    <div className={`topbar-layout-switch ${compact ? 'is-compact' : ''}`} role="group" aria-label="에디터 레이아웃 모드 전환">
+      {options.map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          className={`topbar-layout-switch-button ${value === option.key ? 'active' : ''}`}
+          onClick={() => onChange(option.key)}
+          aria-pressed={value === option.key}
+          title={`에디터 레이아웃을 ${option.label} 모드로 설정`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function MobileTopBarControls({
   currentModeLabel,
   nextModeLabel,
@@ -108,6 +133,8 @@ export default function TopBar({
   currentModeLabel,
   nextModeLabel,
   isExporting,
+  editorLayoutMode,
+  onChangeEditorLayoutMode,
   onToggleMode,
   onOpenExport,
   onReset,
@@ -122,6 +149,10 @@ export default function TopBar({
               ? `모바일 ${mobileEditorMode === 'layout' ? '구성' : '스타일'} 편집 · 선택: ${selectedLabel || '없음'}`
               : '완성본 위에서 직접 편집하고, 토글로 미리보기 전환'}
           </p>
+          <div className="topbar-layout-switch-row">
+            <span className="topbar-layout-switch-label">에디터 레이아웃</span>
+            <EditorLayoutModeSwitch value={editorLayoutMode} onChange={onChangeEditorLayoutMode} compact={isMobile} />
+          </div>
         </div>
 
         <div className="topbar-right">

@@ -44,6 +44,67 @@
     line-height: 1.45;
 }
 
+
+.topbar-layout-switch-row {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.topbar-layout-switch-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6e6a61;
+}
+
+.topbar-layout-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid rgba(29, 29, 27, 0.08);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 8px 20px rgba(17, 17, 17, 0.04);
+}
+
+.topbar-layout-switch.is-compact {
+    gap: 3px;
+    padding: 3px;
+}
+
+.topbar-layout-switch-button {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6e6a61;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.topbar-layout-switch.is-compact .topbar-layout-switch-button {
+    padding: 5px 8px;
+    font-size: 10px;
+}
+
+.topbar-layout-switch-button.active {
+    background: #1d1d1b;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(29, 29, 27, 0.18);
+}
+
+.topbar-layout-switch-button:focus-visible {
+    outline: 2px solid rgba(60, 120, 255, 0.4);
+    outline-offset: 1px;
+}
+
+
 .topbar-right {
     display: flex;
     align-items: center;

@@ -1435,3 +1435,27 @@
 .grid-placement-overlay.is-active .grid-occupied-range {
     opacity: 1;
 }
+
+.editor-layout-force-mobile .mobile-placement-confirm {
+    display: flex !important;
+    right: 16px;
+    left: auto;
+    justify-content: flex-end;
+}
+
+.editor-layout-force-mobile .mobile-placement-confirm-card {
+    align-items: stretch;
+    flex-direction: column;
+}
+
+.editor-layout-force-mobile .mobile-placement-confirm-actions {
+    width: 100%;
+}
+
+.editor-layout-force-mobile .mobile-placement-confirm-actions button {
+    flex: 1 1 0;
+}
+
+.editor-layout-force-desktop .mobile-placement-confirm {
+    display: none !important;
+}

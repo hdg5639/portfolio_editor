@@ -230,3 +230,172 @@
         top: 50%;
     }
 }
+/* 수동 레이아웃 오버라이드 */
+.editor-layout-force-mobile .topbar-inner {
+    padding: 12px;
+    gap: 10px;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.editor-layout-force-mobile .topbar-left {
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+.editor-layout-force-mobile .topbar-left strong {
+    font-size: 14px;
+}
+
+.editor-layout-force-mobile .topbar-left p {
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.editor-layout-force-mobile .topbar-layout-switch-row {
+    gap: 6px;
+}
+
+.editor-layout-force-mobile .topbar-layout-switch-label {
+    font-size: 10px;
+}
+
+.editor-layout-force-mobile .topbar-right {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 108px;
+    align-self: center;
+}
+
+.editor-layout-force-mobile .topbar-mobile-controls {
+    height: auto;
+    min-height: 42px;
+    gap: 6px;
+    align-items: stretch;
+}
+
+.editor-layout-force-mobile .topbar-mode-toggle-mobile {
+    min-width: 0;
+    width: 74px;
+    min-height: 42px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    justify-content: center;
+}
+
+.editor-layout-force-mobile .topbar-mode-toggle-mobile .topbar-mode-toggle-kicker {
+    margin-bottom: 2px;
+    font-size: 9px;
+}
+
+.editor-layout-force-mobile .topbar-mode-toggle-mobile strong {
+    font-size: 12px;
+    line-height: 1.05;
+}
+
+.editor-layout-force-mobile .topbar-mode-toggle-mobile .topbar-mode-toggle-next {
+    font-size: 9px;
+    line-height: 1.1;
+}
+
+.editor-layout-force-mobile .topbar-mobile-icon-stack {
+    width: 34px;
+    gap: 4px;
+}
+
+.editor-layout-force-mobile .topbar-icon-button {
+    height: 19px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.editor-layout-force-mobile .layout-shell {
+    padding: 12px 12px 110px;
+}
+
+.editor-layout-force-mobile .topbar {
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.editor-layout-force-mobile .style-grid,
+.editor-layout-force-mobile .style-quick-grid,
+.editor-layout-force-mobile .two-column-grid,
+.editor-layout-force-mobile .timeline-row,
+.editor-layout-force-mobile .skill-row {
+    grid-template-columns: 1fr;
+}
+
+.editor-layout-force-mobile .custom-item.media.image-left,
+.editor-layout-force-mobile .custom-item.media.image-right {
+    grid-template-columns: 1fr;
+}
+
+.editor-layout-force-mobile .custom-item.media.image-right .custom-media-preview,
+.editor-layout-force-mobile .custom-item.media.image-right .custom-media-body {
+    order: initial;
+}
+
+.editor-layout-force-desktop .topbar-inner {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 20px !important;
+}
+
+.editor-layout-force-desktop .topbar-left {
+    flex: 0 1 auto;
+}
+
+.editor-layout-force-desktop .topbar-left strong {
+    font-size: 18px !important;
+}
+
+.editor-layout-force-desktop .topbar-left p {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+}
+
+.editor-layout-force-desktop .topbar-layout-switch-row {
+    gap: 8px !important;
+}
+
+.editor-layout-force-desktop .topbar-layout-switch-label {
+    font-size: 11px !important;
+}
+
+.editor-layout-force-desktop .topbar-right {
+    width: auto !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+    align-self: auto !important;
+}
+
+.editor-layout-force-desktop .topbar-mode-toggle {
+    flex: 0 0 auto !important;
+    min-width: 188px !important;
+}
+
+.editor-layout-force-desktop .topbar-action-group {
+    gap: 8px !important;
+}
+
+.editor-layout-force-desktop .style-grid,
+.editor-layout-force-desktop .style-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.editor-layout-force-desktop .two-column-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.editor-layout-force-desktop .timeline-row {
+    grid-template-columns: 140px minmax(0, 1fr) !important;
+}
+
+.editor-layout-force-desktop .skill-row {
+    grid-template-columns: 160px minmax(0, 1fr) !important;
+}
+
+.editor-layout-force-desktop .custom-item.media.image-left,
+.editor-layout-force-desktop .custom-item.media.image-right {
+    grid-template-columns: 220px minmax(0, 1fr) !important;
+}

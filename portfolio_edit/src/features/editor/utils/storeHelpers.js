@@ -9,6 +9,7 @@ import {
 import { normalizeGridItems } from './layoutGrid.js';
 
 export const MOBILE_BREAKPOINT = 920;
+export const EDITOR_LAYOUT_MODE_STORAGE_KEY = 'portfolio-editor-layout-mode-v1';
 
 export function detectMobileViewport() {
     if (typeof window === 'undefined') return false;
@@ -27,6 +28,20 @@ export function detectMobileViewport() {
     }
 
     return width <= MOBILE_BREAKPOINT;
+}
+
+export function normalizeEditorLayoutMode(value) {
+    return value === 'mobile' || value === 'desktop' ? value : 'auto';
+}
+
+export function getStoredEditorLayoutMode() {
+    if (typeof window === 'undefined') return 'auto';
+    return normalizeEditorLayoutMode(window.localStorage.getItem(EDITOR_LAYOUT_MODE_STORAGE_KEY));
+}
+
+export function resolveEditorLayoutMode(preferredMode, viewportIsMobile) {
+    const normalizedMode = normalizeEditorLayoutMode(preferredMode);
+    return normalizedMode === 'auto' ? Boolean(viewportIsMobile) : normalizedMode === 'mobile';
 }
 
 
