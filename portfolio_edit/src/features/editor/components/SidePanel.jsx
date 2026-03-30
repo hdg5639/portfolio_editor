@@ -4,15 +4,16 @@ import { CUSTOM_SECTION_PRESETS } from '../utils/defaultPortfolio';
 
 function SectionToggles({ sections, labels, actions }) {
     return (
-        <div className="toggle-grid">
+        <div className="section-toggle-list">
             {Object.entries(sections).map(([key, value]) => (
                 <button
                     key={key}
                     type="button"
-                    className={`toggle-chip ${value ? 'active' : ''}`}
+                    className={`section-toggle-row ${value ? 'active' : ''}`}
                     onClick={() => actions.toggleSection(key)}
                 >
-                    {labels[key] || key}
+                    <span className="section-toggle-row-label">{labels[key] || key}</span>
+                    <span className="section-toggle-row-state">{value ? '표시' : '숨김'}</span>
                 </button>
             ))}
         </div>

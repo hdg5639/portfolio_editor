@@ -69,6 +69,7 @@ export const createProject = () => ({
 
 export const createComplexCustomItem = () => ({
   id: uid(),
+  template: 'complex',
   title: '새 복합 프로젝트',
   subtitle: '부제목 / 담당 역할',
   date: '2026.01 ~ 2026.03',
@@ -102,6 +103,7 @@ export const createCustomSectionItem = (template) => {
   if (template === 'simpleList') {
     return {
       id: uid(),
+      template: 'simpleList',
       title: '새 항목',
       description: '간단한 설명',
       colSpan: 6,
@@ -112,6 +114,7 @@ export const createCustomSectionItem = (template) => {
   if (template === 'timeline') {
     return {
       id: uid(),
+      template: 'timeline',
       date: '2026.01',
       title: '새 일정',
       description: '설명을 입력하세요.',
@@ -123,6 +126,7 @@ export const createCustomSectionItem = (template) => {
   if (template === 'media') {
     return {
       id: uid(),
+      template: 'media',
       title: '새 카드',
       description: '이미지와 함께 설명을 입력하세요.',
       image: '',

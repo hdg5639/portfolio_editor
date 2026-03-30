@@ -149,7 +149,18 @@ export function useProjectActions(setPortfolio) {
             setPortfolio((prev) => ({
                 ...prev,
                 projects: updateById(prev.projects, projectId, (project) => ({
-                    ...project, blocks: updateById(project.blocks, blockId, (block) => ({ ...block, images: block.images.map((img, i) => (i === index ? value : img)) })),
+                    ...project, blocks: updateById(project.blocks, blockId, (block) => ({ ...block, images: (block.images || []).map((img, i) => (i === index ? value : img)) })),
+                })),
+            })),
+        removeProjectImage: (projectId, blockId, index) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                projects: updateById(prev.projects, projectId, (project) => ({
+                    ...project,
+                    blocks: updateById(project.blocks, blockId, (block) => {
+                        const nextImages = (block.images || []).filter((_, i) => i !== index);
+                        return { ...block, images: nextImages.length ? nextImages : [''] };
+                    }),
                 })),
             })),
     }), [setPortfolio]);

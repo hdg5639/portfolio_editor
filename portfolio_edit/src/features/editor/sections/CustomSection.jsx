@@ -97,6 +97,8 @@ function ItemShell({
                        dragOverId,
                        setDraggingId,
                        setDragOverId,
+                       measureRef,
+                       minRowSpan,
                        children,
                    }) {
     const isEdit = store.mode === 'edit';
@@ -106,6 +108,10 @@ function ItemShell({
     const itemSelection = getCustomItemSelectionState(store.selected?.key, sectionId, item.id);
     const useTapReorder = showHelpers && !!store.ui?.isMobile;
     const showTapOverlay = useTapReorder && !!draggingId && draggingId !== item.id;
+    const itemStyle = {
+        gridColumn: `span ${item.colSpan || 6} / span ${item.colSpan || 6}`,
+        gridRow: `span ${item.rowSpan || 1} / span ${item.rowSpan || 1}`,
+    };
 
     const onDragStart = (event) => {
         if (!showHelpers) return;
@@ -152,9 +158,10 @@ function ItemShell({
 
     return (
         <div
-            className={`custom-item-shell selection-scope selection-item span-${item.colSpan || 6} span-r-${item.rowSpan || 1} ${
+            className={`custom-item-shell selection-scope selection-item ${
                 isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''} ${itemSelection.selected ? 'is-selected' : ''} ${itemSelection.ancestor ? 'is-ancestor' : ''}`}
+            } ${isDragOver ? 'drag-over' : ''} ${itemSelection.selected ? 'is-selected' : ''} ${itemSelection.ancestor ? 'is-ancestor' : ''}` }
+            style={itemStyle}
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
@@ -185,6 +192,7 @@ function ItemShell({
                         <LayoutSizeControl
                             widthValue={item.colSpan || 6}
                             heightValue={item.rowSpan || 1}
+                            minHeightValue={minRowSpan}
                             onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
                             onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
                             compact
@@ -213,7 +221,25 @@ function ItemShell({
             ) : null}
 
             <div className="layout-item-body">
-                {children}
+                <article className="project-card-inner custom-item-card">
+                    <div className="layout-item-measure" ref={measureRef}>
+                        {children}
+                        {isEdit ? (
+                            <div className="custom-item-footer-actions">
+                                <button
+                                    type="button"
+                                    className="ghost danger small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        store.actions.removeCustomSectionItem(sectionId, item.id);
+                                    }}
+                                >
+                                    항목 삭제
+                                </button>
+                            </div>
+                        ) : null}
+                    </div>
+                </article>
             </div>
         </div>
     );
@@ -523,35 +549,60 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable}) {
                         className="custom-input subtitle"
                     />
                     <div className="project-image-grid">
-                    {(block.images || []).map((image, index) => (
-                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                {image ? (
-                                    <img src={image} alt={block.title || 'custom'} />
-                                ) : (
-                                    <div className="project-image-placeholder">IMAGE</div>
-                                )}
-                                <label className="ghost small upload-label">
-                                    이미지 업로드
-                                    <input
-                                        type="file"
-                                        hidden
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            readFileAsDataUrl(file, (value) =>
-                                                store.actions.updateCustomComplexImage(
-                                                    sectionId,
-                                                    itemId,
-                                                    block.id,
-                                                    index,
-                                                    value
-                                                )
-                                            );
-                                        }}
-                                    />
-                                </label>
-                            </div>
-                        ))}
+                        {(block.images || []).map((image, index) => {
+                            const inputId = `custom-image-${sectionId}-${itemId}-${block.id}-${index}`;
+                            return (
+                                <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
+                                    <div className="project-image-slot">
+                                        {image ? (
+                                            <img src={image} alt={block.title || 'custom'} />
+                                        ) : (
+                                            <div className="project-image-placeholder">IMAGE</div>
+                                        )}
+                                    </div>
+                                    <div className="project-image-slot-actions">
+                                        <label
+                                            htmlFor={inputId}
+                                            className="ghost small upload-label"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            이미지 업로드
+                                        </label>
+                                        <input
+                                            id={inputId}
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                const file = e.target.files?.[0];
+                                                readFileAsDataUrl(file, (value) =>
+                                                    store.actions.updateCustomComplexImage(
+                                                        sectionId,
+                                                        itemId,
+                                                        block.id,
+                                                        index,
+                                                        value
+                                                    )
+                                                );
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="ghost danger small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
+                                            }}
+                                        >
+                                            슬롯 제거
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <button
@@ -883,8 +934,9 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
 
 function renderItem(section, item, store, disabled) {
     const sectionId = section.id;
+    const itemTemplate = item.template || section.template || 'simpleList';
 
-    if (section.template === 'simpleList') {
+    if (itemTemplate === 'simpleList') {
         const titleKey = `custom.${sectionId}.${item.id}.title`;
         const descKey = `custom.${sectionId}.${item.id}.description`;
 
@@ -913,7 +965,7 @@ function renderItem(section, item, store, disabled) {
         );
     }
 
-    if (section.template === 'timeline') {
+    if (itemTemplate === 'timeline') {
         const dateKey = `custom.${sectionId}.${item.id}.date`;
         const titleKey = `custom.${sectionId}.${item.id}.title`;
         const descKey = `custom.${sectionId}.${item.id}.description`;
@@ -951,7 +1003,7 @@ function renderItem(section, item, store, disabled) {
         );
     }
 
-    if (section.template === 'media') {
+    if (itemTemplate === 'media') {
         const titleKey = `custom.${sectionId}.${item.id}.title`;
         const descKey = `custom.${sectionId}.${item.id}.description`;
 
@@ -961,9 +1013,37 @@ function renderItem(section, item, store, disabled) {
                     item.imagePosition === 'right' ? 'image-right' : ''
                 }`}
             >
-                {item.image ? (
-                    <div className="custom-media-preview">
-                        <img src={item.image} alt={item.title || 'custom'} />
+                {item.image || !disabled ? (
+                    <div className={`custom-media-preview ${item.image ? '' : 'is-empty'}`}>
+                        {item.image ? (
+                            <img src={item.image} alt={item.title || 'custom'} />
+                        ) : (
+                            <div className="project-image-placeholder">IMAGE</div>
+                        )}
+                        {!disabled ? (
+                            <label className="ghost small upload-label custom-media-upload" onClick={(e) => e.stopPropagation()}>
+                                이미지 업로드
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => {
+                                        e.stopPropagation();
+                                        const file = e.target.files?.[0];
+                                        readFileAsDataUrl(file, (value) =>
+                                            store.actions.updateCustomSectionItem(
+                                                sectionId,
+                                                item.id,
+                                                'image',
+                                                value
+                                            )
+                                        );
+                                        e.target.value = '';
+                                    }}
+                                />
+                            </label>
+                        ) : null}
                     </div>
                 ) : null}
 
@@ -985,25 +1065,6 @@ function renderItem(section, item, store, disabled) {
                                 <option value="left">이미지 좌측</option>
                                 <option value="right">이미지 우측</option>
                             </select>
-                            <label className="ghost small upload-label">
-                                이미지 업로드
-                                <input
-                                    type="file"
-                                    hidden
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        readFileAsDataUrl(file, (value) =>
-                                            store.actions.updateCustomSectionItem(
-                                                sectionId,
-                                                item.id,
-                                                'image',
-                                                value
-                                            )
-                                        );
-                                    }}
-                                />
-                            </label>
                         </div>
                     ) : null}
 
@@ -1039,6 +1100,8 @@ export default function CustomSection({ store, section }) {
     const titleStyle = store.actions.styleFor(`section.custom.${section.id}.title`);
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
+    const measuredSectionItems = useMeasuredGridItems(section.items || [], (item) => item.id);
+    const resolvedSectionItems = useMemo(() => measuredSectionItems.resolvedItems, [measuredSectionItems.resolvedItems]);
     const cardSelection = getCardSelectionState(store.selected?.key, 'customCard', [`custom.${section.id}`, `section.custom.${section.id}`]);
 
     return (
@@ -1097,7 +1160,7 @@ export default function CustomSection({ store, section }) {
             </div>
 
             <div className="custom-section-grid">
-                {(section.items || []).map((item) => (
+                {resolvedSectionItems.map((item) => (
                     <ItemShell
                         key={item.id}
                         store={store}
@@ -1107,6 +1170,8 @@ export default function CustomSection({ store, section }) {
                         dragOverId={dragOverId}
                         setDraggingId={setDraggingId}
                         setDragOverId={setDragOverId}
+                        measureRef={measuredSectionItems.registerMeasureRef(item.id)}
+                        minRowSpan={measuredSectionItems.minRowSpanById[item.id]}
                     >
                         {renderItem(section, item, store, !isEdit)}
                     </ItemShell>

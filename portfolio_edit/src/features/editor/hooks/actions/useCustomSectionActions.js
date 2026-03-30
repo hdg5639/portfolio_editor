@@ -23,9 +23,20 @@ export function useCustomSectionActions(setPortfolio, portfolio) {
         updateCustomSectionMeta: (sectionId, field, value) =>
             setPortfolio((prev) => {
                 const next = clone(prev);
-                next.customSections = next.customSections.map((section) =>
-                    section.id === sectionId ? { ...section, [field]: value } : section
-                );
+                next.customSections = next.customSections.map((section) => {
+                    if (section.id !== sectionId) return section;
+                    if (field !== 'template') {
+                        return { ...section, [field]: value };
+                    }
+                    return {
+                        ...section,
+                        template: value,
+                        items: (section.items || []).map((item) => ({
+                            ...item,
+                            template: item.template || section.template || 'simpleList',
+                        })),
+                    };
+                });
                 return syncCustomSections(next);
             }),
 
@@ -251,6 +262,29 @@ export function useCustomSectionActions(setPortfolio, portfolio) {
                 ...prev,
                 customSections: prev.customSections.map((section) =>
                     section.id === sectionId ? { ...section, items: section.items.map((item) => item.id === itemId ? { ...item, blocks: (item.blocks || []).map((block) => block.id === blockId ? { ...block, images: (block.images || []).map((img, i) => i === index ? value : img) } : block) } : item) } : section
+                ),
+            })),
+        removeCustomComplexImage: (sectionId, itemId, blockId, index) =>
+            setPortfolio((prev) => ({
+                ...prev,
+                customSections: prev.customSections.map((section) =>
+                    section.id === sectionId
+                        ? {
+                            ...section,
+                            items: section.items.map((item) =>
+                                item.id === itemId
+                                    ? {
+                                        ...item,
+                                        blocks: (item.blocks || []).map((block) => {
+                                            if (block.id !== blockId) return block;
+                                            const nextImages = (block.images || []).filter((_, i) => i !== index);
+                                            return { ...block, images: nextImages.length ? nextImages : [''] };
+                                        }),
+                                    }
+                                    : item
+                            ),
+                        }
+                        : section
                 ),
             })),
 

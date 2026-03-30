@@ -343,29 +343,54 @@ function ImageBlock({block, projectId, store, editable}) {
                     />
 
                     <div className="project-image-grid">
-                        {(block.images || []).map((image, index) => (
-                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                {image ? (
-                                    <img src={image} alt={block.title || 'project'} />
-                                ) : (
-                                    <div className="project-image-placeholder">IMAGE</div>
-                                )}
-                                <label className="ghost small upload-label">
-                                    이미지 업로드
-                                    <input
-                                        type="file"
-                                        hidden
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            readFileAsDataUrl(file, (value) =>
-                                                store.actions.updateProjectImage(projectId, block.id, index, value)
-                                            );
-                                        }}
-                                    />
-                                </label>
-                            </div>
-                        ))}
+                        {(block.images || []).map((image, index) => {
+                            const inputId = `project-image-${projectId}-${block.id}-${index}`;
+                            return (
+                                <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
+                                    <div className="project-image-slot">
+                                        {image ? (
+                                            <img src={image} alt={block.title || 'project'} />
+                                        ) : (
+                                            <div className="project-image-placeholder">IMAGE</div>
+                                        )}
+                                    </div>
+                                    <div className="project-image-slot-actions">
+                                        <label
+                                            htmlFor={inputId}
+                                            className="ghost small upload-label"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            이미지 업로드
+                                        </label>
+                                        <input
+                                            id={inputId}
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                const file = e.target.files?.[0];
+                                                readFileAsDataUrl(file, (value) =>
+                                                    store.actions.updateProjectImage(projectId, block.id, index, value)
+                                                );
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="ghost danger small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.removeProjectImage(projectId, block.id, index);
+                                            }}
+                                        >
+                                            슬롯 제거
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <button
