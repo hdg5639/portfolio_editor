@@ -96,7 +96,7 @@ export function useUiActions(setUi, setModeState, setSelected, setPortfolio, STO
             const next = clone(defaultPortfolio);
             setPortfolio(next);
             setSelected({ key: 'page', label: '페이지 전체' });
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            setModeState('edit');
         },
     }), [setUi, setModeState, setSelected, setPortfolio, STORAGE_KEY, LAYOUT_MODE_STORAGE_KEY]);
 }
