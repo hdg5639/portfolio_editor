@@ -10,13 +10,19 @@ function toRequiredRowSpan(height, minimumRowSpan = 1) {
   return Math.max(minimumRowSpan, required || 1);
 }
 
-export default function useMeasuredGridItems(items, getId = (item) => item?.id ?? item?.key) {
+export default function useMeasuredGridItems(
+  items,
+  getId = (item) => item?.id ?? item?.key,
+  options = {},
+) {
+  const { lockAutoRowSpan = false } = options;
   const observerRef = useRef(null);
   const nodeMapRef = useRef(new Map());
   const refCallbackMapRef = useRef(new Map());
   const heightsRef = useRef({});
   const rafMapRef = useRef(new Map());
   const [heightsById, setHeightsById] = useState({});
+  const [stickyRowSpanById, setStickyRowSpanById] = useState({});
 
   const commitHeight = useCallback((key, nextHeight) => {
     const normalizedHeight = Math.max(0, Math.round(Number(nextHeight) || 0));
@@ -157,6 +163,34 @@ export default function useMeasuredGridItems(items, getId = (item) => item?.id ?
     return next;
   }, [getId, heightsById, items]);
 
+  useEffect(() => {
+    setStickyRowSpanById((prev) => {
+      const next = {};
+
+      (items || []).forEach((item) => {
+        const id = getId(item);
+        if (id == null) return;
+
+        const key = String(id);
+        const requestedRowSpan = Math.max(1, Number(item?.rowSpan) || 1);
+        const measuredMinimum = Math.max(1, Number(minRowSpanById[key]) || 1);
+        const previousSticky = Math.max(1, Number(prev[key]) || 1);
+
+        next[key] = lockAutoRowSpan
+          ? Math.max(previousSticky, requestedRowSpan, measuredMinimum)
+          : Math.max(requestedRowSpan, measuredMinimum);
+      });
+
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (prevKeys.length === nextKeys.length && nextKeys.every((key) => prev[key] === next[key])) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [getId, items, lockAutoRowSpan, minRowSpanById]);
+
   const resolvedItems = useMemo(
     () =>
       (items || []).map((item) => {
@@ -164,14 +198,18 @@ export default function useMeasuredGridItems(items, getId = (item) => item?.id ?
         const key = String(id);
         const minimumRowSpan = minRowSpanById[key] || Math.max(1, Number(item?.minRowSpan) || 1);
         const requestedRowSpan = Math.max(1, Number(item?.rowSpan) || 1);
+        const stickyRowSpan = stickyRowSpanById[key] || Math.max(requestedRowSpan, minimumRowSpan);
+        const resolvedRowSpan = lockAutoRowSpan
+          ? Math.max(requestedRowSpan, stickyRowSpan)
+          : Math.max(requestedRowSpan, minimumRowSpan);
 
         return {
           ...item,
           minRowSpan: minimumRowSpan,
-          rowSpan: Math.max(requestedRowSpan, minimumRowSpan),
+          rowSpan: resolvedRowSpan,
         };
       }),
-    [getId, items, minRowSpanById]
+    [getId, items, minRowSpanById, stickyRowSpanById, lockAutoRowSpan]
   );
 
   return {

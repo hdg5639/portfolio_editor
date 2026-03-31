@@ -89,6 +89,21 @@ function SelectionBadge({ label, tone = 'block' }) {
     return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
 }
 
+
+function getImageGridLayoutStyle(block) {
+    const slotCount = Math.max(1, block.images?.length || 0);
+    const colSpan = Number(block.colSpan) || 12;
+
+    const maxColumns = colSpan >= 9 ? 3 : colSpan >= 5 ? 2 : 1;
+    const columns = Math.max(1, Math.min(slotCount, maxColumns));
+    const rows = Math.max(1, Math.ceil(slotCount / columns));
+
+    return {
+        '--image-grid-columns': columns,
+        '--image-grid-rows': rows,
+    };
+}
+
 function ItemShell({
                        store,
                        sectionId,
@@ -257,8 +272,11 @@ function ComplexBlockShell({
                                layoutMode,
                                placementStyle,
                                measureRef,
+                               measureNode = null,
+                               fillBody = false,
                                minRowSpan,
                                layoutItemsOverride,
+                               toolbarActions,
                                children,
                            }) {
     const editable = store.mode === 'edit';
@@ -367,6 +385,7 @@ function ComplexBlockShell({
                     }
                     actions={
                         <div className="profile-block-actions">
+                            {toolbarActions}
                             <button
                                 type="button"
                                 onClick={(e) => {
@@ -388,7 +407,12 @@ function ComplexBlockShell({
             ) : null}
 
             <div className="layout-item-body">
-                <div className="layout-item-measure" ref={measureRef}>
+                {measureNode ? (
+                    <div className="layout-item-measure-probe" ref={measureRef} aria-hidden="true">
+                        {measureNode}
+                    </div>
+                ) : null}
+                <div className={`layout-item-measure${fillBody ? ' fill-height' : ''}`} ref={measureNode ? null : measureRef}>
                     {children}
                 </div>
             </div>
@@ -401,7 +425,7 @@ function ComplexTextBlock({ store, sectionId, itemId, block, editable }) {
     const contentKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.content`;
 
     return (
-        <div className="project-inner-card">
+        <div className="project-inner-card project-image-block-card">
             {editable ? (
                 <>
                     <input
@@ -441,7 +465,7 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
     const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
 
     return (
-        <div className="project-inner-card">
+        <div className="project-inner-card project-image-block-card">
             {editable ? (
                 <>
                     <input
@@ -487,13 +511,6 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
                                 </div>
                             );
                         })}
-                        <button
-                            type="button"
-                            className="ghost small"
-                            onClick={() => store.actions.addCustomComplexListItem(sectionId, itemId, block.id)}
-                        >
-                            리스트 항목 추가
-                        </button>
                     </div>
                 </>
             ) : (
@@ -518,12 +535,51 @@ function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
     );
 }
 
-function ComplexImageBlock({store, sectionId, itemId, block, editable}) {
+function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeight = false, measureOnly = false}) {
     const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
     const captionKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.caption`;
+    const imageGridStyle = useMemo(() => getImageGridLayoutStyle(block), [block.colSpan, block.images]);
+
+    if (measureOnly) {
+        return (
+            <div className="project-inner-card project-image-block-card">
+                {editable ? (
+                    <>
+                        <div className="custom-input title">{block.title || ' '}</div>
+                        <div className="custom-input subtitle">{block.caption || ' '}</div>
+                        <div className="project-image-grid" style={imageGridStyle}>
+                            {(block.images || []).map((image, index) => (
+                                <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
+                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
+                                        {image ? (
+                                            <img src={image} alt={block.title || 'custom'} />
+                                        ) : (
+                                            <div className="project-image-placeholder">IMAGE</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <h4>{block.title}</h4>
+                        <div className="project-image-grid" style={imageGridStyle}>
+                            {(block.images || []).filter(Boolean).map((image, index) => (
+                                <div key={`${block.id}-probe-img-${index}`} className="project-image-slot">
+                                    <img src={image} alt={block.title || 'custom'} />
+                                </div>
+                            ))}
+                        </div>
+                        {block.caption ? <p className="project-caption">{block.caption}</p> : null}
+                    </>
+                )}
+            </div>
+        );
+    }
 
     return (
-        <div className="project-inner-card">
+        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}`}>
             {editable ? (
                 <>
                     <input
@@ -548,75 +604,67 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable}) {
                         }
                         className="custom-input subtitle"
                     />
-                    <div className="project-image-grid">
+                    <div className="project-image-grid" style={imageGridStyle}>
                         {(block.images || []).map((image, index) => {
                             const inputId = `custom-image-${sectionId}-${itemId}-${block.id}-${index}`;
                             return (
                                 <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
-                                    <div className="project-image-slot">
+                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
                                         {image ? (
                                             <img src={image} alt={block.title || 'custom'} />
                                         ) : (
                                             <div className="project-image-placeholder">IMAGE</div>
                                         )}
-                                    </div>
-                                    <div className="project-image-slot-actions">
-                                        <label
-                                            htmlFor={inputId}
-                                            className="ghost small upload-label"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            이미지 업로드
-                                        </label>
-                                        <input
-                                            id={inputId}
-                                            type="file"
-                                            hidden
-                                            accept="image/*"
-                                            onClick={(e) => e.stopPropagation()}
-                                            onChange={(e) => {
-                                                e.stopPropagation();
-                                                const file = e.target.files?.[0];
-                                                readFileAsDataUrl(file, (value) =>
-                                                    store.actions.updateCustomComplexImage(
-                                                        sectionId,
-                                                        itemId,
-                                                        block.id,
-                                                        index,
-                                                        value
-                                                    )
-                                                );
-                                                e.target.value = '';
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            className="ghost danger small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
-                                            }}
-                                        >
-                                            슬롯 제거
-                                        </button>
+                                        <div className="project-image-slot-actions inside">
+                                            <label
+                                                htmlFor={inputId}
+                                                className="ghost small upload-label"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                이미지 업로드
+                                            </label>
+                                            <input
+                                                id={inputId}
+                                                type="file"
+                                                hidden
+                                                accept="image/*"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    const file = e.target.files?.[0];
+                                                    readFileAsDataUrl(file, (value) =>
+                                                        store.actions.updateCustomComplexImage(
+                                                            sectionId,
+                                                            itemId,
+                                                            block.id,
+                                                            index,
+                                                            value
+                                                        )
+                                                    );
+                                                    e.target.value = '';
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="ghost danger small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
+                                                }}
+                                            >
+                                                슬롯 제거
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
-
-                    <button
-                        type="button"
-                        className="ghost small"
-                        onClick={() => store.actions.addCustomComplexImage(sectionId, itemId, block.id)}
-                    >
-                        이미지 슬롯 추가
-                    </button>
                 </>
             ) : (
                 <>
                     <h4 {...selectableViewProps(store, titleKey, '복합 이미지 블록 제목')}>{block.title}</h4>
-                    <div className="project-image-grid">
+                    <div className="project-image-grid" style={imageGridStyle}>
                         {(block.images || []).filter(Boolean).map((image, index) => (
                             <div key={`${block.id}-img-${index}`} className="project-image-slot">
                                 <img src={image} alt={block.title || 'custom'} />
@@ -646,7 +694,9 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
     const summaryKey = `custom.${sectionId}.${item.id}.summary`;
     const linkKey = `custom.${sectionId}.${item.id}.link`;
     const blockLayoutMode = item.layoutMode || 'manual';
-    const measuredComplexBlocks = useMeasuredGridItems(item.blocks || [], (block) => block.id);
+    const measuredComplexBlocks = useMeasuredGridItems(item.blocks || [], (block) => block.id, {
+        lockAutoRowSpan: store.mode !== 'edit',
+    });
     const resolvedComplexBlocks = useMemo(() => {
         const normalized = blockLayoutMode === 'manual' ? normalizeGridItems(measuredComplexBlocks.resolvedItems) : measuredComplexBlocks.resolvedItems;
         return normalized;
@@ -836,6 +886,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         active={!!draggingBlockId}
                         interactive={blockLayoutMode === 'manual' && !!draggingBlockId}
                         confirmBeforePlace={!!store.ui?.isMobile}
+                        isMobileLayout={!!store.ui?.isMobile}
                         onCellEnter={(cell) => {
                             if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
                             setManualPreviewCell(cell);
@@ -881,7 +932,78 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                     />
                 ) : null}
 
-                {resolvedComplexBlocks.map((block) => (
+                {resolvedComplexBlocks.map((block) => {
+                    const toolbarActions = editable
+                        ? block.type === 'list'
+                            ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        store.actions.addCustomComplexListItem(sectionId, item.id, block.id);
+                                    }}
+                                >
+                                    리스트 항목 추가
+                                </button>
+                            )
+                            : block.type === 'image'
+                                ? (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            store.actions.addCustomComplexImage(sectionId, item.id, block.id);
+                                        }}
+                                    >
+                                        이미지 슬롯 추가
+                                    </button>
+                                )
+                                : null
+                        : null;
+
+                    const isImageBlock = block.type === 'image';
+                    const blockNode = block.type === 'text'
+                        ? (
+                            <ComplexTextBlock
+                                store={store}
+                                sectionId={sectionId}
+                                itemId={item.id}
+                                block={block}
+                                editable={editable}
+                            />
+                        ) : block.type === 'list'
+                            ? (
+                                <ComplexListBlock
+                                    store={store}
+                                    sectionId={sectionId}
+                                    itemId={item.id}
+                                    block={block}
+                                    editable={editable}
+                                />
+                            ) : (
+                                <ComplexImageBlock
+                                    store={store}
+                                    sectionId={sectionId}
+                                    itemId={item.id}
+                                    block={block}
+                                    editable={editable}
+                                    fillHeight
+                                />
+                            );
+                    const measureNode = isImageBlock
+                        ? (
+                            <ComplexImageBlock
+                                store={store}
+                                sectionId={sectionId}
+                                itemId={item.id}
+                                block={block}
+                                editable={editable}
+                                measureOnly
+                            />
+                        )
+                        : null;
+
+                    return (
                     <ComplexBlockShell
                         key={block.id}
                         store={store}
@@ -895,36 +1017,16 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         layoutMode={blockLayoutMode}
                         placementStyle={getGridItemPlacementStyle(block, blockLayoutMode)}
                         measureRef={measuredComplexBlocks.registerMeasureRef(block.id)}
+                        measureNode={measureNode}
+                        fillBody={isImageBlock}
                         minRowSpan={block.minRowSpan || 1}
                         layoutItemsOverride={resolvedComplexBlocks}
+                        toolbarActions={toolbarActions}
                     >
-                        {block.type === 'text' ? (
-                            <ComplexTextBlock
-                                store={store}
-                                sectionId={sectionId}
-                                itemId={item.id}
-                                block={block}
-                                editable={editable}
-                            />
-                        ) : block.type === 'list' ? (
-                            <ComplexListBlock
-                                store={store}
-                                sectionId={sectionId}
-                                itemId={item.id}
-                                block={block}
-                                editable={editable}
-                            />
-                        ) : (
-                            <ComplexImageBlock
-                                store={store}
-                                sectionId={sectionId}
-                                itemId={item.id}
-                                block={block}
-                                editable={editable}
-                            />
-                        )}
+                        {blockNode}
                     </ComplexBlockShell>
-                ))}
+                    );
+                })}
             </div>
 
             {editable ? (
@@ -1124,7 +1226,9 @@ export default function CustomSection({ store, section }) {
     const titleStyle = store.actions.styleFor(`section.custom.${section.id}.title`);
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
-    const measuredSectionItems = useMeasuredGridItems(section.items || [], (item) => item.id);
+    const measuredSectionItems = useMeasuredGridItems(section.items || [], (item) => item.id, {
+        lockAutoRowSpan: store.mode !== 'edit',
+    });
     const resolvedSectionItems = useMemo(() => measuredSectionItems.resolvedItems, [measuredSectionItems.resolvedItems]);
     const cardSelection = getCardSelectionState(store.selected?.key, 'customCard', [`custom.${section.id}`, `section.custom.${section.id}`]);
 

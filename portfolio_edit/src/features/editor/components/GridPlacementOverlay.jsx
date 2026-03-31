@@ -53,6 +53,7 @@ export default function GridPlacementOverlay({
   interactive = false,
   active = false,
   confirmBeforePlace = false,
+  isMobileLayout = false,
   confirmText = '배치하기',
   cancelText = '취소',
   onCellEnter,
@@ -85,7 +86,11 @@ export default function GridPlacementOverlay({
     if (!(confirmBeforePlace && interactive && active && pendingCell)) return null;
 
     const node = (
-      <div className="mobile-placement-confirm no-print" role="dialog" aria-label="배치 확인">
+      <div
+        className={`mobile-placement-confirm no-print ${isMobileLayout ? 'is-editor-mobile-layout' : 'is-editor-desktop-layout'}`}
+        role="dialog"
+        aria-label="배치 확인"
+      >
         <div className="mobile-placement-confirm-card">
           <div className="mobile-placement-confirm-copy">
             <strong>미리보기 위치 확인</strong>
@@ -124,7 +129,7 @@ export default function GridPlacementOverlay({
     );
 
     return typeof document !== 'undefined' ? createPortal(node, document.body) : node;
-  }, [active, cancelText, confirmBeforePlace, confirmText, interactive, onCancel, onCellConfirm, onPointerLeave, pendingCell]);
+  }, [active, cancelText, confirmBeforePlace, confirmText, interactive, isMobileLayout, onCancel, onCellConfirm, onPointerLeave, pendingCell]);
 
   useEffect(() => {
     if (!interactive || !active || !confirmBeforePlace) {

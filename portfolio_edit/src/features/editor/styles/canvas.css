@@ -222,7 +222,7 @@
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-auto-rows: minmax(110px, auto);
-    grid-auto-flow: row dense;
+    grid-auto-flow: row;
     gap: 18px;
     align-items: start;
 }
@@ -235,7 +235,7 @@
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-auto-rows: var(--grid-row-height);
-    grid-auto-flow: row dense;
+    grid-auto-flow: row;
     gap: var(--grid-gap);
     align-items: stretch;
 }
@@ -740,31 +740,27 @@
     color: #fff;
 }
 
-@media (min-width: 921px) {
-    .mobile-placement-confirm {
-        display: none;
-    }
+.mobile-placement-confirm.is-editor-desktop-layout {
+    display: none;
 }
 
-@media (max-width: 920px) {
-    .mobile-placement-confirm {
-        right: 16px;
-        left: auto;
-        justify-content: flex-end;
-    }
+.mobile-placement-confirm.is-editor-mobile-layout {
+    right: 16px;
+    left: auto;
+    justify-content: flex-end;
+}
 
-    .mobile-placement-confirm-card {
-        align-items: stretch;
-        flex-direction: column;
-    }
+.mobile-placement-confirm.is-editor-mobile-layout .mobile-placement-confirm-card {
+    align-items: stretch;
+    flex-direction: column;
+}
 
-    .mobile-placement-confirm-actions {
-        width: 100%;
-    }
+.mobile-placement-confirm.is-editor-mobile-layout .mobile-placement-confirm-actions {
+    width: 100%;
+}
 
-    .mobile-placement-confirm-actions button {
-        flex: 1 1 0;
-    }
+.mobile-placement-confirm.is-editor-mobile-layout .mobile-placement-confirm-actions button {
+    flex: 1 1 0;
 }
 
 .grid-placement-overlay {
@@ -1488,29 +1484,6 @@
     opacity: 1;
 }
 
-.editor-layout-force-mobile .mobile-placement-confirm {
-    display: flex !important;
-    right: 16px;
-    left: auto;
-    justify-content: flex-end;
-}
-
-.editor-layout-force-mobile .mobile-placement-confirm-card {
-    align-items: stretch;
-    flex-direction: column;
-}
-
-.editor-layout-force-mobile .mobile-placement-confirm-actions {
-    width: 100%;
-}
-
-.editor-layout-force-mobile .mobile-placement-confirm-actions button {
-    flex: 1 1 0;
-}
-
-.editor-layout-force-desktop .mobile-placement-confirm {
-    display: none !important;
-}
 
 /* ===== Modern monochrome canvas chrome ===== */
 .canvas-wrap {

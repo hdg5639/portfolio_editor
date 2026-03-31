@@ -286,7 +286,9 @@ export default function ProfileSection({ store }) {
     const showHelpers = isEdit && store.ui.showEditHelpers;
     const contacts = profile.contacts || [];
     const extraBlocks = profile.extraBlocks || [];
-    const measuredProfileLayout = useMeasuredGridItems(profile.layout || [], (item) => item.key);
+    const measuredProfileLayout = useMeasuredGridItems(profile.layout || [], (item) => item.key, {
+        lockAutoRowSpan: store.mode !== 'edit',
+    });
     const resolvedProfileLayout = useMemo(() => {
         const visible = measuredProfileLayout.resolvedItems.filter((item) => item.visible !== false);
         const normalizedVisible = layoutMode === 'manual' ? normalizeGridItems(visible) : visible;
@@ -571,7 +573,7 @@ export default function ProfileSection({ store }) {
                     )}
                 </div>
             ),
-            measureNode: introPreviewNode,
+            measureNode: isEdit ? null : introPreviewNode,
             actions: (
                 <div className="profile-block-actions">
                     <button
@@ -618,7 +620,7 @@ export default function ProfileSection({ store }) {
             );
             acc[`extra:${block.id}`] = {
                 label,
-                measureNode: previewNode,
+                measureNode: isEdit ? null : previewNode,
                 node: (
                     <div className="project-inner-card project-block">
                         {isEdit ? (
@@ -744,7 +746,7 @@ export default function ProfileSection({ store }) {
         );
         acc[`extra:${block.id}`] = {
             label,
-            measureNode: previewNode,
+            measureNode: isEdit ? null : previewNode,
             node: (
                 <div className="project-inner-card project-block">
                     {isEdit ? (
@@ -853,6 +855,7 @@ export default function ProfileSection({ store }) {
                         active={!!draggingKey}
                         interactive={layoutMode === 'manual' && !!draggingKey}
                         confirmBeforePlace={!!store.ui?.isMobile}
+                        isMobileLayout={!!store.ui?.isMobile}
                         onCellEnter={(cell) => {
                             if (layoutMode !== 'manual' || !draggingKey) return;
                             setManualPreviewCell(cell);
