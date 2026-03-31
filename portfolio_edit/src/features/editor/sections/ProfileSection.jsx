@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -112,6 +112,7 @@ function ProfileBlockShell({
     minRowSpan,
     layoutItemsOverride,
     actions,
+    measureNode,
     children,
 }) {
     const isEdit = store.mode === 'edit';
@@ -170,7 +171,7 @@ function ProfileBlockShell({
 
     return (
         <div
-            className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} layout-mode-${layoutMode} ${isDragging ? 'dragging' : ''} ${
+            className={`profile-layout-item selection-scope selection-block span-${colSpan} span-r-${rowSpan} layout-mode-${layoutMode} ${layoutMode === 'manual' && draggingKey === blockKey ? 'manual-armed' : ''} ${isDragging ? 'dragging' : ''} ${
                 isDragOver ? 'drag-over' : ''
             } ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             style={placementStyle}
@@ -235,7 +236,12 @@ function ProfileBlockShell({
             ) : null}
 
             <div className="layout-item-body">
-                <div className="layout-item-measure" ref={measureRef}>
+                {measureNode ? (
+                    <div className="layout-item-measure-probe" ref={measureRef} aria-hidden="true">
+                        {measureNode}
+                    </div>
+                ) : null}
+                <div className="layout-item-measure" ref={measureNode ? null : measureRef}>
                     {children}
                 </div>
             </div>
@@ -248,6 +254,23 @@ function renderContactValue(contact) {
     return contact.value;
 }
 
+function renderProfileContactPreview(store, contacts) {
+    return (
+        <div className="profile-block profile-contacts-block">
+            <div className="profile-contact-list">
+                {contacts.length ? contacts.filter((contact) => contact.visible !== false).map((contact) => (
+                    <div key={contact.id} className="profile-contact-row">
+                        <span {...viewProps(store, `profile.contacts.${contact.id}.label`, `${contact.label} 라벨`)}>{contact.label || 'CONTACT'}</span>
+                        <strong {...viewProps(store, `profile.contacts.${contact.id}.value`, `${contact.label} 값`)}>
+                            {renderContactValue(contact)}
+                        </strong>
+                    </div>
+                )) : <div className="profile-contact-empty">표시할 연락처가 없습니다.</div>}
+            </div>
+        </div>
+    );
+}
+
 export default function ProfileSection({ store }) {
     const { profile } = store.portfolio;
     const isEdit = store.mode === 'edit';
@@ -257,6 +280,7 @@ export default function ProfileSection({ store }) {
     const [draggingKey, setDraggingKey] = useState(null);
     const [dragOverKey, setDragOverKey] = useState(null);
     const [manualPreviewCell, setManualPreviewCell] = useState(null);
+    const [manualLayoutSnapshot, setManualLayoutSnapshot] = useState(null);
 
     const layoutMode = profile.layoutMode || 'manual';
     const showHelpers = isEdit && store.ui.showEditHelpers;
@@ -271,14 +295,63 @@ export default function ProfileSection({ store }) {
             item.visible === false ? item : (visibleByKey.get(item.key) || item)
         );
     }, [layoutMode, measuredProfileLayout.resolvedItems]);
+    useEffect(() => {
+        if (layoutMode !== 'manual') {
+            if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+            return;
+        }
+
+        if (draggingKey) {
+            if (!manualLayoutSnapshot) {
+                setManualLayoutSnapshot(resolvedProfileLayout.map((item) => ({ ...item })));
+            }
+            return;
+        }
+
+        if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+    }, [draggingKey, layoutMode, manualLayoutSnapshot, resolvedProfileLayout]);
+
+    const previewSourceLayout = layoutMode === 'manual' && manualLayoutSnapshot ? manualLayoutSnapshot : resolvedProfileLayout;
     const visibleBlocks = resolvedProfileLayout.filter((item) => item.visible !== false);
+    const previewVisibleBlocks = previewSourceLayout.filter((item) => item.visible !== false);
     const packedPreviewState = layoutMode === 'packed'
         ? getPackedPlacementPreview(visibleBlocks, draggingKey, dragOverKey)
         : null;
     const manualPreviewState = layoutMode === 'manual' && manualPreviewCell
-        ? getManualPlacementPreview(visibleBlocks, draggingKey, manualPreviewCell.x, manualPreviewCell.y)
+        ? getManualPlacementPreview(previewVisibleBlocks, draggingKey, manualPreviewCell.x, manualPreviewCell.y)
         : null;
-    const gridRows = getGridRowExtent(visibleBlocks, packedPreviewState?.preview || manualPreviewState?.preview, 4);
+    const gridRows = getGridRowExtent(previewVisibleBlocks, packedPreviewState?.preview || manualPreviewState?.preview, 4);
+
+    const contactPreviewNode = renderProfileContactPreview(store, contacts);
+    const imagePreviewNode = (
+        <div className="profile-block profile-photo-block">
+            {profile.image ? (
+                <img src={profile.image} alt={profile.name || 'profile'} className="profile-photo" />
+            ) : (
+                <div className="profile-photo placeholder">PHOTO</div>
+            )}
+        </div>
+    );
+    const quotePreviewNode = (
+        <div className="profile-block profile-quote-block">
+            <div className="profile-quote-text" {...viewProps(store, 'profile.quote', '한 줄 메시지')}>{profile.quote}</div>
+        </div>
+    );
+    const identityPreviewNode = (
+        <div className="profile-block profile-identity-block">
+            <div>
+                <div className="profile-name-text" {...viewProps(store, 'profile.name', '이름')}>{profile.name}</div>
+            </div>
+            <div>
+                <div className="profile-role-text" {...viewProps(store, 'profile.role', '직무')}>{profile.role}</div>
+            </div>
+        </div>
+    );
+    const introPreviewNode = (
+        <div className="profile-block profile-intro-block">
+            <div className="profile-intro-text" {...viewProps(store, 'profile.intro', '자기소개')}>{profile.intro}</div>
+        </div>
+    );
 
     const fixedBlockMap = {
         image: {
@@ -290,26 +363,27 @@ export default function ProfileSection({ store }) {
                     ) : (
                         <div className="profile-photo placeholder">PHOTO</div>
                     )}
-
-                    {isEdit ? (
-                        <label className="ghost small upload-label">
-                            이미지 업로드
-                            <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    readFileAsDataUrl(file, (value) => store.actions.updateProfile('image', value));
-                                    e.target.value = '';
-                                }}
-                            />
-                        </label>
-                    ) : null}
                 </div>
             ),
+            measureNode: imagePreviewNode,
             actions: (
                 <div className="profile-block-actions">
+                    <label
+                        className="ghost small upload-label"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        이미지 업로드
+                        <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                readFileAsDataUrl(file, (value) => store.actions.updateProfile('image', value));
+                                e.target.value = '';
+                            }}
+                        />
+                    </label>
                     <button
                         type="button"
                         onClick={(e) => {
@@ -341,6 +415,7 @@ export default function ProfileSection({ store }) {
                     )}
                 </div>
             ),
+            measureNode: quotePreviewNode,
             actions: (
                 <div className="profile-block-actions">
                     <button
@@ -401,29 +476,17 @@ export default function ProfileSection({ store }) {
                                     </div>
                                 ))}
                             </div>
-                            <div className="profile-contact-add-row">
-                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('email')}>이메일 추가</button>
-                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('phone')}>전화 추가</button>
-                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('url')}>링크 추가</button>
-                                <button type="button" className="ghost small" onClick={() => store.actions.addProfileContact('text')}>직접 추가</button>
-                            </div>
                         </div>
-                    ) : (
-                        <div className="profile-contact-list">
-                            {contacts.length ? contacts.filter((contact) => contact.visible !== false).map((contact) => (
-                                <div key={contact.id} className="profile-contact-row">
-                                    <span {...viewProps(store, `profile.contacts.${contact.id}.label`, `${contact.label} 라벨`)}>{contact.label || 'CONTACT'}</span>
-                                    <strong {...viewProps(store, `profile.contacts.${contact.id}.value`, `${contact.label} 값`)}>
-                                        {renderContactValue(contact)}
-                                    </strong>
-                                </div>
-                            )) : <div className="profile-contact-empty">표시할 연락처가 없습니다.</div>}
-                        </div>
-                    )}
+                    ) : contactPreviewNode}
                 </div>
             ),
+            measureNode: contactPreviewNode,
             actions: (
-                <div className="profile-block-actions">
+                <div className="profile-block-actions profile-contact-actions">
+                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('email'); }}>이메일 추가</button>
+                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('phone'); }}>전화 추가</button>
+                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('url'); }}>링크 추가</button>
+                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('text'); }}>직접 추가</button>
                     <button
                         type="button"
                         onClick={(e) => {
@@ -473,6 +536,7 @@ export default function ProfileSection({ store }) {
                     </div>
                 </div>
             ),
+            measureNode: identityPreviewNode,
             actions: (
                 <div className="profile-block-actions">
                     <button
@@ -507,6 +571,7 @@ export default function ProfileSection({ store }) {
                     )}
                 </div>
             ),
+            measureNode: introPreviewNode,
             actions: (
                 <div className="profile-block-actions">
                     <button
@@ -541,8 +606,19 @@ export default function ProfileSection({ store }) {
         );
 
         if (block.type === 'list') {
+            const previewNode = (
+                <div className="project-inner-card project-block">
+                    <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 리스트 제목')}>{block.title}</h5>
+                    <ul className="project-list-view">
+                        {(block.items || []).filter(Boolean).map((item, index) => (
+                            <li key={`${block.id}-${index}`} {...viewProps(store, `${baseKey}.items.${index}`, '프로필 추가 리스트 항목')}>{item}</li>
+                        ))}
+                    </ul>
+                </div>
+            );
             acc[`extra:${block.id}`] = {
                 label,
+                measureNode: previewNode,
                 node: (
                     <div className="project-inner-card project-block">
                         {isEdit ? (
@@ -581,8 +657,18 @@ export default function ProfileSection({ store }) {
 
         if (block.type === 'image') {
             const imageSrc = block.images?.[0] || '';
+            const previewNode = (
+                <div className="project-inner-card project-block project-images-wrap">
+                    <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 이미지 제목')}>{block.title}</h5>
+                    <div className="project-image-slot">
+                        {imageSrc ? <img src={imageSrc} alt={block.title || 'profile extra'} /> : <div className="project-image-placeholder">IMAGE</div>}
+                    </div>
+                    {block.caption ? <p className="image-caption" {...viewProps(store, `${baseKey}.caption`, '프로필 추가 이미지 캡션')}>{block.caption}</p> : null}
+                </div>
+            );
             acc[`extra:${block.id}`] = {
                 label,
+                measureNode: previewNode,
                 node: (
                     <div className="project-inner-card project-block project-images-wrap">
                         {isEdit ? (
@@ -650,8 +736,15 @@ export default function ProfileSection({ store }) {
             return acc;
         }
 
+        const previewNode = (
+            <div className="project-inner-card project-block">
+                <h5 {...viewProps(store, `${baseKey}.title`, '프로필 추가 텍스트 제목')}>{block.title}</h5>
+                <p className="project-paragraph" {...viewProps(store, `${baseKey}.content`, '프로필 추가 텍스트 내용')}>{block.content}</p>
+            </div>
+        );
         acc[`extra:${block.id}`] = {
             label,
+            measureNode: previewNode,
             node: (
                 <div className="project-inner-card project-block">
                     {isEdit ? (
@@ -754,7 +847,7 @@ export default function ProfileSection({ store }) {
                     <GridPlacementOverlay
                         rows={gridRows}
                         preview={packedPreviewState?.preview || manualPreviewState?.preview}
-                        items={visibleBlocks}
+                        items={previewVisibleBlocks}
                         activeItemId={draggingKey}
                         showOccupiedRanges={layoutMode === 'manual'}
                         active={!!draggingKey}
@@ -766,28 +859,31 @@ export default function ProfileSection({ store }) {
                         }}
                         onCellDrop={(cell) => {
                             if (layoutMode !== 'manual' || !draggingKey) return;
-                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, previewSourceLayout);
                             setDraggingKey(null);
                             setDragOverKey(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellClick={(cell, event) => {
                             if (layoutMode !== 'manual' || !draggingKey) return;
                             event.preventDefault();
                             event.stopPropagation();
-                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, previewSourceLayout);
                             setDraggingKey(null);
                             setDragOverKey(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellConfirm={(cell, event) => {
                             if (layoutMode !== 'manual' || !draggingKey) return;
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
-                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, resolvedProfileLayout);
+                            store.actions.placeProfileBlock(draggingKey, cell.x, cell.y, previewSourceLayout);
                             setDraggingKey(null);
                             setDragOverKey(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onPointerLeave={() => {
                             if (layoutMode === 'manual') setManualPreviewCell(null);
@@ -796,6 +892,7 @@ export default function ProfileSection({ store }) {
                             setManualPreviewCell(null);
                             setDraggingKey(null);
                             setDragOverKey(null);
+                            setManualLayoutSnapshot(null);
                             store.actions.selectPage();
                         }}
                     />
@@ -822,6 +919,7 @@ export default function ProfileSection({ store }) {
                             measureRef={measuredProfileLayout.registerMeasureRef(block.key)}
                             layoutItemsOverride={resolvedProfileLayout}
                             actions={current.actions}
+                            measureNode={current.measureNode}
                         >
                             {current.node}
                         </ProfileBlockShell>

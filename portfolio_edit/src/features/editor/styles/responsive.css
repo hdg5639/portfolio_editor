@@ -399,3 +399,41 @@
 .editor-layout-force-desktop .custom-item.media.image-right {
     grid-template-columns: 220px minmax(0, 1fr) !important;
 }
+
+/* ===== Responsive tune for monochrome refresh ===== */
+@media (max-width: 1280px) {
+    .topbar-mode-toggle {
+        min-width: 176px;
+    }
+}
+
+@media (max-width: 920px) {
+    .topbar-inner {
+        gap: 12px;
+    }
+
+    .topbar-action-button {
+        padding: 8px 10px;
+    }
+
+    .mobile-app-shell .topbar {
+        background: rgba(252, 252, 252, 0.92);
+    }
+
+    .mobile-app-shell .topbar-inner,
+    .editor-layout-force-mobile .topbar-inner {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .mobile-app-shell .topbar-mode-toggle-mobile,
+    .editor-layout-force-mobile .topbar-mode-toggle-mobile {
+        border-radius: 10px;
+    }
+
+    .mobile-app-shell .topbar-icon-button,
+    .editor-layout-force-mobile .topbar-icon-button {
+        border-radius: 8px;
+    }
+}
+

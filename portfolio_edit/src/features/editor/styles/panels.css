@@ -1237,3 +1237,341 @@
     align-self: center;
     z-index: 1;
 }
+
+/* ===== Modern monochrome side panels ===== */
+.panel-stack {
+    gap: 8px;
+}
+
+.panel-section {
+    background: var(--panel-muted);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.panel-section-head {
+    padding: 11px 13px;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.panel-section-head strong {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.panel-section-body {
+    padding: 12px 13px;
+}
+
+.sidebar-panel {
+    background: #ffffff;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.sidebar-panel-header {
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.07);
+    background: #fcfcfc;
+}
+
+.sidebar-panel-header-hit {
+    min-width: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 8px 10px;
+    margin: 0;
+    border-radius: 10px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sidebar-panel-header-hit:hover {
+    background: #f5f5f6;
+    border-color: rgba(17, 17, 17, 0.05);
+}
+
+.sidebar-panel-header-text strong {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.sidebar-panel-header-text p {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.sidebar-panel-header-close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.sidebar-panel-body {
+    padding: 10px;
+}
+
+.sidebar-panel-body::-webkit-scrollbar-thumb {
+    background: rgba(17, 17, 17, 0.16);
+    border-radius: 999px;
+}
+
+.header-inline-toggle {
+    align-self: center;
+    gap: 8px;
+}
+
+.header-inline-toggle-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+}
+
+.header-inline-toggle-track {
+    width: 34px;
+    height: 18px;
+    background: #d6d8dc;
+}
+
+.header-inline-toggle-thumb {
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(17, 17, 17, 0.18);
+}
+
+.header-inline-toggle.active .header-inline-toggle-track {
+    background: #111111;
+}
+
+.header-inline-toggle.active .header-inline-toggle-thumb {
+    left: 18px;
+}
+
+.toggle-grid {
+    gap: 8px;
+}
+
+.toggle-chip {
+    min-height: 40px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
+    box-shadow: none;
+}
+
+.toggle-chip.active {
+    background: #111111;
+    color: #ffffff;
+    border-color: #111111;
+    box-shadow: none;
+}
+
+.section-toggle-list {
+    border-top: 0;
+    gap: 6px;
+}
+
+.section-toggle-row {
+    padding: 11px 12px;
+    border: 1px solid rgba(17, 17, 17, 0.06);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.section-toggle-row:last-child {
+    border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+}
+
+.section-toggle-row:hover {
+    background: #f6f7f8;
+}
+
+.section-toggle-row-label {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.section-toggle-row-state {
+    padding: 3px 7px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 999px;
+    background: #f7f7f8;
+    color: #4b5563;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.section-toggle-row.active .section-toggle-row-state {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+}
+
+.builder-form,
+.mini-list,
+.sub-list,
+.style-panel-summary-body {
+    gap: 10px;
+}
+
+.builder-field {
+    gap: 5px;
+}
+
+.builder-field span,
+.style-field > span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.mini-card {
+    padding: 12px;
+    border-radius: 10px;
+    border-color: rgba(17, 17, 17, 0.08);
+    background: #ffffff;
+}
+
+.sub-item {
+    border-radius: 8px;
+    border-style: solid;
+    border-color: rgba(17, 17, 17, 0.08);
+    background: #ffffff;
+}
+
+.style-grid,
+.style-grid.compact,
+.style-quick-grid {
+    gap: 10px;
+}
+
+.style-accordion {
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 10px;
+    background: #fbfbfb;
+}
+
+.style-accordion summary {
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    background: #ffffff;
+}
+
+.style-accordion-body {
+    padding: 0 14px 14px;
+}
+
+.alpha-color-stack {
+    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-rows: 34px 30px;
+    column-gap: 8px;
+    row-gap: 8px;
+}
+
+.alpha-color-picker,
+.alpha-color-picker input[type='color'],
+.alpha-color-picker span {
+    width: 48px;
+    height: 34px;
+}
+
+.alpha-color-picker span,
+.alpha-color-preview-shell,
+.alpha-value-box input[type='number'] {
+    border-radius: 8px;
+}
+
+.alpha-color-picker-fill {
+    inset: 5px;
+    border-radius: 6px;
+}
+
+.alpha-color-preview-shell {
+    height: 34px;
+}
+
+.alpha-range-input::-webkit-slider-runnable-track,
+.alpha-range-input::-moz-range-track {
+    height: 6px;
+    background: #d7d9dd;
+}
+
+.alpha-range-input::-webkit-slider-thumb,
+.alpha-range-input::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #111111;
+    box-shadow: none;
+}
+
+.alpha-value-box input[type='number'] {
+    height: 30px;
+}
+
+.mobile-bottom-dock-inner,
+.mobile-selection-chip,
+.mobile-selection-badge,
+.mobile-select-tool-guide,
+.mobile-style-tool-hint,
+.mobile-empty-state,
+.mobile-editor-sheet,
+.export-dialog,
+.orientation-card {
+    border-radius: 12px;
+}
+
+.mobile-bottom-dock-inner,
+.mobile-selection-chip,
+.mobile-editor-sheet,
+.export-dialog {
+    border-color: rgba(17, 17, 17, 0.08);
+    box-shadow: var(--shadow-soft);
+}
+
+.mobile-dock-button {
+    border-radius: 8px;
+    color: #4b5563;
+}
+
+.mobile-dock-button.active {
+    background: #f3f4f6;
+    border-color: rgba(17, 17, 17, 0.08);
+}
+
+.mobile-dock-button.emphasized,
+.mobile-select-action.primary,
+.orientation-toggle-button,
+.mobile-quick-fab {
+    background: #111111;
+    color: #ffffff;
+}
+
+.mobile-sheet-close {
+    border-radius: 8px;
+}
+

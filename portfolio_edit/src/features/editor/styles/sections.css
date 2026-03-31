@@ -917,3 +917,15 @@
     min-height: 32px;
     padding: 7px 12px;
 }
+
+.profile-contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.profile-contact-actions .ghost.small {
+    min-height: 32px;
+}

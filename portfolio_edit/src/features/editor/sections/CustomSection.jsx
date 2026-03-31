@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -314,7 +314,7 @@ function ComplexBlockShell({
 
     return (
         <div
-            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${layoutMode === 'manual' && draggingId === block.id ? 'manual-armed' : ''} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             style={placementStyle}
@@ -638,6 +638,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
     const [draggingBlockId, setDraggingBlockId] = useState(null);
     const [dragOverBlockId, setDragOverBlockId] = useState(null);
     const [manualPreviewCell, setManualPreviewCell] = useState(null);
+    const [manualLayoutSnapshot, setManualLayoutSnapshot] = useState(null);
 
     const titleKey = `custom.${sectionId}.${item.id}.title`;
     const subtitleKey = `custom.${sectionId}.${item.id}.subtitle`;
@@ -650,13 +651,30 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
         const normalized = blockLayoutMode === 'manual' ? normalizeGridItems(measuredComplexBlocks.resolvedItems) : measuredComplexBlocks.resolvedItems;
         return normalized;
     }, [blockLayoutMode, measuredComplexBlocks.resolvedItems]);
+    useEffect(() => {
+        if (blockLayoutMode !== 'manual') {
+            if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+            return;
+        }
+
+        if (draggingBlockId) {
+            if (!manualLayoutSnapshot) {
+                setManualLayoutSnapshot(resolvedComplexBlocks.map((block) => ({ ...block })));
+            }
+            return;
+        }
+
+        if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+    }, [blockLayoutMode, draggingBlockId, manualLayoutSnapshot, resolvedComplexBlocks]);
+
+    const previewSourceBlocks = blockLayoutMode === 'manual' && manualLayoutSnapshot ? manualLayoutSnapshot : resolvedComplexBlocks;
     const blockPreviewPacked = blockLayoutMode === 'packed'
         ? getPackedPlacementPreview(resolvedComplexBlocks, draggingBlockId, dragOverBlockId)
         : null;
     const blockPreviewManual = blockLayoutMode === 'manual' && manualPreviewCell
-        ? getManualPlacementPreview(resolvedComplexBlocks, draggingBlockId, manualPreviewCell.x, manualPreviewCell.y)
+        ? getManualPlacementPreview(previewSourceBlocks, draggingBlockId, manualPreviewCell.x, manualPreviewCell.y)
         : null;
-    const blockGridRows = getGridRowExtent(resolvedComplexBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
+    const blockGridRows = getGridRowExtent(previewSourceBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
 
     return (
         <article className="portfolio-card project-card-inner">
@@ -673,6 +691,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                                 store.actions.setCustomComplexLayoutMode(sectionId, item.id, 'manual', resolvedComplexBlocks);
                                 setDragOverBlockId(null);
                                 setManualPreviewCell(null);
+                                setManualLayoutSnapshot(null);
                             }}
                         >
                             자유형
@@ -686,6 +705,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                                 setDraggingBlockId(null);
                                 setDragOverBlockId(null);
                                 setManualPreviewCell(null);
+                                setManualLayoutSnapshot(null);
                             }}
                         >
                             정리형
@@ -810,7 +830,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                     <GridPlacementOverlay
                         rows={blockGridRows}
                         preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
-                        items={resolvedComplexBlocks.filter((block) => block.visible !== false)}
+                        items={previewSourceBlocks.filter((block) => block.visible !== false)}
                         activeItemId={draggingBlockId}
                         showOccupiedRanges={blockLayoutMode === 'manual'}
                         active={!!draggingBlockId}
@@ -822,28 +842,31 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         }}
                         onCellDrop={(cell) => {
                             if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
-                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingBlockId(null);
                             setDragOverBlockId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellClick={(cell, event) => {
                             if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
                             event.preventDefault();
                             event.stopPropagation();
-                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingBlockId(null);
                             setDragOverBlockId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellConfirm={(cell, event) => {
                             if (blockLayoutMode !== 'manual' || !draggingBlockId) return;
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
-                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, resolvedComplexBlocks);
+                            store.actions.placeCustomComplexBlock(sectionId, item.id, draggingBlockId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingBlockId(null);
                             setDragOverBlockId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onPointerLeave={() => {
                             if (blockLayoutMode === 'manual') setManualPreviewCell(null);
@@ -852,6 +875,7 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                             setManualPreviewCell(null);
                             setDraggingBlockId(null);
                             setDragOverBlockId(null);
+                            setManualLayoutSnapshot(null);
                             store.actions.selectPage();
                         }}
                     />

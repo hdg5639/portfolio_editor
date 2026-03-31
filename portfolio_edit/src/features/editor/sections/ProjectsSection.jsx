@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -117,7 +117,7 @@ function BlockShell({
 
     return (
         <div
-            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${
+            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${layoutMode === 'manual' && draggingId === block.id ? 'manual-armed' : ''} ${
                 isDragging ? 'dragging' : ''
             } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
             style={placementStyle}
@@ -486,6 +486,7 @@ function ProjectCard({
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
     const [manualPreviewCell, setManualPreviewCell] = useState(null);
+    const [manualLayoutSnapshot, setManualLayoutSnapshot] = useState(null);
 
     const titleKey = `projects.${project.id}.title`;
     const roleKey = `projects.${project.id}.role`;
@@ -509,13 +510,30 @@ function ProjectCard({
         const normalized = blockLayoutMode === 'manual' ? normalizeGridItems(measuredProjectBlocks.resolvedItems) : measuredProjectBlocks.resolvedItems;
         return normalized;
     }, [blockLayoutMode, measuredProjectBlocks.resolvedItems]);
+    useEffect(() => {
+        if (blockLayoutMode !== 'manual') {
+            if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+            return;
+        }
+
+        if (draggingId) {
+            if (!manualLayoutSnapshot) {
+                setManualLayoutSnapshot(resolvedProjectBlocks.map((block) => ({ ...block })));
+            }
+            return;
+        }
+
+        if (manualLayoutSnapshot) setManualLayoutSnapshot(null);
+    }, [blockLayoutMode, draggingId, manualLayoutSnapshot, resolvedProjectBlocks]);
+
+    const previewSourceBlocks = blockLayoutMode === 'manual' && manualLayoutSnapshot ? manualLayoutSnapshot : resolvedProjectBlocks;
     const blockPreviewPacked = blockLayoutMode === 'packed'
         ? getPackedPlacementPreview(resolvedProjectBlocks, draggingId, dragOverId)
         : null;
     const blockPreviewManual = blockLayoutMode === 'manual' && manualPreviewCell
-        ? getManualPlacementPreview(resolvedProjectBlocks, draggingId, manualPreviewCell.x, manualPreviewCell.y)
+        ? getManualPlacementPreview(previewSourceBlocks, draggingId, manualPreviewCell.x, manualPreviewCell.y)
         : null;
-    const blockGridRows = getGridRowExtent(resolvedProjectBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
+    const blockGridRows = getGridRowExtent(previewSourceBlocks, blockPreviewPacked?.preview || blockPreviewManual?.preview, 4);
 
     return (
         <article
@@ -622,6 +640,7 @@ function ProjectCard({
                                 store.actions.setProjectLayoutMode(project.id, 'manual', resolvedProjectBlocks);
                                 setDragOverId(null);
                                 setManualPreviewCell(null);
+                                setManualLayoutSnapshot(null);
                             }}
                         >
                             자유형
@@ -635,6 +654,7 @@ function ProjectCard({
                                 setDraggingId(null);
                                 setDragOverId(null);
                                 setManualPreviewCell(null);
+                                setManualLayoutSnapshot(null);
                             }}
                         >
                             정리형
@@ -749,7 +769,7 @@ function ProjectCard({
                     <GridPlacementOverlay
                         rows={blockGridRows}
                         preview={blockPreviewPacked?.preview || blockPreviewManual?.preview}
-                        items={resolvedProjectBlocks.filter((block) => block.visible !== false)}
+                        items={previewSourceBlocks.filter((block) => block.visible !== false)}
                         activeItemId={draggingId}
                         showOccupiedRanges={blockLayoutMode === 'manual'}
                         active={!!draggingId}
@@ -761,28 +781,31 @@ function ProjectCard({
                         }}
                         onCellDrop={(cell) => {
                             if (blockLayoutMode !== 'manual' || !draggingId) return;
-                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingId(null);
                             setDragOverId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellClick={(cell, event) => {
                             if (blockLayoutMode !== 'manual' || !draggingId) return;
                             event.preventDefault();
                             event.stopPropagation();
-                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingId(null);
                             setDragOverId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onCellConfirm={(cell, event) => {
                             if (blockLayoutMode !== 'manual' || !draggingId) return;
                             event?.preventDefault?.();
                             event?.stopPropagation?.();
-                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, resolvedProjectBlocks);
+                            store.actions.placeProjectBlock(project.id, draggingId, cell.x, cell.y, previewSourceBlocks);
                             setDraggingId(null);
                             setDragOverId(null);
                             setManualPreviewCell(null);
+                            setManualLayoutSnapshot(null);
                         }}
                         onPointerLeave={() => {
                             if (blockLayoutMode === 'manual') setManualPreviewCell(null);
@@ -791,6 +814,7 @@ function ProjectCard({
                             setManualPreviewCell(null);
                             setDraggingId(null);
                             setDragOverId(null);
+                            setManualLayoutSnapshot(null);
                             store.actions.selectPage();
                         }}
                     />

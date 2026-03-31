@@ -92,3 +92,97 @@ button.small {
 .no-print {
     display: block;
 }
+
+/* ===== Modern monochrome editor refresh ===== */
+:root {
+    --bg: #f3f4f6;
+    --panel: #ffffff;
+    --panel-muted: #fafafa;
+    --text: #111111;
+    --muted: #6b7280;
+    --line: #dddddd;
+    --line-strong: #c9ccd1;
+    --accent: #111111;
+    --danger: #b42318;
+    --shadow: 0 10px 30px rgba(17, 17, 17, 0.04);
+    --shadow-soft: 0 18px 44px rgba(17, 17, 17, 0.05);
+}
+
+html,
+body,
+#root {
+    color: var(--text);
+    background: var(--bg);
+}
+
+body {
+    background:
+        linear-gradient(180deg, #f7f7f8 0%, #f1f2f4 100%);
+}
+
+button,
+input,
+textarea,
+select,
+.ghost {
+    transition:
+        border-color 0.18s ease,
+        background-color 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease;
+}
+
+input,
+textarea,
+select {
+    border-color: var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 10px 12px;
+    box-shadow: none;
+}
+
+input:hover,
+textarea:hover,
+select:hover,
+button:hover,
+.ghost:hover {
+    border-color: var(--line-strong);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #8b8f97;
+    box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+input[type='color'] {
+    height: 38px;
+    border-radius: 8px;
+}
+
+button,
+.ghost {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text);
+    padding: 9px 12px;
+    box-shadow: none;
+}
+
+button:hover,
+.ghost:hover {
+    background: #f7f7f8;
+}
+
+button:focus-visible,
+.ghost:focus-visible {
+    outline: none;
+    border-color: #8b8f97;
+    box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+

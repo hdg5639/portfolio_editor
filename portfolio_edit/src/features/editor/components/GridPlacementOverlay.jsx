@@ -73,6 +73,7 @@ export default function GridPlacementOverlay({
       .filter((item) => String(item?.id ?? item?.key) !== String(activeItemId))
       .map((item) => ({
         id: String(item?.id ?? item?.key),
+        label: item?.label || item?.title || (item?.key ? String(item.key) : '') || (item?.type ? String(item.type) : ''),
         gridX: Number(item?.gridX) || 1,
         gridY: Number(item?.gridY) || 1,
         colSpan: Math.max(1, Number(item?.colSpan) || 1),
@@ -200,7 +201,9 @@ export default function GridPlacementOverlay({
               gridColumn: `${item.gridX} / span ${item.colSpan}`,
               gridRow: `${item.gridY} / span ${item.rowSpan}`,
             }}
-          />
+          >
+            {item.label ? <span className="grid-occupied-range-label">{item.label}</span> : null}
+          </div>
         ))}
 
         {preview ? (
