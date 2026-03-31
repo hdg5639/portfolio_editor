@@ -38,15 +38,16 @@ export function useLayoutAndProfileActions(setPortfolio) {
         // 프로필 조작
         updateProfile: (field, value) =>
             setPortfolio((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } })),
-        addProfileContact: (type = 'text') =>
+        addProfileContact: (type = 'blank') =>
             setPortfolio((prev) => {
                 const presets = {
+                    blank: { label: '', type: 'text', value: '' },
                     email: { label: 'Email', type: 'email', value: '' },
                     phone: { label: 'Phone', type: 'phone', value: '' },
                     url: { label: 'Website', type: 'url', value: '' },
-                    text: { label: 'Custom', type: 'text', value: '' },
+                    text: { label: '연락처', type: 'text', value: '' },
                 };
-                const contact = createProfileContact(presets[type] || presets.text);
+                const contact = createProfileContact(presets[type] || presets.blank);
                 return {
                     ...prev,
                     profile: {

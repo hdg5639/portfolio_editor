@@ -1,17 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getProfileBlockSelectionState } from '../utils/storeHelpers';
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
-
-const CONTACT_TYPE_OPTIONS = [
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'url', label: 'URL' },
-    { value: 'text', label: 'Custom' },
-];
 
 function bind(store, key, label) {
     return {
@@ -94,6 +87,29 @@ function EditableInput({
 
 function SelectionBadge({ label, tone = 'block' }) {
     return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
+}
+
+function AutoGrowTextarea({ className, value, placeholder, onChange, inputMeta }) {
+    const ref = useRef(null);
+
+    useLayoutEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        node.style.height = '0px';
+        node.style.height = `${node.scrollHeight}px`;
+    }, [value]);
+
+    return (
+        <textarea
+            ref={ref}
+            value={value || ''}
+            placeholder={placeholder}
+            rows={1}
+            className={className}
+            onChange={(e) => onChange(e.target.value)}
+            {...inputMeta}
+        />
+    );
 }
 
 function ProfileBlockShell({
@@ -437,46 +453,39 @@ export default function ProfileSection({ store }) {
             node: (
                 <div className="profile-block profile-contacts-block">
                     {isEdit ? (
-                        <div className="profile-contacts-edit">
+                        <div className="profile-contacts-edit profile-contacts-edit-compact">
                             <div className="profile-contacts-edit-list">
-                                {contacts.map((contact, index) => (
-                                    <div key={contact.id} className="profile-contact-edit-row">
-                                        <div className="profile-contact-edit-fields">
-                                            <select
-                                                value={contact.type}
-                                                onChange={(e) => store.actions.updateProfileContact(contact.id, 'type', e.target.value)}
-                                                {...inputProps(store, `profile.contacts.${contact.id}.type`, '연락처 타입')}
-                                            >
-                                                {CONTACT_TYPE_OPTIONS.map((option) => (
-                                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                                ))}
-                                            </select>
+                                {contacts.length ? contacts.map((contact) => (
+                                    <div key={contact.id} className="profile-contact-edit-card">
+                                        <div className="profile-contact-edit-head">
                                             <input
                                                 value={contact.label || ''}
-                                                placeholder="라벨"
+                                                placeholder="이름"
                                                 onChange={(e) => store.actions.updateProfileContact(contact.id, 'label', e.target.value)}
+                                                className="profile-contact-label-input"
                                                 {...inputProps(store, `profile.contacts.${contact.id}.label`, '연락처 라벨')}
                                             />
-                                            <input
-                                                value={contact.value || ''}
-                                                placeholder="값"
-                                                onChange={(e) => store.actions.updateProfileContact(contact.id, 'value', e.target.value)}
-                                                {...inputProps(store, `profile.contacts.${contact.id}.value`, '연락처 값')}
-                                            />
+                                            <button
+                                                type="button"
+                                                className="profile-contact-remove ghost danger small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    store.actions.removeProfileContact(contact.id);
+                                                }}
+                                                aria-label={`${contact.label || '연락처'} 삭제`}
+                                            >
+                                                X
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            className="timeline-item-remove ghost danger small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                store.actions.removeProfileContact(contact.id);
-                                            }}
-                                            aria-label={`${contact.label || '연락처'} 삭제`}
-                                        >
-                                            X
-                                        </button>
+                                        <AutoGrowTextarea
+                                            value={contact.value || ''}
+                                            placeholder="내용"
+                                            onChange={(value) => store.actions.updateProfileContact(contact.id, 'value', value)}
+                                            className="profile-contact-value-input"
+                                            inputMeta={inputProps(store, `profile.contacts.${contact.id}.value`, '연락처 값')}
+                                        />
                                     </div>
-                                ))}
+                                )) : <div className="profile-contact-empty">표시할 연락처가 없습니다.</div>}
                             </div>
                         </div>
                     ) : contactPreviewNode}
@@ -485,19 +494,7 @@ export default function ProfileSection({ store }) {
             measureNode: contactPreviewNode,
             actions: (
                 <div className="profile-block-actions profile-contact-actions">
-                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('email'); }}>이메일 추가</button>
-                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('phone'); }}>전화 추가</button>
-                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('url'); }}>링크 추가</button>
-                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact('text'); }}>직접 추가</button>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            store.actions.toggleProfileBlock('contacts');
-                        }}
-                    >
-                        숨김
-                    </button>
+                    <button type="button" className="ghost small" onClick={(e) => { e.stopPropagation(); store.actions.addProfileContact(); }}>추가</button>
                 </div>
             ),
         },

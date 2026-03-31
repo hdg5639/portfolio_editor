@@ -438,7 +438,8 @@
 }
 
 .profile-contact-row span,
-.contact-edit-row span {
+.contact-edit-row span,
+.profile-contact-label-input {
     font-size: 12px;
     color: var(--muted);
     letter-spacing: 0.08em;
@@ -456,45 +457,70 @@
 
 .profile-contacts-edit-list {
     display: grid;
-    gap: 16px;
+    gap: 14px;
 }
 
-.profile-contact-edit-row {
+.profile-contacts-edit-compact {
+    gap: 0;
+}
+
+.profile-contact-edit-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
-    padding-top: 14px;
-    border-top: 1px solid rgba(229, 221, 210, 0.7);
-}
-
-.profile-contact-edit-row:first-child {
-    padding-top: 0;
-    border-top: none;
-}
-
-.profile-contact-edit-fields {
-    display: grid;
-    grid-template-columns: 116px minmax(120px, 0.42fr) minmax(0, 1fr);
-    gap: 8px;
-    align-items: start;
-}
-
-.profile-contact-edit-fields select,
-.profile-contact-edit-fields input {
+    gap: 6px;
     min-width: 0;
 }
 
-.profile-contact-add-row {
+.profile-contact-edit-head {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(229, 221, 210, 0.7);
+    min-width: 0;
 }
 
-.profile-contact-add-row .ghost.small {
-    min-height: 32px;
+.profile-contact-label-input,
+.profile-contact-value-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text);
+}
+
+.profile-contact-label-input {
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.profile-contact-value-input {
+    font-size: 15px;
+    line-height: 1.55;
+    resize: none;
+    min-height: 0;
+    overflow: hidden;
+    letter-spacing: 0;
+}
+
+.profile-contact-label-input:focus,
+.profile-contact-value-input:focus {
+    outline: none;
+}
+
+.profile-contact-remove {
+    position: static;
+    flex: 0 0 auto;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.profile-contact-edit-row,
+.profile-contact-edit-fields,
+.profile-contact-add-row {
+    display: none;
 }
 
 .profile-add-tools {
