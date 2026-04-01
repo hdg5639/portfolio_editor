@@ -1,5 +1,5 @@
 import InlineEditable from '../components/InlineEditable';
-import { SelectionBadge, inlineEditableProps } from '../components/editor-primitives/index.jsx';
+import { SelectionBadge, createSelectHandler, inlineEditableProps, selectableStyle } from '../components/editor-primitives/index.jsx';
 import { getCardSelectionState, getSkillRowSelectionState } from '../utils/storeHelpers';
 
 
@@ -11,10 +11,7 @@ export default function SkillSection({ store }) {
         <section
             className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={actions.sectionCardStyle('skillsCard')}
-            onClick={(e) => {
-                e.stopPropagation();
-                store.actions.select({ key: 'skillsCard', label: '기술 스택 카드' });
-            }}
+            onClick={createSelectHandler(store, 'skillsCard', '기술 스택 카드')}
         >
             {cardSelection.selected ? (
                 <SelectionBadge label="기술 카드 선택됨" tone="card" />
@@ -23,11 +20,8 @@ export default function SkillSection({ store }) {
             <div className="section-head">
                 <h2
                     className="section-title"
-                    style={actions.styleFor('section.skills.title')}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        store.actions.select({ key: 'section.skills.title', label: '기술 스택 섹션 제목' });
-                    }}
+                    style={selectableStyle(store, 'section.skills.title')}
+                    onClick={createSelectHandler(store, 'section.skills.title', '기술 스택 섹션 제목')}
                 >
                     기술 스택
                 </h2>

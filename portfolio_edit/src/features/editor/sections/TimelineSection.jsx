@@ -1,5 +1,5 @@
 import InlineEditable from '../components/InlineEditable';
-import { SelectionBadge, inlineEditableProps } from '../components/editor-primitives/index.jsx';
+import { SelectionBadge, createSelectHandler, inlineEditableProps, selectableStyle } from '../components/editor-primitives/index.jsx';
 import { getCardSelectionState, getTimelineItemSelectionState } from '../utils/storeHelpers';
 
 
@@ -13,10 +13,7 @@ export default function TimelineSection({ store, sectionKey, title }) {
         <section
             className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
             style={actions.sectionCardStyle(cardKey)}
-            onClick={(e) => {
-                e.stopPropagation();
-                store.actions.select({ key: cardKey, label: `${title} 카드` });
-            }}
+            onClick={createSelectHandler(store, cardKey, `${title} 카드`)}
         >
             {cardSelection.selected ? (
                 <SelectionBadge label={`${title} 카드 선택됨`} tone="card" />
@@ -25,11 +22,8 @@ export default function TimelineSection({ store, sectionKey, title }) {
             <div className="section-head">
                 <h2
                     className="section-title"
-                    style={actions.styleFor(`section.${sectionKey}.title`)}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        store.actions.select({ key: `section.${sectionKey}.title`, label: `${title} 섹션 제목` });
-                    }}
+                    style={selectableStyle(store, `section.${sectionKey}.title`)}
+                    onClick={createSelectHandler(store, `section.${sectionKey}.title`, `${title} 섹션 제목`)}
                 >
                     {title}
                 </h2>
