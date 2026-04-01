@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePdfExport } from '../../hooks/usePdfExport.js';
 import { useMobileViewportLock } from '../../hooks/useMobileViewportLock.js';
+import { useEditorHistory } from '../../hooks/useEditorHistory.js';
 import TopBar from './TopBar.jsx';
 import EditorLayout from './EditorLayout.jsx';
 import ExportOrientationDialog from './ExportOrientationDialog.jsx';
@@ -22,6 +23,12 @@ function useTopBarModeLabels(mode) {
   }, [mode]);
 }
 
+function isTypingTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName;
+  return target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
+}
+
 export default function EditorWorkspace({ store, onExit }) {
   const { ui, mode, actions, portfolio, selected } = store;
   const editorLayoutModeClass = ui.editorLayoutMode === 'auto' ? 'editor-layout-auto' : `editor-layout-force-${ui.editorLayoutMode}`;
@@ -29,8 +36,43 @@ export default function EditorWorkspace({ store, onExit }) {
   const { exportRef, isExporting, isExportSheetOpen, openExportSheet, closeExportSheet, handleExportPdf } =
     usePdfExport({ store });
   const { nextMode, currentModeLabel, nextModeLabel } = useTopBarModeLabels(mode);
+  const { canUndo, canRedo, undo, redo } = useEditorHistory();
 
   useMobileViewportLock(ui.isMobile);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.defaultPrevented || event.isComposing || isTypingTarget(event.target)) return;
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'z' && event.shiftKey) {
+        if (!canRedo) return;
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      if (key === 'z') {
+        if (!canUndo) return;
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      if (key === 'y') {
+        if (!canRedo) return;
+        event.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo]);
 
   return (
     <div
@@ -56,8 +98,12 @@ export default function EditorWorkspace({ store, onExit }) {
         nextModeLabel={nextModeLabel}
         isExporting={isExporting}
         editorLayoutMode={ui.editorLayoutMode}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onChangeEditorLayoutMode={actions.setEditorLayoutMode}
         onToggleMode={() => actions.setMode(nextMode)}
+        onUndo={undo}
+        onRedo={redo}
         onOpenExport={openExportSheet}
         onReset={actions.reset}
       />

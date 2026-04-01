@@ -5,6 +5,7 @@ import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getProjectSelectionState, getProjectBlockSelectionState } from '../utils/storeHelpers';
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
+import { SelectionBadge, selectableInputProps, selectableViewProps } from '../components/editor-primitives/index.jsx';
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -12,41 +13,6 @@ function readFileAsDataUrl(file, callback) {
     reader.onload = () => callback(reader.result);
     reader.readAsDataURL(file);
 }
-
-function bind(store, key, label) {
-    return {
-        selected: store.selected?.key === key,
-        style: store.actions.styleFor(key),
-        select: () => store.actions.select({ key, label }),
-    };
-}
-
-function selectableInputProps(store, key, label) {
-    const bound = bind(store, key, label);
-    return {
-        style: bound.style,
-        onClick: (e) => {
-            e.stopPropagation();
-            bound.select();
-        },
-    };
-}
-
-function selectableViewProps(store, key, label) {
-    const bound = bind(store, key, label);
-    return {
-        style: bound.style,
-        onClick: (e) => {
-            e.stopPropagation();
-            bound.select();
-        },
-    };
-}
-
-function SelectionBadge({ label, tone = 'block' }) {
-    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
-}
-
 
 
 function AutoGrowTextarea({ className = '', value, placeholder, onChange, inputMeta }) {

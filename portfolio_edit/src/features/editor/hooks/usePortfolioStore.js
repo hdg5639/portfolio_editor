@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore, EDITOR_LAYOUT_MODE_STORAGE_KEY, syncEditorViewport } from '../store/useEditorStore.js';
-
 import { useUiActions } from './actions/useUiActions.js';
 import { useStyleActions } from './actions/useStyleActions.js';
 import { useProjectActions } from './actions/useProjectActions.js';
 import { useCustomSectionActions } from './actions/useCustomSectionActions.js';
 import { useLayoutAndProfileActions } from './actions/useLayoutAndProfileActions.js';
+
+const INITIAL_EDITOR_STATE = useEditorStore.getInitialState();
 
 function resolveNextState(currentValue, updater) {
   if (typeof updater !== 'function') return updater;
@@ -16,12 +17,15 @@ function resolveNextState(currentValue, updater) {
 
 export function usePortfolioStore() {
   const { portfolio, mode, selected, ui } = useEditorStore(
-    useShallow((state) => ({
-      portfolio: state.portfolio,
-      mode: state.mode,
-      selected: state.selected,
-      ui: state.ui,
-    })),
+    useShallow((state) => {
+      const safeState = state ?? INITIAL_EDITOR_STATE;
+      return {
+        portfolio: safeState.portfolio,
+        mode: safeState.mode,
+        selected: safeState.selected,
+        ui: safeState.ui,
+      };
+    }),
   );
 
   const actionNameRef = useRef(null);

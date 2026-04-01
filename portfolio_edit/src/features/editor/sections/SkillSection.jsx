@@ -1,18 +1,7 @@
 import InlineEditable from '../components/InlineEditable';
+import { SelectionBadge, inlineEditableProps } from '../components/editor-primitives/index.jsx';
 import { getCardSelectionState, getSkillRowSelectionState } from '../utils/storeHelpers';
 
-function bind(store, key, label) {
-    return {
-        editable: store.mode === 'edit',
-        selected: store.selected?.key === key,
-        onSelect: () => store.actions.select({ key, label }),
-        style: store.actions.styleFor(key),
-    };
-}
-
-function SelectionBadge({ label, tone = 'block' }) {
-    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
-}
 
 export default function SkillSection({ store }) {
     const { portfolio, actions } = store;
@@ -58,14 +47,14 @@ export default function SkillSection({ store }) {
                             value={skill.category}
                             onChange={(value) => actions.updateSkill(skill.id, 'category', value)}
                             className="skill-category"
-                            {...bind(store, `skills.${skill.id}.category`, `기술 카테고리 ${skill.category}`)}
+                            {...inlineEditableProps(store, `skills.${skill.id}.category`, `기술 카테고리 ${skill.category}`)}
                         />
 
                         <InlineEditable
                             value={skill.value}
                             onChange={(value) => actions.updateSkill(skill.id, 'value', value)}
                             className="skill-value"
-                            {...bind(store, `skills.${skill.id}.value`, `기술 내용 ${skill.category}`)}
+                            {...inlineEditableProps(store, `skills.${skill.id}.value`, `기술 내용 ${skill.category}`)}
                         />
                     </div>
                     );

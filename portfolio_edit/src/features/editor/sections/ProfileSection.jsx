@@ -5,35 +5,8 @@ import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
 import { getCardSelectionState, getProfileBlockSelectionState } from '../utils/storeHelpers';
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
+import { SelectionBadge, selectableInputProps as inputProps, selectableViewProps as viewProps } from '../components/editor-primitives/index.jsx';
 
-function bind(store, key, label) {
-    return {
-        style: store.actions.styleFor(key),
-        select: () => store.actions.select({ key, label }),
-    };
-}
-
-function viewProps(store, key, label) {
-    const bound = bind(store, key, label);
-    return {
-        style: bound.style,
-        onClick: (e) => {
-            e.stopPropagation();
-            bound.select();
-        },
-    };
-}
-
-function inputProps(store, key, label) {
-    const bound = bind(store, key, label);
-    return {
-        style: bound.style,
-        onClick: (e) => {
-            e.stopPropagation();
-            bound.select();
-        },
-    };
-}
 
 function readFileAsDataUrl(file, callback) {
     if (!file) return;
@@ -85,9 +58,6 @@ function EditableInput({
     );
 }
 
-function SelectionBadge({ label, tone = 'block' }) {
-    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
-}
 
 function AutoGrowTextarea({ className, value, placeholder, onChange, inputMeta }) {
     const ref = useRef(null);

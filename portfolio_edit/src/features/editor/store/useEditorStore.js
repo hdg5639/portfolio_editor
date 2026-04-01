@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { temporal } from 'zundo';
 import {
   EDITOR_LAYOUT_MODE_STORAGE_KEY,
   detectMobileViewport,
@@ -28,7 +29,7 @@ function getLegacyPortfolioSnapshot() {
 }
 
 function createInitialPortfolioState() {
-  return getLegacyPortfolioSnapshot() || clone(defaultPortfolio);
+  return migratePortfolio(getLegacyPortfolioSnapshot() || clone(defaultPortfolio));
 }
 
 function createInitialUiState() {
@@ -84,20 +85,39 @@ function mergePersistedState(persistedState, currentState) {
   };
 }
 
+const HISTORY_LIMIT = 100;
+
+function getTemporalPartialState(state) {
+  return {
+    portfolio: state?.portfolio ?? createInitialPortfolioState(),
+  };
+}
+
+function getPersistPartialState(state) {
+  return {
+    portfolio: state?.portfolio ?? createInitialPortfolioState(),
+    ui: {
+      editorLayoutMode: state?.ui?.editorLayoutMode ?? getStoredEditorLayoutMode(),
+    },
+  };
+}
+
 export const useEditorStore = create(
   devtools(
     persist(
-      immer(() => createInitialEditorState()),
+      temporal(
+        immer(() => createInitialEditorState()),
+        {
+          partialize: getTemporalPartialState,
+          equality: (pastState, currentState) => pastState?.portfolio === currentState?.portfolio,
+          limit: HISTORY_LIMIT,
+        },
+      ),
       {
         name: PORTFOLIO_STORE_STORAGE_KEY,
         version: 1,
         storage: createJSONStorage(() => window.localStorage),
-        partialize: (state) => ({
-          portfolio: state.portfolio,
-          ui: {
-            editorLayoutMode: state.ui.editorLayoutMode,
-          },
-        }),
+        partialize: getPersistPartialState,
         merge: (persistedState, currentState) => mergePersistedState(persistedState, currentState),
       },
     ),

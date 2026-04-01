@@ -6,10 +6,8 @@ import TimelineSection from './TimelineSection.jsx';
 import CustomSection from './CustomSection.jsx';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import { getSectionSelectionState } from '../utils/storeHelpers';
+import { SelectionBadge } from '../components/editor-primitives/index.jsx';
 
-function SelectionBadge({ label, tone = 'section' }) {
-  return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
-}
 
 function SectionTile({
                        store,

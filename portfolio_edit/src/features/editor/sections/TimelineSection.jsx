@@ -1,18 +1,7 @@
 import InlineEditable from '../components/InlineEditable';
+import { SelectionBadge, inlineEditableProps } from '../components/editor-primitives/index.jsx';
 import { getCardSelectionState, getTimelineItemSelectionState } from '../utils/storeHelpers';
 
-function bind(store, key, label) {
-    return {
-        editable: store.mode === 'edit',
-        selected: store.selected?.key === key,
-        onSelect: () => store.actions.select({ key, label }),
-        style: store.actions.styleFor(key),
-    };
-}
-
-function SelectionBadge({ label, tone = 'block' }) {
-    return <span className={`selection-badge selection-badge-${tone}`}>{label}</span>;
-}
 
 export default function TimelineSection({ store, sectionKey, title }) {
     const { portfolio, actions } = store;
@@ -62,7 +51,7 @@ export default function TimelineSection({ store, sectionKey, title }) {
                                 value={item.date}
                                 onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'date', value)}
                                 className="timeline-date"
-                                {...bind(store, `${sectionKey}.${item.id}.date`, `${title} 날짜`)}
+                                {...inlineEditableProps(store, `${sectionKey}.${item.id}.date`, `${title} 날짜`)}
                             />
 
                             <div className="timeline-content">
@@ -72,7 +61,7 @@ export default function TimelineSection({ store, sectionKey, title }) {
                                         value={item.title}
                                         onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'title', value)}
                                         className="timeline-title"
-                                        {...bind(store, `${sectionKey}.${item.id}.title`, `${title} 제목`)}
+                                        {...inlineEditableProps(store, `${sectionKey}.${item.id}.title`, `${title} 제목`)}
                                     />
 
                                     {store.mode === 'edit' ? (
@@ -95,7 +84,7 @@ export default function TimelineSection({ store, sectionKey, title }) {
                                     value={item.desc}
                                     onChange={(value) => actions.updateTimelineItem(sectionKey, item.id, 'desc', value)}
                                     className="timeline-desc"
-                                    {...bind(store, `${sectionKey}.${item.id}.desc`, `${title} 설명`)}
+                                    {...inlineEditableProps(store, `${sectionKey}.${item.id}.desc`, `${title} 설명`)}
                                 />
                             </div>
                         </div>

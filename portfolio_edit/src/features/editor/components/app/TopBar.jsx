@@ -23,11 +23,45 @@ function EditorLayoutModeSwitch({ value, onChange, compact = false }) {
   );
 }
 
+function HistoryControls({ canUndo, canRedo, onUndo, onRedo, compact = false }) {
+  return (
+    <div className={`topbar-history-group ${compact ? 'is-compact' : ''}`} role="group" aria-label="실행 취소 및 다시 실행">
+      <button
+        type="button"
+        className="topbar-history-button"
+        onClick={onUndo}
+        disabled={!canUndo}
+        aria-label="실행 취소"
+        title="실행 취소 (Ctrl/Cmd + Z)"
+      >
+        <span aria-hidden="true">↶</span>
+        {compact ? null : <strong>실행 취소</strong>}
+      </button>
+
+      <button
+        type="button"
+        className="topbar-history-button"
+        onClick={onRedo}
+        disabled={!canRedo}
+        aria-label="다시 실행"
+        title="다시 실행 (Ctrl/Cmd + Shift + Z / Ctrl + Y)"
+      >
+        <span aria-hidden="true">↷</span>
+        {compact ? null : <strong>다시 실행</strong>}
+      </button>
+    </div>
+  );
+}
+
 function MobileTopBarControls({
   currentModeLabel,
   nextModeLabel,
   isExporting,
+  canUndo,
+  canRedo,
   onToggleMode,
+  onUndo,
+  onRedo,
   onOpenExport,
   onReset,
 }) {
@@ -44,27 +78,31 @@ function MobileTopBarControls({
         <span className="topbar-mode-toggle-next">→ {nextModeLabel}</span>
       </button>
 
-      <div className="topbar-mobile-icon-stack">
-        <button
-          type="button"
-          className="topbar-icon-button topbar-icon-button-primary"
-          onClick={onOpenExport}
-          disabled={isExporting}
-          aria-label={isExporting ? 'PDF 생성 중' : 'PDF 추출'}
-          title={isExporting ? 'PDF 생성 중' : 'PDF 추출'}
-        >
-          <span aria-hidden="true">⤓</span>
-        </button>
+      <div className="topbar-mobile-tool-grid">
+        <HistoryControls canUndo={canUndo} canRedo={canRedo} onUndo={onUndo} onRedo={onRedo} compact />
 
-        <button
-          type="button"
-          className="topbar-icon-button"
-          onClick={onReset}
-          aria-label="초기화"
-          title="초기화"
-        >
-          <span aria-hidden="true">⟲</span>
-        </button>
+        <div className="topbar-mobile-icon-stack">
+          <button
+            type="button"
+            className="topbar-icon-button topbar-icon-button-primary"
+            onClick={onOpenExport}
+            disabled={isExporting}
+            aria-label={isExporting ? 'PDF 생성 중' : 'PDF 추출'}
+            title={isExporting ? 'PDF 생성 중' : 'PDF 추출'}
+          >
+            <span aria-hidden="true">⤓</span>
+          </button>
+
+          <button
+            type="button"
+            className="topbar-icon-button"
+            onClick={onReset}
+            aria-label="초기화"
+            title="초기화"
+          >
+            <span aria-hidden="true">⟲</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -74,7 +112,11 @@ function DesktopTopBarControls({
   currentModeLabel,
   nextModeLabel,
   isExporting,
+  canUndo,
+  canRedo,
   onToggleMode,
+  onUndo,
+  onRedo,
   onOpenExport,
   onReset,
 }) {
@@ -95,6 +137,8 @@ function DesktopTopBarControls({
           <span className="topbar-mode-toggle-next">→ {nextModeLabel}</span>
         </span>
       </button>
+
+      <HistoryControls canUndo={canUndo} canRedo={canRedo} onUndo={onUndo} onRedo={onRedo} />
 
       <div className="topbar-action-group">
         <button
@@ -134,8 +178,12 @@ export default function TopBar({
   nextModeLabel,
   isExporting,
   editorLayoutMode,
+  canUndo,
+  canRedo,
   onChangeEditorLayoutMode,
   onToggleMode,
+  onUndo,
+  onRedo,
   onOpenExport,
   onReset,
 }) {
@@ -161,7 +209,11 @@ export default function TopBar({
               currentModeLabel={currentModeLabel}
               nextModeLabel={nextModeLabel}
               isExporting={isExporting}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onToggleMode={onToggleMode}
+              onUndo={onUndo}
+              onRedo={onRedo}
               onOpenExport={onOpenExport}
               onReset={onReset}
             />
@@ -170,7 +222,11 @@ export default function TopBar({
               currentModeLabel={currentModeLabel}
               nextModeLabel={nextModeLabel}
               isExporting={isExporting}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onToggleMode={onToggleMode}
+              onUndo={onUndo}
+              onRedo={onRedo}
               onOpenExport={onOpenExport}
               onReset={onReset}
             />
