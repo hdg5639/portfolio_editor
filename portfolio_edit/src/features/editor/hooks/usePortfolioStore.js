@@ -8,7 +8,11 @@ import { useProjectActions } from './actions/useProjectActions.js';
 import { useCustomSectionActions } from './actions/useCustomSectionActions.js';
 import { useLayoutAndProfileActions } from './actions/useLayoutAndProfileActions.js';
 
-const LEGACY_STORAGE_KEY = 'portfolio-editor-v5';
+function resolveNextState(currentValue, updater) {
+  if (typeof updater !== 'function') return updater;
+  const result = updater(currentValue);
+  return result === undefined ? currentValue : result;
+}
 
 export function usePortfolioStore() {
   const { portfolio, mode, selected, ui } = useEditorStore(
@@ -25,7 +29,10 @@ export function usePortfolioStore() {
   const setPortfolio = useCallback((updater) => {
     useEditorStore.setState(
       (state) => {
-        state.portfolio = typeof updater === 'function' ? updater(state.portfolio) : updater;
+        const nextPortfolio = resolveNextState(state.portfolio, updater);
+        if (nextPortfolio !== state.portfolio) {
+          state.portfolio = nextPortfolio;
+        }
       },
       false,
       actionNameRef.current || 'portfolio/update',
@@ -35,7 +42,10 @@ export function usePortfolioStore() {
   const setUi = useCallback((updater) => {
     useEditorStore.setState(
       (state) => {
-        state.ui = typeof updater === 'function' ? updater(state.ui) : updater;
+        const nextUi = resolveNextState(state.ui, updater);
+        if (nextUi !== state.ui) {
+          state.ui = nextUi;
+        }
       },
       false,
       actionNameRef.current || 'ui/update',
@@ -45,7 +55,10 @@ export function usePortfolioStore() {
   const setModeState = useCallback((updater) => {
     useEditorStore.setState(
       (state) => {
-        state.mode = typeof updater === 'function' ? updater(state.mode) : updater;
+        const nextMode = resolveNextState(state.mode, updater);
+        if (nextMode !== state.mode) {
+          state.mode = nextMode;
+        }
       },
       false,
       actionNameRef.current || 'mode/update',
@@ -55,7 +68,10 @@ export function usePortfolioStore() {
   const setSelected = useCallback((updater) => {
     useEditorStore.setState(
       (state) => {
-        state.selected = typeof updater === 'function' ? updater(state.selected) : updater;
+        const nextSelected = resolveNextState(state.selected, updater);
+        if (nextSelected !== state.selected) {
+          state.selected = nextSelected;
+        }
       },
       false,
       actionNameRef.current || 'selection/update',
@@ -76,7 +92,6 @@ export function usePortfolioStore() {
     setModeState,
     setSelected,
     setPortfolio,
-    LEGACY_STORAGE_KEY,
     EDITOR_LAYOUT_MODE_STORAGE_KEY,
   );
   const styleActions = useStyleActions(portfolio, setPortfolio, selected);
@@ -113,5 +128,8 @@ export function usePortfolioStore() {
     [rawActions],
   );
 
-  return { portfolio, mode, selected, ui, actions };
+  return useMemo(
+    () => ({ portfolio, mode, selected, ui, actions }),
+    [portfolio, mode, selected, ui, actions],
+  );
 }
