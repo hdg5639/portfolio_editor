@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { exportPortfolioPdf } from '../utils/pdfExport';
+import { getDefaultPdfExporter } from '../export/ExportService.js';
 
 export function usePdfExport({ store }) {
   const exportRef = useRef(null);
@@ -31,7 +31,8 @@ export function usePdfExport({ store }) {
         actions.clearSelection?.();
         await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
 
-        await exportPortfolioPdf({
+        const exporter = await getDefaultPdfExporter();
+        await exporter.export({
           target,
           portfolio,
           mode,

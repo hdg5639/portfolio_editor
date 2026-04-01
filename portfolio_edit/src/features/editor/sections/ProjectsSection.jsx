@@ -5,10 +5,14 @@ import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview,
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 import { SelectionBadge, selectableInputProps, selectableViewProps } from '../components/editor-primitives/index.jsx';
 import EditableGridBlockShell from '../components/block-shells/EditableGridBlockShell.jsx';
+import DragHandle from '../components/drag/DragHandle.jsx';
 import EditableCollectionItemShell from '../components/item-shells/EditableCollectionItemShell.jsx';
 import ImageRatioToolbar from '../components/block-renderers/ImageRatioToolbar.jsx';
 import { ProjectImageBlock, ProjectListBlock, ProjectTextBlock } from '../components/block-renderers/ProjectBlockRenderers.jsx';
 import { FIXED_RATIO_IMAGE_MEASURE_BIAS, getImageFrameProps } from '../utils/imageBlockLayout.js';
+import useNativeReorderAdapter from '../hooks/useNativeReorderAdapter.js';
+import { DRAG_TYPES } from '../constants/dragTypes.js';
+import { SelectionKey } from '../utils/selectionKeys.js';
 
 function BlockShell({
                         store,
@@ -49,10 +53,11 @@ function BlockShell({
             layoutItemsOverride={layoutItemsOverride}
             toolbarActions={toolbarActions}
             selectionState={blockSelection}
+            dragType={DRAG_TYPES.projectBlock}
             chromeLabel={`${block.type} · ${block.title}`}
             layoutSummary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
             selectOnClick={() =>
-                store.actions.select({ key: `projects.${projectId}.blocks.${block.id}`, label: `${block.title || '프로젝트'} 블럭` })
+                store.actions.select({ key: SelectionKey.project.block(projectId, block.id), label: `${block.title || '프로젝트'} 블럭` })
             }
             moveItem={(fromId, toId) => store.actions.moveProjectBlock(projectId, fromId, toId)}
             setItemSpan={(value, itemsOverride) =>
@@ -69,10 +74,10 @@ function BlockShell({
 }
 
 export default function ProjectsSection({ store }) {
-    const cardStyle = store.actions.sectionCardStyle('projectsCard');
+    const cardStyle = store.actions.sectionCardStyle(SelectionKey.card.projects());
     const isEdit = store.mode === 'edit';
-    const titleStyle = store.actions.styleFor('section.projects.title');
-    const cardSelection = getCardSelectionState(store.selected?.key, 'projectsCard', ['projects', 'section.projects']);
+    const titleStyle = store.actions.styleFor(SelectionKey.sectionTitle('projects'));
+    const cardSelection = getCardSelectionState(store.selected?.key, SelectionKey.card.projects(), ['projects', 'section.projects']);
     const [draggingProjectId, setDraggingProjectId] = useState(null);
     const [dragOverProjectId, setDragOverProjectId] = useState(null);
 
@@ -82,7 +87,7 @@ export default function ProjectsSection({ store }) {
             style={cardStyle}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({key: 'projectsCard', label: '프로젝트 카드'});
+                store.actions.select({key: SelectionKey.card.projects(), label: '프로젝트 카드'});
             }}
         >
             {cardSelection.selected ? (
@@ -95,7 +100,7 @@ export default function ProjectsSection({ store }) {
                     style={titleStyle}
                     onClick={(e) => {
                         e.stopPropagation();
-                        store.actions.select({ key: 'section.projects.title', label: '프로젝트 섹션 제목' });
+                        store.actions.select({ key: SelectionKey.sectionTitle('projects'), label: '프로젝트 섹션 제목' });
                     }}
                 >
                     프로젝트
@@ -134,22 +139,30 @@ function ProjectCard({
     const [manualPreviewCell, setManualPreviewCell] = useState(null);
     const [manualLayoutSnapshot, setManualLayoutSnapshot] = useState(null);
 
-    const titleKey = `projects.${project.id}.title`;
-    const roleKey = `projects.${project.id}.role`;
-    const periodKey = `projects.${project.id}.period`;
-    const summaryKey = `projects.${project.id}.summary`;
-    const linkKey = `projects.${project.id}.link`;
+    const titleKey = SelectionKey.project.field(project.id, 'title');
+    const roleKey = SelectionKey.project.field(project.id, 'role');
+    const periodKey = SelectionKey.project.field(project.id, 'period');
+    const summaryKey = SelectionKey.project.field(project.id, 'summary');
+    const linkKey = SelectionKey.project.field(project.id, 'link');
 
     const showHelpers = editable && store.ui.showEditHelpers;
     const isProjectDragging = draggingProjectId === project.id;
     const isProjectDragOver = dragOverProjectId === project.id && draggingProjectId !== project.id;
 
-    const isProjectCardDragEvent = (event) =>
-        Array.from(event.dataTransfer?.types || []).includes('application/x-project-card');
 
     const showProjectDropOverlay = showHelpers && !!draggingProjectId && draggingProjectId !== project.id;
     const projectSelection = getProjectSelectionState(store.selected?.key, project.id);
-    const useTapReorder = showHelpers && !!store.ui?.isMobile;
+    const projectDragAdapter = useNativeReorderAdapter({
+        id: project.id,
+        dragType: DRAG_TYPES.projectCard,
+        draggingId: draggingProjectId,
+        dragOverId: dragOverProjectId,
+        setDraggingId: setDraggingProjectId,
+        setDragOverId: setDragOverProjectId,
+        enabled: showHelpers,
+        tapEnabled: showHelpers && !!store.ui?.isMobile,
+        onMove: (fromId, toId) => store.actions.moveProject(fromId, toId),
+    });
     const blockLayoutMode = project.layoutMode || 'manual';
     const measuredProjectBlocks = useMeasuredGridItems(project.blocks || [], (block) => block.id, {
         lockAutoRowSpan: store.mode !== 'edit',
@@ -185,31 +198,11 @@ function ProjectCard({
 
     const helperSlot = showHelpers ? (
         <div className="project-card-toolbar project-card-toolbar-wrap">
-            <div
-                className="drag-handle"
-                draggable
+            <DragHandle
                 title="프로젝트 카드 순서 변경"
-                onDragStart={(event) => {
-                    event.stopPropagation();
-                    setDraggingProjectId(project.id);
-                    event.dataTransfer.effectAllowed = 'move';
-                    event.dataTransfer.setData('application/x-project-card', String(project.id));
-                }}
-                onDragEnd={(event) => {
-                    event.stopPropagation();
-                    setDraggingProjectId(null);
-                    setDragOverProjectId(null);
-                }}
-                onClick={(event) => {
-                    if (!useTapReorder) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setDraggingProjectId((current) => (current === project.id ? null : project.id));
-                    setDragOverProjectId(null);
-                }}
-            >
-                ⋮⋮
-            </div>
+                handleProps={projectDragAdapter.dragHandleProps}
+                onClick={projectDragAdapter.toggleTapArm}
+            />
 
             <strong>{project.title || '프로젝트'}</strong>
 
@@ -257,41 +250,11 @@ function ProjectCard({
 
     const overlaySlot = showProjectDropOverlay ? (
         <div
-            className={`project-card-drop-overlay ${(isProjectDragOver || useTapReorder) ? 'active' : ''}`}
-            onDragOver={(event) => {
-                if (!isProjectCardDragEvent(event)) return;
-                event.preventDefault();
-                event.stopPropagation();
-                event.dataTransfer.dropEffect = 'move';
-
-                if (dragOverProjectId !== project.id) {
-                    setDragOverProjectId(project.id);
-                }
-            }}
-            onDrop={(event) => {
-                if (!isProjectCardDragEvent(event)) return;
-                event.preventDefault();
-                event.stopPropagation();
-
-                const dragged = event.dataTransfer.getData('application/x-project-card') || draggingProjectId;
-
-                if (dragged && dragged !== project.id) {
-                    store.actions.moveProject(dragged, project.id);
-                }
-
-                setDraggingProjectId(null);
-                setDragOverProjectId(null);
-            }}
-            onClick={(event) => {
-                if (!useTapReorder || !draggingProjectId || draggingProjectId === project.id) return;
-                event.preventDefault();
-                event.stopPropagation();
-                store.actions.moveProject(draggingProjectId, project.id);
-                setDraggingProjectId(null);
-                setDragOverProjectId(null);
-            }}
+            className={`project-card-drop-overlay ${(isProjectDragOver || projectDragAdapter.showTapOverlay) ? 'active' : ''}`}
+            {...projectDragAdapter.dropTargetProps}
+            onClick={projectDragAdapter.handleTapReorder}
         >
-            {useTapReorder ? <span>여기로 이동</span> : null}
+            {projectDragAdapter.showTapOverlay ? <span>여기로 이동</span> : null}
         </div>
     ) : null;
 
@@ -303,49 +266,13 @@ function ProjectCard({
             isDragging={isProjectDragging}
             isDragOver={isProjectDragOver}
             onClick={(event) => {
-                if (useTapReorder && draggingProjectId && draggingProjectId !== project.id) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    store.actions.moveProject(draggingProjectId, project.id);
-                    setDraggingProjectId(null);
-                    setDragOverProjectId(null);
+                if (projectDragAdapter.handleTapReorder(event)) {
                     return;
                 }
                 event.stopPropagation();
-                store.actions.select({ key: `projects.${project.id}`, label: `${project.title || '프로젝트'} 항목` });
+                store.actions.select({ key: SelectionKey.project.item(project.id), label: `${project.title || '프로젝트'} 항목` });
             }}
-            dragEvents={{
-                onDragEnterCapture: (event) => {
-                    if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    if (dragOverProjectId !== project.id) setDragOverProjectId(project.id);
-                },
-                onDragOverCapture: (event) => {
-                    if (!showHelpers || !draggingProjectId || !isProjectCardDragEvent(event)) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.dataTransfer.dropEffect = 'move';
-                    if (dragOverProjectId !== project.id) setDragOverProjectId(project.id);
-                },
-                onDragLeaveCapture: (event) => {
-                    if (!isProjectCardDragEvent(event)) return;
-                    const nextTarget = event.relatedTarget;
-                    if (nextTarget && event.currentTarget.contains(nextTarget)) return;
-                    if (dragOverProjectId === project.id) setDragOverProjectId(null);
-                },
-                onDropCapture: (event) => {
-                    if (!showHelpers || !isProjectCardDragEvent(event)) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const dragged = event.dataTransfer.getData('application/x-project-card') || draggingProjectId;
-                    if (dragged && dragged !== project.id) {
-                        store.actions.moveProject(dragged, project.id);
-                    }
-                    setDraggingProjectId(null);
-                    setDragOverProjectId(null);
-                },
-            }}
+            dragEvents={projectDragAdapter.captureDropTargetProps}
             helperSlot={helperSlot}
             overlaySlot={overlaySlot}
             body={() => (

@@ -10,6 +10,8 @@ import { selectableInputProps, selectableViewProps } from '../editor-primitives/
 import { FIXED_RATIO_IMAGE_MEASURE_BIAS, getImageFrameProps } from '../../utils/imageBlockLayout.js';
 import { getCustomBlockSelectionState } from '../../utils/storeHelpers';
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../../utils/layoutGrid.js';
+import { DRAG_TYPES } from '../../constants/dragTypes.js';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 
 function ComplexBlockShell({
     store,
@@ -51,10 +53,11 @@ function ComplexBlockShell({
             layoutItemsOverride={layoutItemsOverride}
             toolbarActions={toolbarActions}
             selectionState={blockSelection}
+            dragType={DRAG_TYPES.customComplexBlock}
             chromeLabel={`${block.type} · ${block.title}`}
             layoutSummary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
             selectOnClick={() =>
-                store.actions.select({ key: `custom.${sectionId}.${itemId}.blocks.${block.id}`, label: `${block.title || block.type} 블럭` })
+                store.actions.select({ key: SelectionKey.custom.block(sectionId, itemId, block.id), label: `${block.title || block.type} 블럭` })
             }
             moveItem={(fromId, toId) => store.actions.moveCustomComplexBlock(sectionId, itemId, fromId, toId)}
             setItemSpan={(value, itemsOverride) =>
@@ -76,11 +79,11 @@ export default function CustomComplexProjectItem({ sectionId, item, store, edita
     const [manualPreviewCell, setManualPreviewCell] = useState(null);
     const [manualLayoutSnapshot, setManualLayoutSnapshot] = useState(null);
 
-    const titleKey = `custom.${sectionId}.${item.id}.title`;
-    const subtitleKey = `custom.${sectionId}.${item.id}.subtitle`;
-    const dateKey = `custom.${sectionId}.${item.id}.date`;
-    const summaryKey = `custom.${sectionId}.${item.id}.summary`;
-    const linkKey = `custom.${sectionId}.${item.id}.link`;
+    const titleKey = SelectionKey.custom.field(sectionId, item.id, 'title');
+    const subtitleKey = SelectionKey.custom.field(sectionId, item.id, 'subtitle');
+    const dateKey = SelectionKey.custom.field(sectionId, item.id, 'date');
+    const summaryKey = SelectionKey.custom.field(sectionId, item.id, 'summary');
+    const linkKey = SelectionKey.custom.field(sectionId, item.id, 'link');
     const blockLayoutMode = item.layoutMode || 'manual';
     const measuredComplexBlocks = useMeasuredGridItems(item.blocks || [], (block) => block.id, {
         lockAutoRowSpan: store.mode !== 'edit',
@@ -227,7 +230,7 @@ export default function CustomComplexProjectItem({ sectionId, item, store, edita
                 <div className="project-list-edit">
                     <strong>기술 스택</strong>
                     {(item.techStack || []).map((tech, index) => {
-                        const techKey = `custom.${sectionId}.${item.id}.tech.${index}`;
+                        const techKey = SelectionKey.custom.tech(sectionId, item.id, index);
                         return (
                             <input
                                 key={`${item.id}-tech-${index}`}
@@ -250,7 +253,7 @@ export default function CustomComplexProjectItem({ sectionId, item, store, edita
             ) : (
                 <div className="chip-list">
                     {(item.techStack || []).filter(Boolean).map((tech, index) => {
-                        const techKey = `custom.${sectionId}.${item.id}.tech.${index}`;
+                        const techKey = SelectionKey.custom.tech(sectionId, item.id, index);
                         return (
                             <span
                                 key={`${item.id}-chip-${index}`}

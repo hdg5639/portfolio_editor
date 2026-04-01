@@ -5,6 +5,7 @@ import {
   normalizeEditorLayoutMode,
   resolveEditorLayoutMode,
 } from '../../utils/storeHelpers.js';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 import { defaultPortfolio } from '../../utils/defaultPortfolio.js';
 
 export function useUiActions(
@@ -29,7 +30,7 @@ export function useUiActions(
         setSelected(next);
       },
       selectPage: () => {
-        setSelected({ key: 'page', label: '페이지 전체' });
+        setSelected({ key: SelectionKey.page(), label: '페이지 전체' });
         setUi((prev) => ({
           ...prev,
           mobileEditorMode: prev.isMobile ? 'style' : prev.mobileEditorMode,
@@ -106,7 +107,7 @@ export function useUiActions(
         })),
       reset: () => {
         setPortfolio(migratePortfolio(clone(defaultPortfolio)));
-        setSelected({ key: 'page', label: '페이지 전체' });
+        setSelected({ key: SelectionKey.page(), label: '페이지 전체' });
         setModeState('edit');
       },
     }),

@@ -1,5 +1,8 @@
 import LayoutChrome from '../LayoutChrome.jsx';
 import LayoutSizeControl from '../../sections/LayoutSizeControl.jsx';
+import DragHandle from '../drag/DragHandle.jsx';
+import ReorderDropOverlay from '../drag/ReorderDropOverlay.jsx';
+import useNativeReorderAdapter from '../../hooks/useNativeReorderAdapter.js';
 
 export default function EditableGridBlockShell({
     store,
@@ -19,6 +22,7 @@ export default function EditableGridBlockShell({
     toolbarActions,
     selectionState,
     shellClassName = 'project-block-shell selection-scope selection-block',
+    dragType,
     dragHandleTitleManual = '드래그 후 격자 위치 선택',
     dragHandleTitlePacked = '드래그해서 순서 이동',
     layoutSummary,
@@ -33,15 +37,20 @@ export default function EditableGridBlockShell({
 }) {
     const editable = store.mode === 'edit';
     const showHelpers = editable && store.ui.showEditHelpers;
+    const packedDragAdapter = useNativeReorderAdapter({
+        id: block.id,
+        dragType,
+        draggingId,
+        dragOverId,
+        setDraggingId,
+        setDragOverId,
+        enabled: showHelpers && layoutMode === 'packed',
+        tapEnabled: showHelpers && !!store.ui?.isMobile && layoutMode === 'packed',
+        onMove: moveItem,
+    });
     const isDragging = draggingId === block.id;
-    const isDragOver = layoutMode === 'packed' && dragOverId === block.id && draggingId !== block.id;
-    const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = layoutMode === 'packed' && useTapReorder && !!draggingId && draggingId !== block.id;
-
-    const clearDragState = () => {
-        setDraggingId(null);
-        setDragOverId(null);
-    };
+    const isDragOver = layoutMode === 'packed' && packedDragAdapter.isDragOver;
+    const showTapOverlay = layoutMode === 'packed' && packedDragAdapter.showTapOverlay;
 
     const armDragHandle = (event) => {
         if (layoutMode === 'manual') {
@@ -52,56 +61,7 @@ export default function EditableGridBlockShell({
             return;
         }
 
-        if (!useTapReorder) return;
-        event.preventDefault();
-        event.stopPropagation();
-        setDraggingId((current) => (current === block.id ? null : block.id));
-        setDragOverId(null);
-    };
-
-    const handleTapReorder = (event) => {
-        if (!showTapOverlay) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        moveItem(draggingId, block.id);
-        clearDragState();
-        return true;
-    };
-
-    const onDragStart = (event) => {
-        if (!showHelpers) return;
-        event.stopPropagation();
-        setDraggingId(block.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', String(block.id));
-    };
-
-    const onDragOver = (event) => {
-        if (layoutMode !== 'packed' || !showHelpers || !draggingId) return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.dataTransfer.dropEffect = 'move';
-        if (dragOverId !== block.id) {
-            setDragOverId(block.id);
-        }
-    };
-
-    const onDrop = (event) => {
-        if (layoutMode !== 'packed' || !showHelpers) return;
-        event.preventDefault();
-        event.stopPropagation();
-
-        const dragged = event.dataTransfer.getData('text/plain') || draggingId;
-        if (dragged && dragged !== block.id) {
-            moveItem(dragged, block.id);
-        }
-
-        clearDragState();
-    };
-
-    const onDragEnd = (event) => {
-        event.stopPropagation();
-        clearDragState();
+        packedDragAdapter.toggleTapArm(event);
     };
 
     return (
@@ -111,16 +71,11 @@ export default function EditableGridBlockShell({
             } ${isDragOver ? 'drag-over' : ''} ${selectionState.selected ? 'is-selected' : ''} ${selectionState.ancestor ? 'is-ancestor' : ''}`}
             style={placementStyle}
             onClick={(event) => {
-                if (handleTapReorder(event)) return;
+                if (packedDragAdapter.handleTapReorder(event)) return;
                 event.stopPropagation();
                 selectOnClick();
             }}
-            onDragOver={onDragOver}
-            onDragLeave={() => {
-                if (dragOverId === block.id) setDragOverId(null);
-            }}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
+            {...packedDragAdapter.dropTargetProps}
         >
             {showHelpers ? (
                 <LayoutChrome
@@ -128,17 +83,15 @@ export default function EditableGridBlockShell({
                     summary={layoutSummary}
                     defaultExpanded={false}
                     dragHandle={
-                        <div
-                            className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`}
+                        <DragHandle
                             title={layoutMode === 'manual' ? dragHandleTitleManual : dragHandleTitlePacked}
-                            draggable
-                            onDragStart={onDragStart}
-                            onDragEnd={onDragEnd}
-                            onMouseDown={(event) => event.stopPropagation()}
+                            isArmed={layoutMode === 'manual' && draggingId === block.id}
+                            handleProps={{
+                                ...packedDragAdapter.dragHandleProps,
+                                draggable: showHelpers && layoutMode === 'packed',
+                            }}
                             onClick={armDragHandle}
-                        >
-                            ⋮⋮
-                        </div>
+                        />
                     }
                     controls={
                         <LayoutSizeControl
@@ -167,11 +120,7 @@ export default function EditableGridBlockShell({
                 />
             ) : null}
 
-            {showTapOverlay ? (
-                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
-                    여기로 이동
-                </button>
-            ) : null}
+            <ReorderDropOverlay active={showTapOverlay} onClick={packedDragAdapter.handleTapReorder} />
 
             <div className="layout-item-body">
                 {measureNode ? (

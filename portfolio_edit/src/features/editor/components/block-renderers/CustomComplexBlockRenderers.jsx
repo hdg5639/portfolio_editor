@@ -1,7 +1,8 @@
 import { GenericImageBlock, GenericListBlock, GenericTextBlock } from './SharedBlockRenderers.jsx';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 
 export function CustomComplexTextBlock({ block, sectionId, itemId, store, editable }) {
-    const baseKey = `custom.${sectionId}.${itemId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.custom.block(sectionId, itemId, block.id);
     return (
         <GenericTextBlock
             block={block}
@@ -19,7 +20,7 @@ export function CustomComplexTextBlock({ block, sectionId, itemId, store, editab
 }
 
 export function CustomComplexListBlock({ block, sectionId, itemId, store, editable }) {
-    const baseKey = `custom.${sectionId}.${itemId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.custom.block(sectionId, itemId, block.id);
     return (
         <GenericListBlock
             block={block}
@@ -37,7 +38,7 @@ export function CustomComplexListBlock({ block, sectionId, itemId, store, editab
 }
 
 export function CustomComplexImageBlock({ block, sectionId, itemId, store, editable, fillHeight = false, measureOnly = false }) {
-    const baseKey = `custom.${sectionId}.${itemId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.custom.block(sectionId, itemId, block.id);
     return (
         <GenericImageBlock
             block={block}

@@ -1,10 +1,11 @@
 import { selectableInputProps } from '../editor-primitives/index.jsx';
 import EditableCustomText from './EditableCustomText.jsx';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 
 export default function CustomTimelineItemRenderer({ sectionId, item, store, disabled }) {
-    const dateKey = `custom.${sectionId}.${item.id}.date`;
-    const titleKey = `custom.${sectionId}.${item.id}.title`;
-    const descKey = `custom.${sectionId}.${item.id}.description`;
+    const dateKey = SelectionKey.custom.field(sectionId, item.id, 'date');
+    const titleKey = SelectionKey.custom.field(sectionId, item.id, 'title');
+    const descKey = SelectionKey.custom.field(sectionId, item.id, 'description');
 
     return (
         <div className="custom-item timeline">

@@ -4,12 +4,17 @@ import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 import { SelectionBadge, selectableInputProps, selectableViewProps } from '../components/editor-primitives/index.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
+import DragHandle from '../components/drag/DragHandle.jsx';
+import ReorderDropOverlay from '../components/drag/ReorderDropOverlay.jsx';
 import EditableCollectionItemShell from '../components/item-shells/EditableCollectionItemShell.jsx';
 import CustomSimpleItemRenderer from '../components/item-renderers/CustomSimpleItemRenderer.jsx';
 import CustomTimelineItemRenderer from '../components/item-renderers/CustomTimelineItemRenderer.jsx';
 import CustomMediaItemRenderer from '../components/item-renderers/CustomMediaItemRenderer.jsx';
 import CustomComplexItemRenderer from '../components/item-renderers/CustomComplexItemRenderer.jsx';
 import CustomComplexProjectItem from '../components/item-renderers/CustomComplexProjectItem.jsx';
+import useNativeReorderAdapter from '../hooks/useNativeReorderAdapter.js';
+import { DRAG_TYPES } from '../constants/dragTypes.js';
+import { SelectionKey } from '../utils/selectionKeys.js';
 
 function ItemShell({
                        store,
@@ -25,57 +30,23 @@ function ItemShell({
                    }) {
     const isEdit = store.mode === 'edit';
     const showHelpers = isEdit && store.ui.showEditHelpers;
-    const isDragging = draggingId === item.id;
-    const isDragOver = dragOverId === item.id && draggingId !== item.id;
     const itemSelection = getCustomItemSelectionState(store.selected?.key, sectionId, item.id);
-    const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = useTapReorder && !!draggingId && draggingId !== item.id;
+    const dragAdapter = useNativeReorderAdapter({
+        id: item.id,
+        dragType: DRAG_TYPES.customItem,
+        draggingId,
+        dragOverId,
+        setDraggingId,
+        setDragOverId,
+        enabled: showHelpers,
+        tapEnabled: showHelpers && !!store.ui?.isMobile,
+        onMove: (fromId, toId) => store.actions.moveCustomSectionItem(sectionId, fromId, toId),
+    });
+    const isDragging = dragAdapter.isDragging;
+    const isDragOver = dragAdapter.isDragOver;
     const itemStyle = {
         gridColumn: `span ${item.colSpan || 6} / span ${item.colSpan || 6}`,
         gridRow: `span ${item.rowSpan || 1} / span ${item.rowSpan || 1}`,
-    };
-
-    const onDragStart = (event) => {
-        if (!showHelpers) return;
-        event.stopPropagation();
-        setDraggingId(item.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', item.id);
-    };
-
-    const onDragOver = (event) => {
-        if (!showHelpers || !draggingId) return;
-        event.preventDefault();
-        event.stopPropagation();
-        if (dragOverId !== item.id) setDragOverId(item.id);
-    };
-
-    const onDrop = (event) => {
-        if (!showHelpers) return;
-        event.preventDefault();
-        event.stopPropagation();
-        const dragged = event.dataTransfer.getData('text/plain') || draggingId;
-        if (dragged && dragged !== item.id) {
-            store.actions.moveCustomSectionItem(sectionId, dragged, item.id);
-        }
-        setDraggingId(null);
-        setDragOverId(null);
-    };
-
-    const onDragEnd = (event) => {
-        event.stopPropagation();
-        setDraggingId(null);
-        setDragOverId(null);
-    };
-
-    const handleTapReorder = (event) => {
-        if (!showTapOverlay) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        store.actions.moveCustomSectionItem(sectionId, draggingId, item.id);
-        setDraggingId(null);
-        setDragOverId(null);
-        return true;
     };
 
     const helperSlot = showHelpers ? (
@@ -84,15 +55,7 @@ function ItemShell({
             summary={`${item.colSpan || 6} × ${item.rowSpan || 1}`}
             defaultExpanded={false}
             dragHandle={
-                <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
-                    if (!useTapReorder) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setDraggingId((current) => (current === item.id ? null : item.id));
-                    setDragOverId(null);
-                }}>
-                    ⋮⋮
-                </div>
+                <DragHandle handleProps={dragAdapter.dragHandleProps} onClick={dragAdapter.toggleTapArm} />
             }
             controls={
                 <LayoutSizeControl
@@ -120,11 +83,7 @@ function ItemShell({
         />
     ) : null;
 
-    const overlaySlot = showTapOverlay ? (
-        <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
-            여기로 이동
-        </button>
-    ) : null;
+    const overlaySlot = <ReorderDropOverlay active={dragAdapter.showTapOverlay} onClick={dragAdapter.handleTapReorder} />;
 
     return (
         <EditableCollectionItemShell
@@ -134,11 +93,11 @@ function ItemShell({
             isDragging={isDragging}
             isDragOver={isDragOver}
             onClick={(event) => {
-                if (handleTapReorder(event)) return;
+                if (dragAdapter.handleTapReorder(event)) return;
                 event.stopPropagation();
-                store.actions.select({ key: `custom.${sectionId}.${item.id}`, label: `${item.title || '커스텀'} 항목` });
+                store.actions.select({ key: SelectionKey.custom.item(sectionId, item.id), label: `${item.title || '커스텀'} 항목` });
             }}
-            dragEvents={{ onDragOver, onDrop, onDragEnd }}
+            dragEvents={dragAdapter.dropTargetProps}
             helperSlot={helperSlot}
             overlaySlot={overlaySlot}
             measureRef={measureRef}
@@ -189,22 +148,22 @@ function renderItem(section, item, store, disabled) {
 
 export default function CustomSection({ store, section }) {
     const isEdit = store.mode === 'edit';
-    const titleStyle = store.actions.styleFor(`section.custom.${section.id}.title`);
+    const titleStyle = store.actions.styleFor(SelectionKey.sectionTitle('custom', section.id));
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
     const measuredSectionItems = useMeasuredGridItems(section.items || [], (item) => item.id, {
         lockAutoRowSpan: store.mode !== 'edit',
     });
     const resolvedSectionItems = useMemo(() => measuredSectionItems.resolvedItems, [measuredSectionItems.resolvedItems]);
-    const cardSelection = getCardSelectionState(store.selected?.key, 'customCard', [`custom.${section.id}`, `section.custom.${section.id}`]);
+    const cardSelection = getCardSelectionState(store.selected?.key, SelectionKey.card.custom(), [`custom.${section.id}`, `section.custom.${section.id}`]);
 
     return (
         <section
             className={`portfolio-card selection-scope selection-card ${cardSelection.selected ? 'is-selected' : ''} ${cardSelection.ancestor ? 'is-ancestor' : ''}`}
-            style={store.actions.sectionCardStyle('customCard')}
+            style={store.actions.sectionCardStyle(SelectionKey.card.custom())}
             onClick={(e) => {
                 e.stopPropagation();
-                store.actions.select({ key: 'customCard', label: '커스텀 카드' });
+                store.actions.select({ key: SelectionKey.card.custom(), label: '커스텀 카드' });
             }}
         >
             {cardSelection.selected ? (
@@ -220,7 +179,7 @@ export default function CustomSection({ store, section }) {
                         onClick={(e) => {
                             e.stopPropagation();
                             store.actions.select({
-                                key: `section.custom.${section.id}.title`,
+                                key: SelectionKey.sectionTitle('custom', section.id),
                                 label: `${section.name} 섹션 제목`,
                             });
                         }}
@@ -233,7 +192,7 @@ export default function CustomSection({ store, section }) {
                         onClick={(e) => {
                             e.stopPropagation();
                             store.actions.select({
-                                key: `section.custom.${section.id}.title`,
+                                key: SelectionKey.sectionTitle('custom', section.id),
                                 label: `${section.name} 섹션 제목`,
                             });
                         }}

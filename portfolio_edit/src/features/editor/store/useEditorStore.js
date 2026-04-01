@@ -11,6 +11,7 @@ import {
   resolveEditorLayoutMode,
   normalizeEditorLayoutMode,
 } from '../utils/storeHelpers.js';
+import { SelectionKey } from '../utils/selectionKeys.js';
 import { defaultPortfolio } from '../utils/defaultPortfolio.js';
 
 export const LEGACY_PORTFOLIO_STORAGE_KEY = 'portfolio-editor-v5';
@@ -56,7 +57,7 @@ function createInitialEditorState() {
   return {
     portfolio: createInitialPortfolioState(),
     mode: 'edit',
-    selected: { key: 'page', label: '페이지 전체' },
+    selected: { key: SelectionKey.page(), label: '페이지 전체' },
     ui: createInitialUiState(),
   };
 }

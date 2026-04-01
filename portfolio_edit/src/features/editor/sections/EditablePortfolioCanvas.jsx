@@ -7,7 +7,11 @@ import CustomSection from './CustomSection.jsx';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import { getSectionSelectionState } from '../utils/storeHelpers';
 import { SelectionBadge } from '../components/editor-primitives/index.jsx';
+import DragHandle from '../components/drag/DragHandle.jsx';
 import useCanvasViewport from '../hooks/useCanvasViewport.js';
+import useNativeReorderAdapter from '../hooks/useNativeReorderAdapter.js';
+import { DRAG_TYPES } from '../constants/dragTypes.js';
+import { SelectionKey } from '../utils/selectionKeys.js';
 
 function SectionTile({
   store,
@@ -25,74 +29,21 @@ function SectionTile({
   const resolvedSpan = Math.min(12, Math.max(1, Number(span) || 12));
   const resolvedRowSpan = Math.min(48, Math.max(1, Number(rowSpan) || 1));
   const showHelpers = editable && store.ui.showEditHelpers;
-  const isDragging = draggingKey === sectionKey;
-  const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
-  const showSectionDropOverlay = showHelpers && !!draggingKey && draggingKey !== sectionKey;
   const sectionSelection = getSectionSelectionState(store.selected?.key, sectionKey);
-  const useTapReorder = showHelpers && !!store.ui?.isMobile;
-
-  const isSectionDragEvent = (event) => Array.from(event.dataTransfer?.types || []).includes('application/x-section');
-
-  const handleDragStart = (event) => {
-    if (!showHelpers) return;
-    event.stopPropagation();
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('application/x-section', sectionKey);
-    setDraggingKey(sectionKey);
-  };
-
-  const handleDragOver = (event) => {
-    if (!showHelpers || !draggingKey || !isSectionDragEvent(event)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = 'move';
-
-    if (dragOverKey !== sectionKey) {
-      setDragOverKey(sectionKey);
-    }
-  };
-
-  const handleDrop = (event) => {
-    if (!showHelpers || !isSectionDragEvent(event)) return;
-    event.preventDefault();
-    event.stopPropagation();
-
-    const dragged = event.dataTransfer.getData('application/x-section') || draggingKey;
-
-    if (dragged && dragged !== sectionKey) {
-      store.actions.moveSection(dragged, sectionKey);
-    }
-
-    setDraggingKey(null);
-    setDragOverKey(null);
-  };
-
-  const handleDragLeave = (event) => {
-    if (!isSectionDragEvent(event)) return;
-
-    const nextTarget = event.relatedTarget;
-    if (nextTarget && event.currentTarget.contains(nextTarget)) return;
-
-    if (dragOverKey === sectionKey) {
-      setDragOverKey(null);
-    }
-  };
-
-  const handleDragEnd = (event) => {
-    event?.stopPropagation?.();
-    setDraggingKey(null);
-    setDragOverKey(null);
-  };
-
-  const handleTapReorder = (event) => {
-    if (!useTapReorder || !draggingKey || draggingKey === sectionKey) return false;
-    event.preventDefault();
-    event.stopPropagation();
-    store.actions.moveSection(draggingKey, sectionKey);
-    setDraggingKey(null);
-    setDragOverKey(null);
-    return true;
-  };
+  const dragAdapter = useNativeReorderAdapter({
+    id: sectionKey,
+    dragType: DRAG_TYPES.section,
+    draggingId: draggingKey,
+    dragOverId: dragOverKey,
+    setDraggingId: setDraggingKey,
+    setDragOverId: setDragOverKey,
+    enabled: showHelpers,
+    tapEnabled: showHelpers && !!store.ui?.isMobile,
+    onMove: (fromId, toId) => store.actions.moveSection(fromId, toId),
+  });
+  const isDragging = dragAdapter.isDragging;
+  const isDragOver = dragAdapter.isDragOver;
+  const showSectionDropOverlay = showHelpers && !!draggingKey && draggingKey !== sectionKey;
 
   return (
     <div
@@ -104,43 +55,29 @@ function SectionTile({
         gridRow: `span ${resolvedRowSpan}`,
       }}
       onClick={(event) => {
-        if (handleTapReorder(event)) return;
+        if (dragAdapter.handleTapReorder(event)) return;
         event.stopPropagation();
         const mapping = {
-          profile: { key: 'profileCard', label: '프로필 카드' },
-          projects: { key: 'projectsCard', label: '프로젝트 카드' },
-          skills: { key: 'skillsCard', label: '기술 스택 카드' },
-          awards: { key: 'awardsCard', label: '수상 카드' },
-          certificates: { key: 'certificatesCard', label: '자격증 카드' },
+          profile: { key: SelectionKey.card.profile(), label: '프로필 카드' },
+          projects: { key: SelectionKey.card.projects(), label: '프로젝트 카드' },
+          skills: { key: SelectionKey.card.skills(), label: '기술 스택 카드' },
+          awards: { key: SelectionKey.card.awards(), label: '수상 카드' },
+          certificates: { key: SelectionKey.card.certificates(), label: '자격증 카드' },
         };
-        const payload = sectionKey.startsWith('custom:') ? { key: 'customCard', label: '커스텀 카드' } : mapping[sectionKey];
+        const payload = sectionKey.startsWith('custom:') ? { key: SelectionKey.card.custom(), label: '커스텀 카드' } : mapping[sectionKey];
         if (payload) store.actions.select(payload);
       }}
-      onDragEnterCapture={handleDragOver}
-      onDragOverCapture={handleDragOver}
-      onDragLeaveCapture={handleDragLeave}
-      onDropCapture={handleDrop}
-      onDragEnd={handleDragEnd}
+      {...dragAdapter.captureDropTargetProps}
+      onDragEnd={dragAdapter.handleDragEnd}
     >
       {sectionSelection.selected ? <SelectionBadge label={`${label} 선택됨`} tone="section" /> : null}
 
       {showHelpers ? (
         <div className="section-tile-toolbar no-print">
-          <div
-            className="drag-handle"
-            draggable
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onClick={(event) => {
-              if (!useTapReorder) return;
-              event.preventDefault();
-              event.stopPropagation();
-              setDraggingKey((current) => (current === sectionKey ? null : sectionKey));
-              setDragOverKey(null);
-            }}
-          >
-            ⋮⋮
-          </div>
+          <DragHandle
+            handleProps={dragAdapter.dragHandleProps}
+            onClick={dragAdapter.toggleTapArm}
+          />
 
           <strong>{label}</strong>
 
@@ -155,12 +92,11 @@ function SectionTile({
 
       {showSectionDropOverlay ? (
         <div
-          className={`section-drop-overlay ${(isDragOver || useTapReorder) ? 'active' : ''}`}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={handleTapReorder}
+          className={`section-drop-overlay ${(isDragOver || dragAdapter.showTapOverlay) ? 'active' : ''}`}
+          {...dragAdapter.dropTargetProps}
+          onClick={dragAdapter.handleTapReorder}
         >
-          {useTapReorder ? <span>여기로 이동</span> : null}
+          {dragAdapter.showTapOverlay ? <span>여기로 이동</span> : null}
         </div>
       ) : null}
 
@@ -280,7 +216,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
         backgroundColor: 'transparent',
         paddingLeft: isMobileCanvas ? undefined : '24px',
         paddingRight: isMobileCanvas ? undefined : '24px',
-        justifyContent: isMobileCanvas ? 'center' : store.mode === 'edit' ? 'flex-start' : undefined,
+        justifyContent: 'flex-start',
       }}
       onMouseDown={handleCanvasMouseDown}
       onDragStart={(event) => {
@@ -288,7 +224,7 @@ const EditablePortfolioCanvas = forwardRef(function EditablePortfolioCanvas({ st
           event.preventDefault();
         }
       }}
-      onClick={() => actions.select({ key: 'page', label: '페이지 전체' })}
+      onClick={() => actions.select({ key: SelectionKey.page(), label: '페이지 전체' })}
     >
       <div
         className={`canvas-scale-stage ${isMobileCanvas ? 'mobile-scale-stage' : ''}`}

@@ -1,7 +1,8 @@
 import { GenericImageBlock, GenericListBlock, GenericTextBlock } from './SharedBlockRenderers.jsx';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 
 export function ProjectTextBlock({ block, projectId, store, editable }) {
-    const baseKey = `projects.${projectId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.project.block(projectId, block.id);
     return (
         <GenericTextBlock
             block={block}
@@ -19,7 +20,7 @@ export function ProjectTextBlock({ block, projectId, store, editable }) {
 }
 
 export function ProjectListBlock({ block, projectId, store, editable }) {
-    const baseKey = `projects.${projectId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.project.block(projectId, block.id);
     return (
         <GenericListBlock
             block={block}
@@ -37,7 +38,7 @@ export function ProjectListBlock({ block, projectId, store, editable }) {
 }
 
 export function ProjectImageBlock({ block, projectId, store, editable, fillHeight = false, measureOnly = false }) {
-    const baseKey = `projects.${projectId}.blocks.${block.id}`;
+    const baseKey = SelectionKey.project.block(projectId, block.id);
     return (
         <GenericImageBlock
             block={block}

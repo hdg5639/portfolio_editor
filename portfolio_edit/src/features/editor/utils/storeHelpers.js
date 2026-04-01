@@ -7,6 +7,7 @@ import {
     defaultStyle,
 } from './defaultPortfolio.js';
 import { normalizeGridItems } from './layoutGrid.js';
+import { SelectionKey, isCardSelectionKey as importedIsCardSelectionKey, matchesSelectionScope, getSelectionTypeLabelFromKey } from './selectionKeys.js';
 
 export const MOBILE_BREAKPOINT = 920;
 export const EDITOR_LAYOUT_MODE_STORAGE_KEY = 'portfolio-editor-layout-mode-v1';
@@ -45,32 +46,14 @@ export function resolveEditorLayoutMode(preferredMode, viewportIsMobile) {
 }
 
 
-const CARD_SELECTION_KEYS = new Set([
-    'profileCard',
-    'projectsCard',
-    'skillsCard',
-    'awardsCard',
-    'certificatesCard',
-    'customCard',
-]);
+export function getSelectionTypeLabel(selectedKey) {
+    return getSelectionTypeLabelFromKey(selectedKey);
+}
 
 export function isCardSelectionKey(selectedKey) {
-    return CARD_SELECTION_KEYS.has(selectedKey);
+    return importedIsCardSelectionKey(selectedKey);
 }
 
-export function getSelectionTypeLabel(selectedKey) {
-    if (!selectedKey) return '선택 없음';
-    if (selectedKey === 'page') return '페이지';
-    if (isCardSelectionKey(selectedKey)) return '카드';
-    if (selectedKey.startsWith('profileBlock.')) return '블럭';
-    if (/^projects\.[^.]+\.blocks\.[^.]+$/.test(selectedKey)) return '블럭';
-    if (/^custom\.[^.]+\.[^.]+\.blocks\.[^.]+$/.test(selectedKey)) return '블럭';
-    if (/^projects\.[^.]+$/.test(selectedKey)) return '블럭';
-    if (/^skills\.[^.]+$/.test(selectedKey)) return '블럭';
-    if (/^(awards|certificates)\.[^.]+$/.test(selectedKey)) return '블럭';
-    if (/^custom\.[^.]+\.[^.]+$/.test(selectedKey)) return '블럭';
-    return '요소';
-}
 
 export function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -97,12 +80,6 @@ function stripTransientGridState(item) {
     return rest;
 }
 
-
-function matchesSelectionScope(selectedKey, prefix) {
-    if (!selectedKey || !prefix) return false;
-    return selectedKey === prefix || selectedKey.startsWith(`${prefix}.`);
-}
-
 function stripDefaultStyleValues(style) {
     if (!style || typeof style !== 'object') return style;
 
@@ -126,16 +103,16 @@ export function getCardSelectionState(selectedKey, cardKey, prefixes = []) {
 
 export function getSectionSelectionState(selectedKey, sectionKey) {
     const mapping = {
-        profile: { cardKey: 'profileCard', prefixes: ['profile', 'profileBlock', 'section.profile'] },
-        projects: { cardKey: 'projectsCard', prefixes: ['projects', 'section.projects'] },
-        skills: { cardKey: 'skillsCard', prefixes: ['skills', 'section.skills'] },
-        awards: { cardKey: 'awardsCard', prefixes: ['awards', 'section.awards'] },
-        certificates: { cardKey: 'certificatesCard', prefixes: ['certificates', 'section.certificates'] },
+        profile: { cardKey: SelectionKey.card.profile(), prefixes: ['profile', 'profileBlock', 'section.profile'] },
+        projects: { cardKey: SelectionKey.card.projects(), prefixes: ['projects', 'section.projects'] },
+        skills: { cardKey: SelectionKey.card.skills(), prefixes: ['skills', 'section.skills'] },
+        awards: { cardKey: SelectionKey.card.awards(), prefixes: ['awards', 'section.awards'] },
+        certificates: { cardKey: SelectionKey.card.certificates(), prefixes: ['certificates', 'section.certificates'] },
     };
 
     if (sectionKey?.startsWith('custom:')) {
         const sectionId = sectionKey.slice('custom:'.length);
-        return getCardSelectionState(selectedKey, 'customCard', [`custom.${sectionId}`, `section.custom.${sectionId}`]);
+        return getCardSelectionState(selectedKey, SelectionKey.card.custom(), [`custom.${sectionId}`, `section.custom.${sectionId}`]);
     }
 
     const current = mapping[sectionKey];
@@ -144,16 +121,16 @@ export function getSectionSelectionState(selectedKey, sectionKey) {
 }
 
 export function getProfileBlockSelectionState(selectedKey, blockKey) {
-    const shellKey = `profileBlock.${blockKey}`;
+    const shellKey = SelectionKey.profile.block(blockKey);
     const scopes = {
-        image: ['profile.image'],
-        quote: ['profile.quote'],
-        contacts: ['profile.contacts'],
-        identity: ['profile.name', 'profile.role'],
-        intro: ['profile.intro'],
+        image: [SelectionKey.profile.field('image')],
+        quote: [SelectionKey.profile.field('quote')],
+        contacts: [SelectionKey.profile.field('contacts')],
+        identity: [SelectionKey.profile.field('name'), SelectionKey.profile.field('role')],
+        intro: [SelectionKey.profile.field('intro')],
     };
     const prefixes = blockKey.startsWith('extra:')
-        ? [`profile.extraBlocks.${blockKey.replace('extra:', '')}`]
+        ? [SelectionKey.profile.extraBlock(blockKey.replace('extra:', ''))]
         : (scopes[blockKey] || []);
     const selected = selectedKey === shellKey;
     const ancestor = !selected && prefixes.some((prefix) => matchesSelectionScope(selectedKey, prefix));
@@ -161,42 +138,42 @@ export function getProfileBlockSelectionState(selectedKey, blockKey) {
 }
 
 export function getProjectSelectionState(selectedKey, projectId) {
-    const prefix = `projects.${projectId}`;
+    const prefix = SelectionKey.project.item(projectId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };
 }
 
 export function getProjectBlockSelectionState(selectedKey, projectId, blockId) {
-    const prefix = `projects.${projectId}.blocks.${blockId}`;
+    const prefix = SelectionKey.project.block(projectId, blockId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };
 }
 
 export function getCustomItemSelectionState(selectedKey, sectionId, itemId) {
-    const prefix = `custom.${sectionId}.${itemId}`;
+    const prefix = SelectionKey.custom.item(sectionId, itemId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };
 }
 
 export function getCustomBlockSelectionState(selectedKey, sectionId, itemId, blockId) {
-    const prefix = `custom.${sectionId}.${itemId}.blocks.${blockId}`;
+    const prefix = SelectionKey.custom.block(sectionId, itemId, blockId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };
 }
 
 export function getSkillRowSelectionState(selectedKey, skillId) {
-    const prefix = `skills.${skillId}`;
+    const prefix = SelectionKey.skill.row(skillId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };
 }
 
 export function getTimelineItemSelectionState(selectedKey, sectionKey, itemId) {
-    const prefix = `${sectionKey}.${itemId}`;
+    const prefix = SelectionKey.timeline.item(sectionKey, itemId);
     const selected = selectedKey === prefix;
     const ancestor = !selected && matchesSelectionScope(selectedKey, prefix);
     return { selected, ancestor, active: selected || ancestor };

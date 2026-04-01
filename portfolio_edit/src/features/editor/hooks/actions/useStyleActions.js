@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { defaultStyle } from '../../utils/defaultPortfolio';
+import { getAncestorElementKeys, getCardStyleKeyForElement, isCardSelectionKey, SelectionKey } from '../../utils/selectionKeys.js';
 
 const TEXT_STYLE_FIELDS = ['color', 'fontFamily', 'fontSize', 'fontWeight', 'textAlign', 'lineHeight', 'letterSpacing'];
 
@@ -11,66 +12,8 @@ function pickTextStyles(style) {
     }, {});
 }
 
-function getCardStyleKeyForElement(key) {
-    if (!key) return null;
-    if (key.startsWith('profile') || key.startsWith('section.profile')) return 'profileCard';
-    if (key.startsWith('projects') || key.startsWith('section.projects')) return 'projectsCard';
-    if (key.startsWith('skills') || key.startsWith('section.skills')) return 'skillsCard';
-    if (key.startsWith('awards') || key.startsWith('section.awards')) return 'awardsCard';
-    if (key.startsWith('certificates') || key.startsWith('section.certificates')) return 'certificatesCard';
-    if (key.startsWith('custom') || key.startsWith('section.custom')) return 'customCard';
-    return null;
-}
-
-function getAncestorElementKeys(key) {
-    if (!key || key === 'page') return [];
-
-    const ancestors = [];
-    const parts = key.split('.');
-
-    if (key.startsWith('profile.')) {
-        const field = parts[1];
-        if (field === 'image') ancestors.push('profileBlock.image');
-        if (field === 'quote') ancestors.push('profileBlock.quote');
-        if (field === 'intro') ancestors.push('profileBlock.intro');
-        if (field === 'name' || field === 'role') ancestors.push('profileBlock.identity');
-        if (field === 'contacts') ancestors.push('profile.contacts', 'profileBlock.contacts');
-        if (field === 'extraBlocks' && parts[2]) ancestors.push(`profileBlock.extra:${parts[2]}`);
-        return [...new Set(ancestors)];
-    }
-
-    if (key.startsWith('skills.')) {
-        if (parts.length >= 3) ancestors.push(`skills.${parts[1]}`);
-        return ancestors;
-    }
-
-    if (key.startsWith('awards.') || key.startsWith('certificates.')) {
-        if (parts.length >= 3) ancestors.push(`${parts[0]}.${parts[1]}`);
-        return ancestors;
-    }
-
-    if (key.startsWith('projects.')) {
-        if (parts.length >= 3) ancestors.push(`projects.${parts[1]}`);
-        if (parts[2] === 'blocks' && parts.length >= 5) {
-            ancestors.push(`projects.${parts[1]}.blocks.${parts[3]}`);
-        }
-        return [...new Set(ancestors)];
-    }
-
-    if (key.startsWith('custom.')) {
-        if (parts.length >= 4) ancestors.push(`custom.${parts[1]}.${parts[2]}`);
-        if (parts[3] === 'blocks' && parts.length >= 6) {
-            ancestors.push(`custom.${parts[1]}.${parts[2]}.blocks.${parts[4]}`);
-        }
-        return [...new Set(ancestors)];
-    }
-
-    return [];
-}
-
 export function useStyleActions(portfolio, setPortfolio, selected) {
     const resolveCardStyleKey = (key) => key;
-    const cardStyleKeys = ['profileCard', 'projectsCard', 'skillsCard', 'awardsCard', 'certificatesCard', 'customCard'];
 
     return useMemo(() => ({
         setPageOrientation: (orientation) => setPortfolio((prev) => ({
@@ -85,7 +28,7 @@ export function useStyleActions(portfolio, setPortfolio, selected) {
         })),
         updateSelectedStyle: (field, value) => {
             if (!selected) return;
-            if (selected.key === 'page' || cardStyleKeys.includes(selected.key)) {
+            if (selected.key === SelectionKey.page() || isCardSelectionKey(selected.key)) {
                 const targetKey = resolveCardStyleKey(selected.key);
                 setPortfolio((prev) => ({ ...prev, styles: { ...prev.styles, [targetKey]: { ...prev.styles[targetKey], [field]: value } } }));
                 return;
@@ -103,8 +46,8 @@ export function useStyleActions(portfolio, setPortfolio, selected) {
         },
         getSelectedStyle: () => {
             if (!selected) return null;
-            if (selected.key === 'page') return portfolio.styles.page;
-            if (cardStyleKeys.includes(selected.key)) return portfolio.styles[resolveCardStyleKey(selected.key)];
+            if (selected.key === SelectionKey.page()) return portfolio.styles.page;
+            if (isCardSelectionKey(selected.key)) return portfolio.styles[resolveCardStyleKey(selected.key)];
             return { ...defaultStyle(), ...pickTextStyles(portfolio.styles.page), ...(portfolio.styles.elements[selected.key] || {}) };
         },
         styleFor: (key) => {

@@ -1,6 +1,7 @@
 import InlineEditable from '../components/InlineEditable';
 import { SelectionBadge, createSelectHandler, inlineEditableProps, selectableStyle } from '../components/editor-primitives/index.jsx';
 import { getCardSelectionState, getTimelineItemSelectionState } from '../utils/storeHelpers';
+import { SelectionKey } from '../utils/selectionKeys.js';
 
 
 export default function TimelineSection({ store, sectionKey, title }) {
@@ -38,7 +39,7 @@ export default function TimelineSection({ store, sectionKey, title }) {
                             key={item.id}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                store.actions.select({ key: `${sectionKey}.${item.id}`, label: `${title} 항목` });
+                                store.actions.select({ key: SelectionKey.timeline.item(sectionKey, item.id), label: `${title} 항목` });
                             }}
                         >
                             <InlineEditable

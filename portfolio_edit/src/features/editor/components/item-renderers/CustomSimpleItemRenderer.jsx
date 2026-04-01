@@ -1,9 +1,10 @@
 import { selectableInputProps } from '../editor-primitives/index.jsx';
 import EditableCustomText from './EditableCustomText.jsx';
+import { SelectionKey } from '../../utils/selectionKeys.js';
 
 export default function CustomSimpleItemRenderer({ sectionId, item, store, disabled }) {
-    const titleKey = `custom.${sectionId}.${item.id}.title`;
-    const descKey = `custom.${sectionId}.${item.id}.description`;
+    const titleKey = SelectionKey.custom.field(sectionId, item.id, 'title');
+    const descKey = SelectionKey.custom.field(sectionId, item.id, 'description');
 
     return (
         <div className="custom-item simple">

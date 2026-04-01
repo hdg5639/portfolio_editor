@@ -1,5 +1,33 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+function getWrapInsets(wrap) {
+  if (!wrap || typeof window === 'undefined') {
+    return {
+      paddingLeft: 0,
+      paddingRight: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+      contentWidth: 0,
+      contentHeight: 0,
+    };
+  }
+
+  const computed = window.getComputedStyle(wrap);
+  const paddingLeft = parseFloat(computed.paddingLeft || '0');
+  const paddingRight = parseFloat(computed.paddingRight || '0');
+  const paddingTop = parseFloat(computed.paddingTop || '0');
+  const paddingBottom = parseFloat(computed.paddingBottom || '0');
+
+  return {
+    paddingLeft,
+    paddingRight,
+    paddingTop,
+    paddingBottom,
+    contentWidth: Math.max(0, wrap.clientWidth - paddingLeft - paddingRight),
+    contentHeight: Math.max(0, wrap.clientHeight - paddingTop - paddingBottom),
+  };
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
   return Boolean(
@@ -82,10 +110,7 @@ export default function useCanvasViewport({
     const wrap = wrapRef.current;
     if (!wrap) return 1;
 
-    const computed = window.getComputedStyle(wrap);
-    const paddingLeft = parseFloat(computed.paddingLeft || '0');
-    const paddingRight = parseFloat(computed.paddingRight || '0');
-    const availableWidth = Math.max(0, wrap.clientWidth - paddingLeft - paddingRight);
+    const { contentWidth: availableWidth } = getWrapInsets(wrap);
 
     if (!availableWidth || !baseWidth) return 1;
 
@@ -200,11 +225,20 @@ export default function useCanvasViewport({
         ? Math.max(520, Math.round(baseWidth * 0.52) + targetDynamicPanGutter)
         : 0;
 
-      const minStageWidth = !isMobileCanvas ? Math.max(0, wrapViewportSize.width - 48) : targetScaledWidth;
+      const wrap = wrapRef.current;
+      const { contentWidth } = getWrapInsets(wrap);
+      const fallbackContentWidth = Math.max(0, wrapViewportSize.width - (isMobileCanvas ? 32 : 48));
+      const viewportContentWidth = contentWidth || fallbackContentWidth;
+      const minStageWidth = !isMobileCanvas ? viewportContentWidth : Math.max(viewportContentWidth, targetScaledWidth);
 
-      const targetStageWidth = !isMobileCanvas && mode === 'edit'
-        ? Math.max(targetScaledWidth + targetEditPanGutter * 2, minStageWidth)
-        : targetScaledWidth;
+      let targetStageWidth = targetScaledWidth;
+      if (!isMobileCanvas && mode === 'edit') {
+        targetStageWidth = Math.max(targetScaledWidth + targetEditPanGutter * 2, minStageWidth);
+      } else if (isMobileCanvas) {
+        const overflowX = Math.max(0, targetScaledWidth - viewportContentWidth);
+        const mobilePanGutter = overflowX > 0 ? Math.max(18, Math.min(96, Math.round(overflowX * 0.18))) : 0;
+        targetStageWidth = Math.max(targetScaledWidth + mobilePanGutter * 2, minStageWidth);
+      }
 
       const stageOffsetX = Math.max(0, Math.round((targetStageWidth - targetScaledWidth) / 2));
 
@@ -225,7 +259,7 @@ export default function useCanvasViewport({
   }, [scale]);
 
   useLayoutEffect(() => {
-    if (isMobileCanvas || mode !== 'edit') {
+    if (mode !== 'edit') {
       previousScaleRef.current = scale;
       return;
     }
@@ -238,16 +272,22 @@ export default function useCanvasViewport({
       return;
     }
 
+    if (pinchStateRef.current.active) {
+      previousScaleRef.current = scale;
+      return;
+    }
+
     const prevMetrics = getStageMetrics(previousScale);
     const nextMetrics = getStageMetrics(scale);
-    const viewportCenterX = wrap.scrollLeft + wrap.clientWidth / 2;
-    const viewportCenterY = wrap.scrollTop + wrap.clientHeight / 2;
+    const { paddingLeft, paddingTop, contentWidth, contentHeight } = getWrapInsets(wrap);
+    const viewportCenterX = wrap.scrollLeft + paddingLeft + contentWidth / 2;
+    const viewportCenterY = wrap.scrollTop + paddingTop + contentHeight / 2;
     const contentCenterX = (viewportCenterX - prevMetrics.stageOffsetX) / previousScale;
     const contentCenterY = viewportCenterY / previousScale;
 
     requestAnimationFrame(() => {
-      const nextScrollLeft = contentCenterX * scale + nextMetrics.stageOffsetX - wrap.clientWidth / 2;
-      const nextScrollTop = contentCenterY * scale - wrap.clientHeight / 2;
+      const nextScrollLeft = contentCenterX * scale + nextMetrics.stageOffsetX - (paddingLeft + contentWidth / 2);
+      const nextScrollTop = contentCenterY * scale - (paddingTop + contentHeight / 2);
       const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
       const maxTop = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
 
@@ -256,7 +296,7 @@ export default function useCanvasViewport({
     });
 
     previousScaleRef.current = scale;
-  }, [getStageMetrics, isMobileCanvas, mode, scale]);
+  }, [getStageMetrics, mode, scale]);
 
   useLayoutEffect(() => {
     if (isMobileCanvas || mode !== 'edit') return;
@@ -325,20 +365,30 @@ export default function useCanvasViewport({
 
       const rect = wrap.getBoundingClientRect();
       const midpoint = getMidpoint(event.touches);
-      const pointerX = midpoint.x - rect.left + wrap.scrollLeft;
-      const pointerY = midpoint.y - rect.top + wrap.scrollTop;
-      const contentX = pointerX / scaleRef.current;
+      const currentMetrics = getStageMetrics(scaleRef.current);
+      const { paddingLeft, paddingTop } = getWrapInsets(wrap);
+      const contentViewportX = midpoint.x - rect.left - paddingLeft;
+      const contentViewportY = midpoint.y - rect.top - paddingTop;
+      const pointerX = contentViewportX + wrap.scrollLeft;
+      const pointerY = contentViewportY + wrap.scrollTop;
+      const contentX = (pointerX - currentMetrics.stageOffsetX) / scaleRef.current;
       const contentY = pointerY / scaleRef.current;
 
       const rawScale = pinchStateRef.current.startScale * (nextDistance / pinchStateRef.current.startDistance);
       const nextScale = Math.min(Math.max(rawScale, minScale), 2.5);
+      const nextMetrics = getStageMetrics(nextScale);
 
       scaleRef.current = nextScale;
       setScale(nextScale);
 
       requestAnimationFrame(() => {
-        wrap.scrollLeft = Math.max(0, contentX * nextScale - (midpoint.x - rect.left));
-        wrap.scrollTop = Math.max(0, contentY * nextScale - (midpoint.y - rect.top));
+        const nextScrollLeft = contentX * nextScale + nextMetrics.stageOffsetX - contentViewportX;
+        const nextScrollTop = contentY * nextScale - contentViewportY;
+        const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+        const maxTop = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
+
+        wrap.scrollLeft = Math.max(0, Math.min(maxLeft, nextScrollLeft));
+        wrap.scrollTop = Math.max(0, Math.min(maxTop, nextScrollTop));
       });
     };
 
@@ -364,7 +414,7 @@ export default function useCanvasViewport({
       wrap.removeEventListener('touchend', handleTouchEnd);
       wrap.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [getFitScale, isMobileCanvas]);
+  }, [getFitScale, getStageMetrics, isMobileCanvas]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
