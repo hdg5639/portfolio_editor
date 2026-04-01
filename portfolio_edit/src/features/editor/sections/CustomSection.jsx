@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -90,6 +90,87 @@ function SelectionBadge({ label, tone = 'block' }) {
 }
 
 
+
+function AutoGrowTextarea({ className = '', value, placeholder, onChange, inputMeta }) {
+    const ref = useRef(null);
+
+    useLayoutEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        node.style.height = '0px';
+        node.style.height = `${node.scrollHeight}px`;
+    }, [value]);
+
+    return (
+        <textarea
+            ref={ref}
+            value={value || ''}
+            placeholder={placeholder}
+            rows={1}
+            className={className}
+            onChange={(e) => onChange(e.target.value)}
+            {...inputMeta}
+        />
+    );
+}
+
+
+const IMAGE_RATIO_OPTIONS = [
+    { value: 'custom', label: 'Custom' },
+    { value: '1:1', label: '1:1' },
+    { value: '3:2', label: '3:2' },
+    { value: '2:3', label: '2:3' },
+    { value: '4:3', label: '4:3' },
+    { value: '16:10', label: '16:10' },
+    { value: '16:9', label: '16:9' },
+];
+
+const FIXED_RATIO_IMAGE_MEASURE_BIAS = 16;
+
+function parsePositiveRatioPart(value, fallback = 1) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function getImageAreaRatioValue(ratioOption, customWidth = 1, customHeight = 1) {
+    switch (ratioOption) {
+        case '1:1':
+            return '1 / 1';
+        case '3:2':
+            return '3 / 2';
+        case '2:3':
+            return '2 / 3';
+        case '4:3':
+            return '4 / 3';
+        case '16:10':
+            return '16 / 10';
+        case '16:9':
+            return '16 / 9';
+        case 'custom': {
+            const width = parsePositiveRatioPart(customWidth);
+            const height = parsePositiveRatioPart(customHeight);
+            return `${width} / ${height}`;
+        }
+        default:
+            return null;
+    }
+}
+
+function getImageFrameProps(block) {
+    const ratioOption = block.imageAspectRatio || 'custom';
+    const customWidth = block.imageCustomRatioWidth ?? 1;
+    const customHeight = block.imageCustomRatioHeight ?? 1;
+    const ratioValue = getImageAreaRatioValue(ratioOption, customWidth, customHeight);
+
+    return {
+        ratioOption,
+        hasFixedRatio: !!ratioValue,
+        customWidth: parsePositiveRatioPart(customWidth),
+        customHeight: parsePositiveRatioPart(customHeight),
+        style: ratioValue ? { '--project-image-area-ratio': ratioValue } : undefined,
+    };
+}
+
 function getImageGridLayoutStyle(block) {
     const slotCount = Math.max(1, block.images?.length || 0);
     const colSpan = Number(block.colSpan) || 12;
@@ -102,6 +183,51 @@ function getImageGridLayoutStyle(block) {
         '--image-grid-columns': columns,
         '--image-grid-rows': rows,
     };
+}
+
+function ImageRatioToolbar({
+    ratioOption,
+    customWidth,
+    customHeight,
+    onRatioChange,
+    onCustomWidthChange,
+    onCustomHeightChange,
+}) {
+    return (
+        <div className="image-ratio-toolbar" onClick={(e) => e.stopPropagation()}>
+            <label className="image-ratio-control">
+                <span>이미지 비율</span>
+                <select value={ratioOption} onChange={(e) => onRatioChange(e.target.value)}>
+                    {IMAGE_RATIO_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </select>
+            </label>
+            {ratioOption === 'custom' ? (
+                <div className="image-ratio-custom-fields">
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={customWidth}
+                        aria-label="커스텀 이미지 비율 가로"
+                        onChange={(e) => onCustomWidthChange(e.target.value)}
+                    />
+                    <span>:</span>
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={customHeight}
+                        aria-label="커스텀 이미지 비율 세로"
+                        onChange={(e) => onCustomHeightChange(e.target.value)}
+                    />
+                </div>
+            ) : null}
+        </div>
+    );
 }
 
 function ItemShell({
@@ -274,6 +400,7 @@ function ComplexBlockShell({
                                measureRef,
                                measureNode = null,
                                fillBody = false,
+                               measureBias = 0,
                                minRowSpan,
                                layoutItemsOverride,
                                toolbarActions,
@@ -408,11 +535,20 @@ function ComplexBlockShell({
 
             <div className="layout-item-body">
                 {measureNode ? (
-                    <div className="layout-item-measure-probe" ref={measureRef} aria-hidden="true">
+                    <div
+                        className="layout-item-measure-probe"
+                        ref={measureRef}
+                        data-layout-measure-bias={measureBias || undefined}
+                        aria-hidden="true"
+                    >
                         {measureNode}
                     </div>
                 ) : null}
-                <div className={`layout-item-measure${fillBody ? ' fill-height' : ''}`} ref={measureNode ? null : measureRef}>
+                <div
+                    className={`layout-item-measure${fillBody ? ' fill-height' : ''}`}
+                    ref={measureNode ? null : measureRef}
+                    data-layout-measure-bias={measureBias || undefined}
+                >
                     {children}
                 </div>
             </div>
@@ -539,6 +675,106 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeigh
     const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
     const captionKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.caption`;
     const imageGridStyle = useMemo(() => getImageGridLayoutStyle(block), [block.colSpan, block.images]);
+    const imageFrame = useMemo(() => getImageFrameProps(block), [block.imageAspectRatio, block.imageCustomRatioWidth, block.imageCustomRatioHeight]);
+
+    const imageGrid = (mode = 'edit') => (
+        <div
+            className={`project-image-frame${imageFrame.hasFixedRatio ? ' has-fixed-ratio' : ''}${mode === 'measure' ? ' is-measure' : ''}`}
+            style={imageFrame.style}
+        >
+            <div className="project-image-grid" style={imageGridStyle}>
+                {(block.images || []).map((image, index) => {
+                    if (mode === 'preview') {
+                        if (!image) return null;
+                        return (
+                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
+                                <img src={image} alt={block.title || 'custom'} />
+                            </div>
+                        );
+                    }
+
+                    if (mode === 'measure') {
+                        return (
+                            <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
+                                <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
+                                    {image ? (
+                                        <img src={image} alt={block.title || 'custom'} />
+                                    ) : (
+                                        <div className="project-image-placeholder">IMAGE</div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    const inputId = `custom-image-${sectionId}-${itemId}-${block.id}-${index}`;
+                    return (
+                        <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
+                            <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
+                                {image ? (
+                                    <img src={image} alt={block.title || 'custom'} />
+                                ) : (
+                                    <div className="project-image-placeholder">IMAGE</div>
+                                )}
+                                <div className="project-image-slot-actions inside">
+                                    <label
+                                        htmlFor={inputId}
+                                        className="ghost small upload-label"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {image ? '이미지 변경' : '이미지 업로드'}
+                                    </label>
+                                    <input
+                                        id={inputId}
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            const file = e.target.files?.[0];
+                                            readFileAsDataUrl(file, (value) =>
+                                                store.actions.updateCustomComplexImage(
+                                                    sectionId,
+                                                    itemId,
+                                                    block.id,
+                                                    index,
+                                                    value
+                                                )
+                                            );
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                    {image ? (
+                                        <button
+                                            type="button"
+                                            className="ghost small project-image-clear-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.updateCustomComplexImage(sectionId, itemId, block.id, index, '');
+                                            }}
+                                        >
+                                            이미지 삭제
+                                        </button>
+                                    ) : null}
+                                    <button
+                                        type="button"
+                                        className="ghost danger small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
+                                        }}
+                                    >
+                                        슬롯 제거
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
 
     if (measureOnly) {
         return (
@@ -546,31 +782,13 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeigh
                 {editable ? (
                     <>
                         <div className="custom-input title">{block.title || ' '}</div>
+                        {imageGrid('measure')}
                         <div className="custom-input subtitle">{block.caption || ' '}</div>
-                        <div className="project-image-grid" style={imageGridStyle}>
-                            {(block.images || []).map((image, index) => (
-                                <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
-                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                        {image ? (
-                                            <img src={image} alt={block.title || 'custom'} />
-                                        ) : (
-                                            <div className="project-image-placeholder">IMAGE</div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </>
                 ) : (
                     <>
                         <h4>{block.title}</h4>
-                        <div className="project-image-grid" style={imageGridStyle}>
-                            {(block.images || []).filter(Boolean).map((image, index) => (
-                                <div key={`${block.id}-probe-img-${index}`} className="project-image-slot">
-                                    <img src={image} alt={block.title || 'custom'} />
-                                </div>
-                            ))}
-                        </div>
+                        {imageGrid('preview')}
                         {block.caption ? <p className="project-caption">{block.caption}</p> : null}
                     </>
                 )}
@@ -579,7 +797,7 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeigh
     }
 
     return (
-        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}`}>
+        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}${imageFrame.hasFixedRatio ? ' fixed-image-ratio' : ''}`}>
             {editable ? (
                 <>
                     <input
@@ -590,87 +808,27 @@ function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeigh
                         }
                         className="custom-input title"
                     />
-                    <input
+                    {imageGrid('edit')}
+                    <AutoGrowTextarea
                         value={block.caption || ''}
-                        {...selectableInputProps(store, captionKey, '복합 이미지 블록 캡션')}
-                        onChange={(e) =>
+                        placeholder="이미지 캡션"
+                        inputMeta={selectableInputProps(store, captionKey, '복합 이미지 블록 캡션')}
+                        onChange={(value) =>
                             store.actions.updateCustomComplexBlock(
                                 sectionId,
                                 itemId,
                                 block.id,
                                 'caption',
-                                e.target.value
+                                value
                             )
                         }
-                        className="custom-input subtitle"
+                        className="custom-input subtitle project-image-caption-input"
                     />
-                    <div className="project-image-grid" style={imageGridStyle}>
-                        {(block.images || []).map((image, index) => {
-                            const inputId = `custom-image-${sectionId}-${itemId}-${block.id}-${index}`;
-                            return (
-                                <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
-                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                        {image ? (
-                                            <img src={image} alt={block.title || 'custom'} />
-                                        ) : (
-                                            <div className="project-image-placeholder">IMAGE</div>
-                                        )}
-                                        <div className="project-image-slot-actions inside">
-                                            <label
-                                                htmlFor={inputId}
-                                                className="ghost small upload-label"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                이미지 업로드
-                                            </label>
-                                            <input
-                                                id={inputId}
-                                                type="file"
-                                                hidden
-                                                accept="image/*"
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    const file = e.target.files?.[0];
-                                                    readFileAsDataUrl(file, (value) =>
-                                                        store.actions.updateCustomComplexImage(
-                                                            sectionId,
-                                                            itemId,
-                                                            block.id,
-                                                            index,
-                                                            value
-                                                        )
-                                                    );
-                                                    e.target.value = '';
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="ghost danger small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
-                                                }}
-                                            >
-                                                슬롯 제거
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
                 </>
             ) : (
                 <>
                     <h4 {...selectableViewProps(store, titleKey, '복합 이미지 블록 제목')}>{block.title}</h4>
-                    <div className="project-image-grid" style={imageGridStyle}>
-                        {(block.images || []).filter(Boolean).map((image, index) => (
-                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                <img src={image} alt={block.title || 'custom'} />
-                            </div>
-                        ))}
-                    </div>
+                    {imageGrid('preview')}
                     {block.caption ? (
                         <p {...selectableViewProps(store, captionKey, '복합 이미지 블록 캡션')} className="project-caption">
                             {block.caption}
@@ -948,20 +1106,42 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                             )
                             : block.type === 'image'
                                 ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            store.actions.addCustomComplexImage(sectionId, item.id, block.id);
-                                        }}
-                                    >
-                                        이미지 슬롯 추가
-                                    </button>
+                                    <>
+                                        <ImageRatioToolbar
+                                            ratioOption={block.imageAspectRatio || 'custom'}
+                                            customWidth={block.imageCustomRatioWidth ?? 1}
+                                            customHeight={block.imageCustomRatioHeight ?? 1}
+                                            onRatioChange={(nextValue) => {
+                                                store.actions.updateCustomComplexBlock(sectionId, item.id, block.id, 'imageAspectRatio', nextValue);
+                                                if (nextValue !== 'custom') {
+                                                    store.actions.setCustomComplexBlockRowSpan(sectionId, item.id, block.id, 1, resolvedComplexBlocks);
+                                                }
+                                            }}
+                                            onCustomWidthChange={(value) =>
+                                                store.actions.updateCustomComplexBlock(sectionId, item.id, block.id, 'imageCustomRatioWidth', value)
+                                            }
+                                            onCustomHeightChange={(value) =>
+                                                store.actions.updateCustomComplexBlock(sectionId, item.id, block.id, 'imageCustomRatioHeight', value)
+                                            }
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.addCustomComplexImage(sectionId, item.id, block.id);
+                                            }}
+                                        >
+                                            이미지 슬롯 추가
+                                        </button>
+                                    </>
                                 )
                                 : null
                         : null;
 
                     const isImageBlock = block.type === 'image';
+                    const imageFrameProps = isImageBlock ? getImageFrameProps(block) : null;
+                    const shouldFillImageBlock = !!(isImageBlock && imageFrameProps && !imageFrameProps.hasFixedRatio);
+                    const measureBias = isImageBlock && imageFrameProps?.hasFixedRatio ? FIXED_RATIO_IMAGE_MEASURE_BIAS : 0;
                     const blockNode = block.type === 'text'
                         ? (
                             <ComplexTextBlock
@@ -987,10 +1167,10 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                                     itemId={item.id}
                                     block={block}
                                     editable={editable}
-                                    fillHeight
+                                    fillHeight={shouldFillImageBlock}
                                 />
                             );
-                    const measureNode = isImageBlock
+                    const measureNode = shouldFillImageBlock
                         ? (
                             <ComplexImageBlock
                                 store={store}
@@ -1018,7 +1198,8 @@ function ComplexProjectItem({ sectionId, item, store, editable }) {
                         placementStyle={getGridItemPlacementStyle(block, blockLayoutMode)}
                         measureRef={measuredComplexBlocks.registerMeasureRef(block.id)}
                         measureNode={measureNode}
-                        fillBody={isImageBlock}
+                        fillBody={shouldFillImageBlock}
+                        measureBias={measureBias}
                         minRowSpan={block.minRowSpan || 1}
                         layoutItemsOverride={resolvedComplexBlocks}
                         toolbarActions={toolbarActions}
@@ -1134,66 +1315,56 @@ function renderItem(section, item, store, disabled) {
         const descKey = `custom.${sectionId}.${item.id}.description`;
 
         return (
-            <div
-                className={`custom-item media ${item.imagePosition === 'left' ? 'image-left' : ''} ${
-                    item.imagePosition === 'right' ? 'image-right' : ''
-                }`}
-            >
+            <div className="custom-item media media-stack">
                 {item.image || !disabled ? (
-                    <div className={`custom-media-preview ${item.image ? '' : 'is-empty'}`}>
+                    <div className={`custom-media-preview ${item.image ? 'has-image' : 'is-empty'}`}>
                         {item.image ? (
                             <img src={item.image} alt={item.title || 'custom'} />
                         ) : (
                             <div className="project-image-placeholder">IMAGE</div>
                         )}
                         {!disabled ? (
-                            <label className="ghost small upload-label custom-media-upload" onClick={(e) => e.stopPropagation()}>
-                                이미지 업로드
-                                <input
-                                    type="file"
-                                    hidden
-                                    accept="image/*"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                        e.stopPropagation();
-                                        const file = e.target.files?.[0];
-                                        readFileAsDataUrl(file, (value) =>
-                                            store.actions.updateCustomSectionItem(
-                                                sectionId,
-                                                item.id,
-                                                'image',
-                                                value
-                                            )
-                                        );
-                                        e.target.value = '';
-                                    }}
-                                />
-                            </label>
+                            <div className="custom-media-preview-actions" onClick={(e) => e.stopPropagation()}>
+                                <label className="ghost small upload-label">
+                                    {item.image ? '이미지 변경' : '이미지 업로드'}
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            const file = e.target.files?.[0];
+                                            readFileAsDataUrl(file, (value) =>
+                                                store.actions.updateCustomSectionItem(
+                                                    sectionId,
+                                                    item.id,
+                                                    'image',
+                                                    value
+                                                )
+                                            );
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                </label>
+                                {item.image ? (
+                                    <button
+                                        type="button"
+                                        className="ghost small project-image-clear-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            store.actions.updateCustomSectionItem(sectionId, item.id, 'image', '');
+                                        }}
+                                    >
+                                        이미지 삭제
+                                    </button>
+                                ) : null}
+                            </div>
                         ) : null}
                     </div>
                 ) : null}
 
                 <div className="custom-media-body">
-                    {!disabled ? (
-                        <div className="inline-actions wrap">
-                            <select
-                                value={item.imagePosition || 'top'}
-                                onChange={(e) =>
-                                    store.actions.updateCustomSectionItem(
-                                        sectionId,
-                                        item.id,
-                                        'imagePosition',
-                                        e.target.value
-                                    )
-                                }
-                            >
-                                <option value="top">이미지 상단</option>
-                                <option value="left">이미지 좌측</option>
-                                <option value="right">이미지 우측</option>
-                            </select>
-                        </div>
-                    ) : null}
-
                     <EditableText
                         value={item.title}
                         placeholder="제목"

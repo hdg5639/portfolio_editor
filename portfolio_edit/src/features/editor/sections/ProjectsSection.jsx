@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -48,6 +48,87 @@ function SelectionBadge({ label, tone = 'block' }) {
 }
 
 
+
+function AutoGrowTextarea({ className = '', value, placeholder, onChange, inputMeta }) {
+    const ref = useRef(null);
+
+    useLayoutEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        node.style.height = '0px';
+        node.style.height = `${node.scrollHeight}px`;
+    }, [value]);
+
+    return (
+        <textarea
+            ref={ref}
+            value={value || ''}
+            placeholder={placeholder}
+            rows={1}
+            className={className}
+            onChange={(e) => onChange(e.target.value)}
+            {...inputMeta}
+        />
+    );
+}
+
+
+const IMAGE_RATIO_OPTIONS = [
+    { value: 'custom', label: 'Custom' },
+    { value: '1:1', label: '1:1' },
+    { value: '3:2', label: '3:2' },
+    { value: '2:3', label: '2:3' },
+    { value: '4:3', label: '4:3' },
+    { value: '16:10', label: '16:10' },
+    { value: '16:9', label: '16:9' },
+];
+
+const FIXED_RATIO_IMAGE_MEASURE_BIAS = 16;
+
+function parsePositiveRatioPart(value, fallback = 1) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function getImageAreaRatioValue(ratioOption, customWidth = 1, customHeight = 1) {
+    switch (ratioOption) {
+        case '1:1':
+            return '1 / 1';
+        case '3:2':
+            return '3 / 2';
+        case '2:3':
+            return '2 / 3';
+        case '4:3':
+            return '4 / 3';
+        case '16:10':
+            return '16 / 10';
+        case '16:9':
+            return '16 / 9';
+        case 'custom': {
+            const width = parsePositiveRatioPart(customWidth);
+            const height = parsePositiveRatioPart(customHeight);
+            return `${width} / ${height}`;
+        }
+        default:
+            return null;
+    }
+}
+
+function getImageFrameProps(block) {
+    const ratioOption = block.imageAspectRatio || 'custom';
+    const customWidth = block.imageCustomRatioWidth ?? 1;
+    const customHeight = block.imageCustomRatioHeight ?? 1;
+    const ratioValue = getImageAreaRatioValue(ratioOption, customWidth, customHeight);
+
+    return {
+        ratioOption,
+        hasFixedRatio: !!ratioValue,
+        customWidth: parsePositiveRatioPart(customWidth),
+        customHeight: parsePositiveRatioPart(customHeight),
+        style: ratioValue ? { '--project-image-area-ratio': ratioValue } : undefined,
+    };
+}
+
 function getImageGridLayoutStyle(block) {
     const slotCount = Math.max(1, block.images?.length || 0);
     const colSpan = Number(block.colSpan) || 12;
@@ -60,6 +141,51 @@ function getImageGridLayoutStyle(block) {
         '--image-grid-columns': columns,
         '--image-grid-rows': rows,
     };
+}
+
+function ImageRatioToolbar({
+    ratioOption,
+    customWidth,
+    customHeight,
+    onRatioChange,
+    onCustomWidthChange,
+    onCustomHeightChange,
+}) {
+    return (
+        <div className="image-ratio-toolbar" onClick={(e) => e.stopPropagation()}>
+            <label className="image-ratio-control">
+                <span>이미지 비율</span>
+                <select value={ratioOption} onChange={(e) => onRatioChange(e.target.value)}>
+                    {IMAGE_RATIO_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </select>
+            </label>
+            {ratioOption === 'custom' ? (
+                <div className="image-ratio-custom-fields">
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={customWidth}
+                        aria-label="커스텀 이미지 비율 가로"
+                        onChange={(e) => onCustomWidthChange(e.target.value)}
+                    />
+                    <span>:</span>
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={customHeight}
+                        aria-label="커스텀 이미지 비율 세로"
+                        onChange={(e) => onCustomHeightChange(e.target.value)}
+                    />
+                </div>
+            ) : null}
+        </div>
+    );
 }
 
 function BlockShell({
@@ -75,6 +201,7 @@ function BlockShell({
                         measureRef,
                         measureNode = null,
                         fillBody = false,
+                        measureBias = 0,
                         minRowSpan,
                         layoutItemsOverride,
                         toolbarActions,
@@ -219,11 +346,20 @@ function BlockShell({
 
             <div className="layout-item-body">
                 {measureNode ? (
-                    <div className="layout-item-measure-probe" ref={measureRef} aria-hidden="true">
+                    <div
+                        className="layout-item-measure-probe"
+                        ref={measureRef}
+                        data-layout-measure-bias={measureBias || undefined}
+                        aria-hidden="true"
+                    >
                         {measureNode}
                     </div>
                 ) : null}
-                <div className={`layout-item-measure${fillBody ? ' fill-height' : ''}`} ref={measureNode ? null : measureRef}>
+                <div
+                    className={`layout-item-measure${fillBody ? ' fill-height' : ''}`}
+                    ref={measureNode ? null : measureRef}
+                    data-layout-measure-bias={measureBias || undefined}
+                >
                     {children}
                 </div>
             </div>
@@ -338,6 +474,100 @@ function ImageBlock({block, projectId, store, editable, fillHeight = false, meas
     const titleKey = `projects.${projectId}.blocks.${block.id}.title`;
     const captionKey = `projects.${projectId}.blocks.${block.id}.caption`;
     const imageGridStyle = useMemo(() => getImageGridLayoutStyle(block), [block.colSpan, block.images]);
+    const imageFrame = useMemo(() => getImageFrameProps(block), [block.imageAspectRatio, block.imageCustomRatioWidth, block.imageCustomRatioHeight]);
+
+    const imageGrid = (mode = 'edit') => (
+        <div
+            className={`project-image-frame${imageFrame.hasFixedRatio ? ' has-fixed-ratio' : ''}${mode === 'measure' ? ' is-measure' : ''}`}
+            style={imageFrame.style}
+        >
+            <div className="project-image-grid" style={imageGridStyle}>
+                {(block.images || []).map((image, index) => {
+                    if (mode === 'preview') {
+                        if (!image) return null;
+                        return (
+                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
+                                <img src={image} alt={block.title || 'project'} />
+                            </div>
+                        );
+                    }
+
+                    if (mode === 'measure') {
+                        return (
+                            <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
+                                <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
+                                    {image ? (
+                                        <img src={image} alt={block.title || 'project'} />
+                                    ) : (
+                                        <div className="project-image-placeholder">IMAGE</div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    const inputId = `project-image-${projectId}-${block.id}-${index}`;
+                    return (
+                        <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
+                            <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
+                                {image ? (
+                                    <img src={image} alt={block.title || 'project'} />
+                                ) : (
+                                    <div className="project-image-placeholder">IMAGE</div>
+                                )}
+                                <div className="project-image-slot-actions inside">
+                                    <label
+                                        htmlFor={inputId}
+                                        className="ghost small upload-label"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {image ? '이미지 변경' : '이미지 업로드'}
+                                    </label>
+                                    <input
+                                        id={inputId}
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            const file = e.target.files?.[0];
+                                            readFileAsDataUrl(file, (value) =>
+                                                store.actions.updateProjectImage(projectId, block.id, index, value)
+                                            );
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                    {image ? (
+                                        <button
+                                            type="button"
+                                            className="ghost small project-image-clear-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.updateProjectImage(projectId, block.id, index, '');
+                                            }}
+                                        >
+                                            이미지 삭제
+                                        </button>
+                                    ) : null}
+                                    <button
+                                        type="button"
+                                        className="ghost danger small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            store.actions.removeProjectImage(projectId, block.id, index);
+                                        }}
+                                    >
+                                        슬롯 제거
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
 
     if (measureOnly) {
         return (
@@ -345,31 +575,13 @@ function ImageBlock({block, projectId, store, editable, fillHeight = false, meas
                 {editable ? (
                     <>
                         <div className="custom-input title">{block.title || ' '}</div>
+                        {imageGrid('measure')}
                         <div className="custom-input subtitle">{block.caption || ' '}</div>
-                        <div className="project-image-grid" style={imageGridStyle}>
-                            {(block.images || []).map((image, index) => (
-                                <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
-                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                        {image ? (
-                                            <img src={image} alt={block.title || 'project'} />
-                                        ) : (
-                                            <div className="project-image-placeholder">IMAGE</div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </>
                 ) : (
                     <>
                         <h4>{block.title}</h4>
-                        <div className="project-image-grid" style={imageGridStyle}>
-                            {(block.images || []).filter(Boolean).map((image, index) => (
-                                <div key={`${block.id}-probe-img-${index}`} className="project-image-slot">
-                                    <img src={image} alt={block.title || 'project'} />
-                                </div>
-                            ))}
-                        </div>
+                        {imageGrid('preview')}
                         {block.caption ? <p className="project-caption">{block.caption}</p> : null}
                     </>
                 )}
@@ -378,7 +590,7 @@ function ImageBlock({block, projectId, store, editable, fillHeight = false, meas
     }
 
     return (
-        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}`}>
+        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}${imageFrame.hasFixedRatio ? ' fixed-image-ratio' : ''}`}>
             {editable ? (
                 <>
                     <input
@@ -389,77 +601,19 @@ function ImageBlock({block, projectId, store, editable, fillHeight = false, meas
                         }
                         className="custom-input title"
                     />
-                    <input
+                    {imageGrid('edit')}
+                    <AutoGrowTextarea
                         value={block.caption || ''}
-                        {...selectableInputProps(store, captionKey, '프로젝트 이미지 캡션')}
-                        onChange={(e) =>
-                            store.actions.updateProjectBlock(projectId, block.id, 'caption', e.target.value)
-                        }
-                        className="custom-input subtitle"
+                        placeholder="이미지 캡션"
+                        inputMeta={selectableInputProps(store, captionKey, '프로젝트 이미지 캡션')}
+                        onChange={(value) => store.actions.updateProjectBlock(projectId, block.id, 'caption', value)}
+                        className="custom-input subtitle project-image-caption-input"
                     />
-
-                    <div className="project-image-grid" style={imageGridStyle}>
-                        {(block.images || []).map((image, index) => {
-                            const inputId = `project-image-${projectId}-${block.id}-${index}`;
-                            return (
-                                <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
-                                    <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                        {image ? (
-                                            <img src={image} alt={block.title || 'project'} />
-                                        ) : (
-                                            <div className="project-image-placeholder">IMAGE</div>
-                                        )}
-                                        <div className="project-image-slot-actions inside">
-                                            <label
-                                                htmlFor={inputId}
-                                                className="ghost small upload-label"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                이미지 업로드
-                                            </label>
-                                            <input
-                                                id={inputId}
-                                                type="file"
-                                                hidden
-                                                accept="image/*"
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    const file = e.target.files?.[0];
-                                                    readFileAsDataUrl(file, (value) =>
-                                                        store.actions.updateProjectImage(projectId, block.id, index, value)
-                                                    );
-                                                    e.target.value = '';
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="ghost danger small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    store.actions.removeProjectImage(projectId, block.id, index);
-                                                }}
-                                            >
-                                                슬롯 제거
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
                 </>
             ) : (
                 <>
                     <h4 {...selectableViewProps(store, titleKey, '프로젝트 이미지 블록 제목')}>{block.title}</h4>
-                    <div className="project-image-grid" style={imageGridStyle}>
-                        {(block.images || []).filter(Boolean).map((image, index) => (
-                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                <img src={image} alt={block.title || 'project'} />
-                            </div>
-                        ))}
-                    </div>
+                    {imageGrid('preview')}
                     {block.caption ? (
                         <p {...selectableViewProps(store, captionKey, '프로젝트 이미지 캡션')} className="project-caption">
                             {block.caption}
@@ -888,26 +1042,48 @@ function ProjectCard({
                             )
                             : block.type === 'image'
                                 ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            store.actions.addProjectImage(project.id, block.id);
-                                        }}
-                                    >
-                                        이미지 슬롯 추가
-                                    </button>
+                                    <>
+                                        <ImageRatioToolbar
+                                            ratioOption={block.imageAspectRatio || 'custom'}
+                                            customWidth={block.imageCustomRatioWidth ?? 1}
+                                            customHeight={block.imageCustomRatioHeight ?? 1}
+                                            onRatioChange={(nextValue) => {
+                                                store.actions.updateProjectBlock(project.id, block.id, 'imageAspectRatio', nextValue);
+                                                if (nextValue !== 'custom') {
+                                                    store.actions.setProjectBlockRowSpan(project.id, block.id, 1, resolvedProjectBlocks);
+                                                }
+                                            }}
+                                            onCustomWidthChange={(value) =>
+                                                store.actions.updateProjectBlock(project.id, block.id, 'imageCustomRatioWidth', value)
+                                            }
+                                            onCustomHeightChange={(value) =>
+                                                store.actions.updateProjectBlock(project.id, block.id, 'imageCustomRatioHeight', value)
+                                            }
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                store.actions.addProjectImage(project.id, block.id);
+                                            }}
+                                        >
+                                            이미지 슬롯 추가
+                                        </button>
+                                    </>
                                 )
                                 : null
                         : null;
 
                     const isImageBlock = block.type === 'image';
+                    const imageFrameProps = isImageBlock ? getImageFrameProps(block) : null;
+                    const shouldFillImageBlock = !!(isImageBlock && imageFrameProps && !imageFrameProps.hasFixedRatio);
+                    const measureBias = isImageBlock && imageFrameProps?.hasFixedRatio ? FIXED_RATIO_IMAGE_MEASURE_BIAS : 0;
                     const blockNode = block.type === 'text'
                         ? <TextBlock block={block} projectId={project.id} store={store} editable={editable} />
                         : block.type === 'list'
                             ? <ListBlock block={block} projectId={project.id} store={store} editable={editable} />
-                            : <ImageBlock block={block} projectId={project.id} store={store} editable={editable} fillHeight />;
-                    const measureNode = isImageBlock
+                            : <ImageBlock block={block} projectId={project.id} store={store} editable={editable} fillHeight={shouldFillImageBlock} />;
+                    const measureNode = shouldFillImageBlock
                         ? <ImageBlock block={block} projectId={project.id} store={store} editable={editable} measureOnly />
                         : null;
 
@@ -925,7 +1101,8 @@ function ProjectCard({
                         placementStyle={getGridItemPlacementStyle(block, blockLayoutMode)}
                         measureRef={measuredProjectBlocks.registerMeasureRef(block.id)}
                         measureNode={measureNode}
-                        fillBody={isImageBlock}
+                        fillBody={shouldFillImageBlock}
+                        measureBias={measureBias}
                         minRowSpan={block.minRowSpan || 1}
                         layoutItemsOverride={resolvedProjectBlocks}
                         toolbarActions={toolbarActions}

@@ -47,6 +47,9 @@ export const createImageBlock = () => ({
   title: '이미지',
   caption: '이미지 캡션',
   images: [''],
+  imageAspectRatio: 'custom',
+  imageCustomRatioWidth: 1,
+  imageCustomRatioHeight: 1,
   colSpan: 6,
   rowSpan: 1,
 });

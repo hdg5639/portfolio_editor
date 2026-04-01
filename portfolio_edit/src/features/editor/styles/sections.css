@@ -41,7 +41,7 @@
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .project-image-grid {
@@ -59,12 +59,53 @@
     align-content: stretch;
 }
 
+.project-image-frame {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.project-image-frame {
+    --project-image-area-ratio: 1 / 1;
+}
+
+.project-image-frame.has-fixed-ratio {
+    aspect-ratio: var(--project-image-area-ratio, 1 / 1);
+}
+
+.project-image-frame.has-fixed-ratio .project-image-grid {
+    height: 100%;
+}
+
+.project-image-block-card.fixed-image-ratio .project-image-frame,
+.project-image-block-card.fixed-image-ratio .project-image-frame.has-fixed-ratio {
+    align-self: start;
+}
+
+.project-image-frame.has-fixed-ratio .project-image-editor-slot,
+.project-image-frame.has-fixed-ratio .project-image-grid > .project-image-slot {
+    position: relative;
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+}
+
+.project-image-frame.has-fixed-ratio .project-image-editor-slot > .project-image-slot {
+    position: absolute;
+    inset: 0;
+}
+
 .project-image-editor-slot {
     min-width: 0;
 }
 
 .project-image-slot.is-empty {
     background: #f6f4ef;
+}
+
+.project-image-slot.has-image,
+.custom-media-preview.has-image {
+    background: transparent;
 }
 
 .project-image-slot-actions {
@@ -84,7 +125,10 @@
 }
 
 .project-image-slot-actions.inside .upload-label,
-.project-image-slot-actions.inside .ghost.danger.small {
+.project-image-slot-actions.inside .ghost.small,
+.project-image-slot-actions.inside .ghost.danger.small,
+.custom-media-preview-actions .upload-label,
+.custom-media-preview-actions .ghost.small {
     min-height: 30px;
     padding: 6px 10px;
     border: 1px solid rgba(17, 17, 17, 0.14);
@@ -99,11 +143,18 @@
     color: #ffffff;
 }
 
+.project-image-clear-button,
+.custom-media-preview-actions .project-image-clear-button {
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text);
+}
+
 .custom-item.media {
     display: grid;
-    gap: 14px;
+    gap: 16px;
     min-width: 0;
     align-items: start;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .custom-media-body {
@@ -115,20 +166,34 @@
 
 .custom-media-preview {
     position: relative;
-    min-height: 180px;
+    min-height: 220px;
+    width: 100%;
     display: grid;
     place-items: center;
+    aspect-ratio: 16 / 10;
 }
 
 .custom-media-preview.is-empty {
     background: linear-gradient(180deg, #f7f3eb, #f1ece3);
 }
 
-.custom-media-upload {
+.custom-media-preview-actions {
     position: absolute;
     right: 12px;
     bottom: 12px;
     z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    max-width: calc(100% - 24px);
+}
+
+
+.project-image-slot.has-image img,
+.custom-media-preview.has-image img {
+    background: transparent;
+    object-fit: fill;
 }
 
 .custom-item.media .custom-input,
@@ -189,6 +254,12 @@
     min-height: 0;
     align-content: start;
     grid-auto-rows: max-content;
+}
+
+.project-image-block-card.fixed-image-ratio {
+    height: 100%;
+    min-height: 0;
+    align-self: stretch;
 }
 
 .layout-item-measure.fill-height {
@@ -279,7 +350,7 @@
     margin: 0;
     padding-left: 18px;
     display: grid;
-    gap: 6px;
+    gap: 4px;
 }
 
 .project-list-edit {
@@ -884,6 +955,10 @@
     height: 100%;
 }
 
+.project-inner-card.project-image-block-card.fixed-image-ratio {
+    height: 100%;
+}
+
 .project-top-meta {
     display: grid;
     gap: 8px;
@@ -1079,4 +1154,125 @@
 
 .project-image-block-card .project-image-slot {
     aspect-ratio: auto;
+}
+
+
+.project-image-block-card.fixed-image-ratio {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: auto auto max-content;
+}
+
+.project-image-block-card.fixed-image-ratio .project-image-frame {
+    align-self: start;
+}
+
+.project-image-block-card .project-image-slot.has-image {
+    background: #ffffff;
+}
+
+.project-image-block-card .project-image-slot img {
+    object-fit: fill;
+}
+
+.image-ratio-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-right: auto;
+}
+
+.image-ratio-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.image-ratio-control select,
+.image-ratio-custom-fields input {
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid rgba(183, 176, 164, 0.72);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.image-ratio-control select {
+    min-width: 82px;
+}
+
+.image-ratio-control span {
+    white-space: nowrap;
+}
+
+.image-ratio-custom-fields {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.image-ratio-custom-fields span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.image-ratio-custom-fields input {
+    width: 42px;
+    text-align: center;
+}
+
+.image-ratio-custom-fields input::-webkit-outer-spin-button,
+.image-ratio-custom-fields input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.image-ratio-custom-fields input[type='number'] {
+    -moz-appearance: textfield;
+}
+
+@media (max-width: 920px) {
+    .image-ratio-control {
+        width: 100%;
+        margin-right: 0;
+        justify-content: space-between;
+    }
+
+    .image-ratio-control select {
+        flex: 1;
+    }
+}
+
+.project-image-caption-input {
+    resize: none;
+    overflow: hidden;
+    min-height: 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.project-image-caption-input::-webkit-resizer {
+    display: none;
+}
+
+.layout-item-measure-probe .project-image-block-card,
+.layout-item-measure-probe .project-image-block-card.fixed-image-ratio,
+.layout-item-measure-probe .project-inner-card.project-image-block-card.fixed-image-ratio {
+    height: auto !important;
+    min-height: 0;
+    align-self: start;
+}
+
+.layout-item-measure-probe .project-image-block-card .project-image-frame,
+.layout-item-measure-probe .project-image-block-card .project-image-frame.has-fixed-ratio {
+    align-self: start;
 }

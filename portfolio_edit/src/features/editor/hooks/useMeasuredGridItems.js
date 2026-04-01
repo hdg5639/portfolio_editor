@@ -3,6 +3,14 @@ import { GRID_GAP, GRID_ROW_HEIGHT } from '../utils/layoutGrid.js';
 
 const GRID_MEASURE_EPSILON = 8;
 
+function resolveMeasureBias(nodeOrValue) {
+  if (nodeOrValue == null) return 0;
+  if (typeof nodeOrValue === 'number') return Number.isFinite(nodeOrValue) ? nodeOrValue : 0;
+  const raw = nodeOrValue?.dataset?.layoutMeasureBias;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
 function toRequiredRowSpan(height, minimumRowSpan = 1) {
   const safeHeight = Math.max(0, Number(height) || 0);
   const adjustedHeight = Math.max(0, safeHeight - GRID_MEASURE_EPSILON);
@@ -24,8 +32,8 @@ export default function useMeasuredGridItems(
   const [heightsById, setHeightsById] = useState({});
   const [stickyRowSpanById, setStickyRowSpanById] = useState({});
 
-  const commitHeight = useCallback((key, nextHeight) => {
-    const normalizedHeight = Math.max(0, Math.round(Number(nextHeight) || 0));
+  const commitHeight = useCallback((key, nextHeight, measureBias = 0) => {
+    const normalizedHeight = Math.max(0, Math.round((Number(nextHeight) || 0) - resolveMeasureBias(measureBias)));
     if (heightsRef.current[key] === normalizedHeight) return;
 
     heightsRef.current = {
@@ -52,7 +60,7 @@ export default function useMeasuredGridItems(
 
     const frameId = requestAnimationFrame(() => {
       rafMapRef.current.delete(key);
-      commitHeight(key, node.getBoundingClientRect().height);
+      commitHeight(key, node.getBoundingClientRect().height, node);
     });
 
     rafMapRef.current.set(key, frameId);
@@ -65,7 +73,7 @@ export default function useMeasuredGridItems(
       entries.forEach((entry) => {
         const id = entry.target.dataset.layoutMeasureId;
         if (!id) return;
-        commitHeight(id, entry.contentRect.height);
+        commitHeight(id, entry.contentRect.height, entry.target);
       });
     });
 

@@ -2,6 +2,18 @@
     min-height: 100vh;
 }
 
+.editor-workspace-shell {
+    min-height: 100dvh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.editor-workspace-shell .topbar {
+    flex: 0 0 auto;
+}
+
 .topbar {
     position: sticky;
     top: 0;
@@ -297,7 +309,9 @@
     margin: 0;
     padding: 0;
     display: block;
-    height: calc(100vh - 65px);
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
     overflow: hidden;
     background: transparent;
 }
@@ -571,6 +585,9 @@
 
 .layout-shell {
     --layout-gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
     background: transparent;
 }
 

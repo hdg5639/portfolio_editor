@@ -19,15 +19,12 @@ function sanitizeStart(value, fallback = 1) {
   return Math.max(1, Math.round(numeric));
 }
 
-function resolveCenteredStart(anchor, span, fallback = 1, maxStart = null) {
+function resolveAnchorStart(anchor, fallback = 1, maxStart = null) {
   const safeAnchor = sanitizeStart(anchor, fallback);
-  const safeSpan = Math.max(1, sanitizeSpan(span, 1, 999));
-  const centered = Math.round(safeAnchor - safeSpan / 2 + 0.5);
-  const normalized = Math.max(1, centered);
   if (Number.isFinite(maxStart)) {
-    return clamp(normalized, 1, Math.max(1, maxStart));
+    return clamp(safeAnchor, 1, Math.max(1, maxStart));
   }
-  return normalized;
+  return Math.max(1, safeAnchor);
 }
 
 function normalizeItemShape(item, columns = GRID_COLUMN_COUNT) {
@@ -288,8 +285,8 @@ export function resolveManualPlacement(items, draggedId, x, y, columns = GRID_CO
   const maxStartX = Math.max(1, columns - dragged.colSpan + 1);
   const preview = {
     ...dragged,
-    gridX: resolveCenteredStart(x, dragged.colSpan, dragged.gridX, maxStartX),
-    gridY: resolveCenteredStart(y, dragged.rowSpan, dragged.gridY),
+    gridX: resolveAnchorStart(x, dragged.gridX, maxStartX),
+    gridY: resolveAnchorStart(y, dragged.gridY),
   };
 
   let placed = active
