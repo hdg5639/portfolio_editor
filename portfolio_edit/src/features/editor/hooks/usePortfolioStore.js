@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { produce } from 'immer';
 import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore, EDITOR_LAYOUT_MODE_STORAGE_KEY, syncEditorViewport } from '../store/useEditorStore.js';
 import { useUiActions } from './actions/useUiActions.js';
@@ -11,72 +12,75 @@ const INITIAL_EDITOR_STATE = useEditorStore.getInitialState();
 
 function resolveNextState(currentValue, updater) {
   if (typeof updater !== 'function') return updater;
-  const result = updater(currentValue);
-  return result === undefined ? currentValue : result;
+
+  return produce(currentValue, (draft) => {
+    const result = updater(draft);
+    if (result !== undefined) {
+      return result;
+    }
+    return undefined;
+  });
 }
 
 export function usePortfolioStore() {
   const { portfolio, mode, selected, ui } = useEditorStore(
-    useShallow((state) => {
-      const safeState = state ?? INITIAL_EDITOR_STATE;
-      return {
-        portfolio: safeState.portfolio,
-        mode: safeState.mode,
-        selected: safeState.selected,
-        ui: safeState.ui,
-      };
-    }),
+    useShallow((state) => ({
+      portfolio: state?.portfolio ?? INITIAL_EDITOR_STATE.portfolio,
+      mode: state?.mode ?? INITIAL_EDITOR_STATE.mode,
+      selected: state?.selected ?? INITIAL_EDITOR_STATE.selected,
+      ui: state?.ui ?? INITIAL_EDITOR_STATE.ui,
+    })),
   );
 
   const actionNameRef = useRef(null);
 
   const setPortfolio = useCallback((updater) => {
+    const currentPortfolio = useEditorStore.getState()?.portfolio ?? INITIAL_EDITOR_STATE.portfolio;
+    const nextPortfolio = resolveNextState(currentPortfolio, updater);
+
+    if (nextPortfolio === currentPortfolio) return;
+
     useEditorStore.setState(
-      (state) => {
-        const nextPortfolio = resolveNextState(state.portfolio, updater);
-        if (nextPortfolio !== state.portfolio) {
-          state.portfolio = nextPortfolio;
-        }
-      },
+      { portfolio: nextPortfolio },
       false,
       actionNameRef.current || 'portfolio/update',
     );
   }, []);
 
   const setUi = useCallback((updater) => {
+    const currentUi = useEditorStore.getState()?.ui ?? INITIAL_EDITOR_STATE.ui;
+    const nextUi = resolveNextState(currentUi, updater);
+
+    if (nextUi === currentUi) return;
+
     useEditorStore.setState(
-      (state) => {
-        const nextUi = resolveNextState(state.ui, updater);
-        if (nextUi !== state.ui) {
-          state.ui = nextUi;
-        }
-      },
+      { ui: nextUi },
       false,
       actionNameRef.current || 'ui/update',
     );
   }, []);
 
   const setModeState = useCallback((updater) => {
+    const currentMode = useEditorStore.getState()?.mode ?? INITIAL_EDITOR_STATE.mode;
+    const nextMode = resolveNextState(currentMode, updater);
+
+    if (nextMode === currentMode) return;
+
     useEditorStore.setState(
-      (state) => {
-        const nextMode = resolveNextState(state.mode, updater);
-        if (nextMode !== state.mode) {
-          state.mode = nextMode;
-        }
-      },
+      { mode: nextMode },
       false,
       actionNameRef.current || 'mode/update',
     );
   }, []);
 
   const setSelected = useCallback((updater) => {
+    const currentSelected = useEditorStore.getState()?.selected ?? INITIAL_EDITOR_STATE.selected;
+    const nextSelected = resolveNextState(currentSelected, updater);
+
+    if (nextSelected === currentSelected) return;
+
     useEditorStore.setState(
-      (state) => {
-        const nextSelected = resolveNextState(state.selected, updater);
-        if (nextSelected !== state.selected) {
-          state.selected = nextSelected;
-        }
-      },
+      { selected: nextSelected },
       false,
       actionNameRef.current || 'selection/update',
     );

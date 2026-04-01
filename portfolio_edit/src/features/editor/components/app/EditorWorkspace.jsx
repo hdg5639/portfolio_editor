@@ -30,7 +30,18 @@ function isTypingTarget(target) {
 }
 
 export default function EditorWorkspace({ store, onExit }) {
-  const { ui, mode, actions, portfolio, selected } = store;
+  const ui = store?.ui ?? {
+    editorLayoutMode: 'auto',
+    isMobile: false,
+  };
+  const mode = store?.mode ?? 'edit';
+  const actions = store?.actions ?? {};
+  const portfolio = store?.portfolio ?? {
+    styles: {
+      page: {},
+    },
+  };
+  const selected = store?.selected ?? null;
   const editorLayoutModeClass = ui.editorLayoutMode === 'auto' ? 'editor-layout-auto' : `editor-layout-force-${ui.editorLayoutMode}`;
   const effectiveLayoutClass = ui.isMobile ? 'editor-mode-mobile' : 'editor-mode-desktop';
   const { exportRef, isExporting, isExportSheetOpen, openExportSheet, closeExportSheet, handleExportPdf } =

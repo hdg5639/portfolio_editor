@@ -31,16 +31,21 @@ function resolveCellFromPointer(event, rows) {
 
   const rect = currentTarget.getBoundingClientRect();
   const safeRows = Math.max(1, rows || 1);
-  const totalGapWidth = GRID_GAP * (GRID_COLUMN_COUNT - 1);
-  const columnWidth = (rect.width - totalGapWidth) / GRID_COLUMN_COUNT;
-  const rowHeight = GRID_ROW_HEIGHT;
+  const layoutWidth = Math.max(1, currentTarget.offsetWidth || currentTarget.clientWidth || rect.width);
+  const layoutHeight = Math.max(1, currentTarget.offsetHeight || currentTarget.clientHeight || rect.height);
+  const scaleX = rect.width / layoutWidth;
+  const scaleY = rect.height / layoutHeight;
+  const scaledGapX = GRID_GAP * scaleX;
+  const scaledGapY = GRID_GAP * scaleY;
+  const columnWidth = (rect.width - scaledGapX * (GRID_COLUMN_COUNT - 1)) / GRID_COLUMN_COUNT;
+  const rowHeight = GRID_ROW_HEIGHT * scaleY;
 
-  const relativeX = Math.min(Math.max(0, event.clientX - rect.left), rect.width - 1);
-  const relativeY = Math.min(Math.max(0, event.clientY - rect.top), rect.height - 1);
+  const relativeX = Math.min(Math.max(0, event.clientX - rect.left), Math.max(0, rect.width - 1));
+  const relativeY = Math.min(Math.max(0, event.clientY - rect.top), Math.max(0, rect.height - 1));
 
   return {
-    x: resolveTrackIndex(relativeX, columnWidth, GRID_GAP, GRID_COLUMN_COUNT),
-    y: resolveTrackIndex(relativeY, rowHeight, GRID_GAP, safeRows),
+    x: resolveTrackIndex(relativeX, columnWidth, scaledGapX, GRID_COLUMN_COUNT),
+    y: resolveTrackIndex(relativeY, rowHeight, scaledGapY, safeRows),
   };
 }
 
