@@ -24,6 +24,8 @@ function SectionTile({
                        children,
                      }) {
   const editable = store.mode === 'edit';
+  const resolvedSpan = Math.min(12, Math.max(1, Number(span) || 12));
+  const resolvedRowSpan = Math.min(48, Math.max(1, Number(rowSpan) || 1));
   const showHelpers = editable && store.ui.showEditHelpers;
   const isDragging = draggingKey === sectionKey;
   const isDragOver = dragOverKey === sectionKey && draggingKey !== sectionKey;
@@ -97,9 +99,13 @@ function SectionTile({
 
   return (
       <div
-          className={`section-tile selection-scope selection-section span-${span} span-r-${rowSpan || 1} ${isDragging ? 'dragging' : ''} ${
+          className={`section-tile selection-scope selection-section span-${resolvedSpan} span-r-${resolvedRowSpan} ${isDragging ? 'dragging' : ''} ${
               isDragOver ? 'drag-over' : ''
           } ${sectionSelection.selected ? 'is-selected' : ''} ${sectionSelection.ancestor ? 'is-ancestor' : ''}`}
+          style={{
+            gridColumn: `span ${resolvedSpan}`,
+            gridRow: `span ${resolvedRowSpan}`,
+          }}
           onClick={(event) => {
             if (handleTapReorder(event)) return;
             event.stopPropagation();
@@ -138,8 +144,8 @@ function SectionTile({
               <strong>{label}</strong>
 
               <LayoutSizeControl
-                  widthValue={span}
-                  heightValue={rowSpan || 1}
+                  widthValue={resolvedSpan}
+                  heightValue={resolvedRowSpan}
                   onWidthChange={(value) => store.actions.setSectionSpan(sectionKey, value)}
                   onHeightChange={(value) => store.actions.setSectionRowSpan(sectionKey, value)}
               />
