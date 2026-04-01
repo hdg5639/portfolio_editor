@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LayoutSizeControl from './LayoutSizeControl.jsx';
 import LayoutChrome from '../components/LayoutChrome.jsx';
 import GridPlacementOverlay from '../components/GridPlacementOverlay.jsx';
@@ -6,14 +6,11 @@ import { getCardSelectionState, getCustomItemSelectionState, getCustomBlockSelec
 import { getGridItemPlacementStyle, getGridRowExtent, getManualPlacementPreview, getPackedPlacementPreview, normalizeGridItems } from '../utils/layoutGrid.js';
 import useMeasuredGridItems from '../hooks/useMeasuredGridItems.js';
 import { SelectionBadge, selectableInputProps, selectableViewProps } from '../components/editor-primitives/index.jsx';
-
-function readFileAsDataUrl(file, callback) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => callback(reader.result);
-    reader.readAsDataURL(file);
-}
-
+import { readFileAsDataUrl } from '../utils/fileReaders.js';
+import ImageRatioToolbar from '../components/block-renderers/ImageRatioToolbar.jsx';
+import { CustomComplexImageBlock, CustomComplexListBlock, CustomComplexTextBlock } from '../components/block-renderers/CustomComplexBlockRenderers.jsx';
+import { FIXED_RATIO_IMAGE_MEASURE_BIAS, getImageFrameProps } from '../utils/imageBlockLayout.js';
+import EditableCollectionItemShell from '../components/item-shells/EditableCollectionItemShell.jsx';
 
 function EditableText({
                           as = 'input',
@@ -60,145 +57,6 @@ function EditableText({
 
 
 
-
-function AutoGrowTextarea({ className = '', value, placeholder, onChange, inputMeta }) {
-    const ref = useRef(null);
-
-    useLayoutEffect(() => {
-        const node = ref.current;
-        if (!node) return;
-        node.style.height = '0px';
-        node.style.height = `${node.scrollHeight}px`;
-    }, [value]);
-
-    return (
-        <textarea
-            ref={ref}
-            value={value || ''}
-            placeholder={placeholder}
-            rows={1}
-            className={className}
-            onChange={(e) => onChange(e.target.value)}
-            {...inputMeta}
-        />
-    );
-}
-
-
-const IMAGE_RATIO_OPTIONS = [
-    { value: 'custom', label: 'Custom' },
-    { value: '1:1', label: '1:1' },
-    { value: '3:2', label: '3:2' },
-    { value: '2:3', label: '2:3' },
-    { value: '4:3', label: '4:3' },
-    { value: '16:10', label: '16:10' },
-    { value: '16:9', label: '16:9' },
-];
-
-const FIXED_RATIO_IMAGE_MEASURE_BIAS = 16;
-
-function parsePositiveRatioPart(value, fallback = 1) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
-}
-
-function getImageAreaRatioValue(ratioOption, customWidth = 1, customHeight = 1) {
-    switch (ratioOption) {
-        case '1:1':
-            return '1 / 1';
-        case '3:2':
-            return '3 / 2';
-        case '2:3':
-            return '2 / 3';
-        case '4:3':
-            return '4 / 3';
-        case '16:10':
-            return '16 / 10';
-        case '16:9':
-            return '16 / 9';
-        case 'custom': {
-            const width = parsePositiveRatioPart(customWidth);
-            const height = parsePositiveRatioPart(customHeight);
-            return `${width} / ${height}`;
-        }
-        default:
-            return null;
-    }
-}
-
-function getImageFrameProps(block) {
-    const ratioOption = block.imageAspectRatio || 'custom';
-    const customWidth = block.imageCustomRatioWidth ?? 1;
-    const customHeight = block.imageCustomRatioHeight ?? 1;
-    const ratioValue = getImageAreaRatioValue(ratioOption, customWidth, customHeight);
-
-    return {
-        ratioOption,
-        hasFixedRatio: !!ratioValue,
-        customWidth: parsePositiveRatioPart(customWidth),
-        customHeight: parsePositiveRatioPart(customHeight),
-        style: ratioValue ? { '--project-image-area-ratio': ratioValue } : undefined,
-    };
-}
-
-function getImageGridLayoutStyle(block) {
-    const slotCount = Math.max(1, block.images?.length || 0);
-    const colSpan = Number(block.colSpan) || 12;
-
-    const maxColumns = colSpan >= 9 ? 3 : colSpan >= 5 ? 2 : 1;
-    const columns = Math.max(1, Math.min(slotCount, maxColumns));
-    const rows = Math.max(1, Math.ceil(slotCount / columns));
-
-    return {
-        '--image-grid-columns': columns,
-        '--image-grid-rows': rows,
-    };
-}
-
-function ImageRatioToolbar({
-    ratioOption,
-    customWidth,
-    customHeight,
-    onRatioChange,
-    onCustomWidthChange,
-    onCustomHeightChange,
-}) {
-    return (
-        <div className="image-ratio-toolbar" onClick={(e) => e.stopPropagation()}>
-            <label className="image-ratio-control">
-                <span>이미지 비율</span>
-                <select value={ratioOption} onChange={(e) => onRatioChange(e.target.value)}>
-                    {IMAGE_RATIO_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-            </label>
-            {ratioOption === 'custom' ? (
-                <div className="image-ratio-custom-fields">
-                    <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        inputMode="numeric"
-                        value={customWidth}
-                        aria-label="커스텀 이미지 비율 가로"
-                        onChange={(e) => onCustomWidthChange(e.target.value)}
-                    />
-                    <span>:</span>
-                    <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        inputMode="numeric"
-                        value={customHeight}
-                        aria-label="커스텀 이미지 비율 세로"
-                        onChange={(e) => onCustomHeightChange(e.target.value)}
-                    />
-                </div>
-            ) : null}
-        </div>
-    );
-}
 
 function ItemShell({
                        store,
@@ -267,92 +125,94 @@ function ItemShell({
         return true;
     };
 
+    const helperSlot = showHelpers ? (
+        <LayoutChrome
+            label={item.title || '아이템'}
+            summary={`${item.colSpan || 6} × ${item.rowSpan || 1}`}
+            defaultExpanded={false}
+            dragHandle={
+                <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
+                    if (!useTapReorder) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDraggingId((current) => (current === item.id ? null : item.id));
+                    setDragOverId(null);
+                }}>
+                    ⋮⋮
+                </div>
+            }
+            controls={
+                <LayoutSizeControl
+                    widthValue={item.colSpan || 6}
+                    heightValue={item.rowSpan || 1}
+                    minHeightValue={minRowSpan}
+                    onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
+                    onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
+                    compact
+                />
+            }
+            actions={
+                <div className="profile-block-actions">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            store.actions.removeCustomSectionItem(sectionId, item.id);
+                        }}
+                    >
+                        제거
+                    </button>
+                </div>
+            }
+        />
+    ) : null;
+
+    const overlaySlot = showTapOverlay ? (
+        <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
+            여기로 이동
+        </button>
+    ) : null;
+
     return (
-        <div
-            className={`custom-item-shell selection-scope selection-item ${
-                isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''} ${itemSelection.selected ? 'is-selected' : ''} ${itemSelection.ancestor ? 'is-ancestor' : ''}` }
+        <EditableCollectionItemShell
+            className="custom-item-shell"
             style={itemStyle}
+            selectionState={itemSelection}
+            isDragging={isDragging}
+            isDragOver={isDragOver}
             onClick={(event) => {
                 if (handleTapReorder(event)) return;
                 event.stopPropagation();
                 store.actions.select({ key: `custom.${sectionId}.${item.id}`, label: `${item.title || '커스텀'} 항목` });
             }}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
-        >
-
-            {showHelpers ? (
-                <LayoutChrome
-                    label={item.title || '아이템'}
-                    summary={`${item.colSpan || 6} × ${item.rowSpan || 1}`}
-                    defaultExpanded={false}
-                    dragHandle={
-                        <div className="drag-handle" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
-                            if (!useTapReorder) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setDraggingId((current) => (current === item.id ? null : item.id));
-                            setDragOverId(null);
-                        }}>
-                            ⋮⋮
+            dragEvents={{ onDragOver, onDrop, onDragEnd }}
+            helperSlot={helperSlot}
+            overlaySlot={overlaySlot}
+            measureRef={measureRef}
+            body={({ measureRef }) => (
+                <div className="layout-item-body">
+                    <article className="project-card-inner custom-item-card">
+                        <div className="layout-item-measure" ref={measureRef}>
+                            {children}
+                            {isEdit ? (
+                                <div className="custom-item-footer-actions">
+                                    <button
+                                        type="button"
+                                        className="ghost danger small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            store.actions.removeCustomSectionItem(sectionId, item.id);
+                                        }}
+                                    >
+                                        항목 삭제
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
-                    }
-                    controls={
-                        <LayoutSizeControl
-                            widthValue={item.colSpan || 6}
-                            heightValue={item.rowSpan || 1}
-                            minHeightValue={minRowSpan}
-                            onWidthChange={(value) => store.actions.setCustomSectionItemSpan(sectionId, item.id, value)}
-                            onHeightChange={(value) => store.actions.setCustomSectionItemRowSpan(sectionId, item.id, value)}
-                            compact
-                        />
-                    }
-                    actions={
-                        <div className="profile-block-actions">
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.removeCustomSectionItem(sectionId, item.id);
-                                }}
-                            >
-                                제거
-                            </button>
-                        </div>
-                    }
-                />
-            ) : null}
-
-            {showTapOverlay ? (
-                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
-                    여기로 이동
-                </button>
-            ) : null}
-
-            <div className="layout-item-body">
-                <article className="project-card-inner custom-item-card">
-                    <div className="layout-item-measure" ref={measureRef}>
-                        {children}
-                        {isEdit ? (
-                            <div className="custom-item-footer-actions">
-                                <button
-                                    type="button"
-                                    className="ghost danger small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        store.actions.removeCustomSectionItem(sectionId, item.id);
-                                    }}
-                                >
-                                    항목 삭제
-                                </button>
-                            </div>
-                        ) : null}
-                    </div>
-                </article>
-            </div>
-        </div>
+                    </article>
+                </div>
+            )}
+        />
     );
 }
 
@@ -376,437 +236,42 @@ function ComplexBlockShell({
                                toolbarActions,
                                children,
                            }) {
-    const editable = store.mode === 'edit';
-    const showHelpers = editable && store.ui.showEditHelpers;
-    const isDragging = draggingId === block.id;
-    const isDragOver = layoutMode === 'packed' && dragOverId === block.id && draggingId !== block.id;
     const blockSelection = getCustomBlockSelectionState(store.selected?.key, sectionId, itemId, block.id);
-    const useTapReorder = showHelpers && !!store.ui?.isMobile;
-    const showTapOverlay = layoutMode === 'packed' && useTapReorder && !!draggingId && draggingId !== block.id;
-
-    const onDragStart = (event) => {
-        if (!showHelpers) return;
-        event.stopPropagation();
-        setDraggingId(block.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', block.id);
-    };
-
-    const onDragOver = (event) => {
-        if (layoutMode !== 'packed' || !showHelpers || !draggingId) return;
-        event.preventDefault();
-        event.stopPropagation();
-        if (dragOverId !== block.id) setDragOverId(block.id);
-    };
-
-    const onDrop = (event) => {
-        if (layoutMode !== 'packed' || !showHelpers) return;
-        event.preventDefault();
-        event.stopPropagation();
-        const dragged = event.dataTransfer.getData('text/plain') || draggingId;
-        if (dragged && dragged !== block.id) {
-            store.actions.moveCustomComplexBlock(sectionId, itemId, dragged, block.id);
-        }
-        setDraggingId(null);
-        setDragOverId(null);
-    };
-
-    const onDragEnd = (event) => {
-        event.stopPropagation();
-        setDraggingId(null);
-        setDragOverId(null);
-    };
-
-    const handleTapReorder = (event) => {
-        if (!showTapOverlay) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        store.actions.moveCustomComplexBlock(sectionId, itemId, draggingId, block.id);
-        setDraggingId(null);
-        setDragOverId(null);
-        return true;
-    };
 
     return (
-        <div
-            className={`project-block-shell selection-scope selection-block span-${block.colSpan || 12} span-r-${block.rowSpan || 1} layout-mode-${layoutMode} ${layoutMode === 'manual' && draggingId === block.id ? 'manual-armed' : ''} ${
-                isDragging ? 'dragging' : ''
-            } ${isDragOver ? 'drag-over' : ''} ${blockSelection.selected ? 'is-selected' : ''} ${blockSelection.ancestor ? 'is-ancestor' : ''}`}
-            style={placementStyle}
-            onClick={(event) => {
-                if (handleTapReorder(event)) return;
-                event.stopPropagation();
-                store.actions.select({ key: `custom.${sectionId}.${itemId}.blocks.${block.id}`, label: `${block.title || block.type} 블럭` });
-            }}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
+        <EditableGridBlockShell
+            store={store}
+            block={block}
+            draggingId={draggingId}
+            dragOverId={dragOverId}
+            setDraggingId={setDraggingId}
+            setDragOverId={setDragOverId}
+            layoutMode={layoutMode}
+            placementStyle={placementStyle}
+            measureRef={measureRef}
+            measureNode={measureNode}
+            fillBody={fillBody}
+            measureBias={measureBias}
+            minRowSpan={minRowSpan}
+            layoutItemsOverride={layoutItemsOverride}
+            toolbarActions={toolbarActions}
+            selectionState={blockSelection}
+            chromeLabel={`${block.type} · ${block.title}`}
+            layoutSummary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
+            selectOnClick={() =>
+                store.actions.select({ key: `custom.${sectionId}.${itemId}.blocks.${block.id}`, label: `${block.title || block.type} 블럭` })
+            }
+            moveItem={(fromId, toId) => store.actions.moveCustomComplexBlock(sectionId, itemId, fromId, toId)}
+            setItemSpan={(value, itemsOverride) =>
+                store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value, itemsOverride)
+            }
+            setItemRowSpan={(value, itemsOverride) =>
+                store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value, itemsOverride)
+            }
+            removeItem={() => store.actions.removeCustomComplexBlock(sectionId, itemId, block.id)}
         >
-
-            {showHelpers ? (
-                <LayoutChrome
-                    label={`${block.type} · ${block.title}`}
-                    summary={`${block.colSpan || 12} × ${block.rowSpan || 1}`}
-                    defaultExpanded={false}
-                    dragHandle={
-                        <div className={`drag-handle ${layoutMode === 'manual' && draggingId === block.id ? 'is-armed' : ''}`} draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(event) => {
-                            if (layoutMode === 'manual') {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                setDraggingId((current) => (current === block.id ? null : block.id));
-                                setDragOverId(null);
-                                return;
-                            }
-                            if (!useTapReorder) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setDraggingId((current) => (current === block.id ? null : block.id));
-                            setDragOverId(null);
-                        }}>
-                            ⋮⋮
-                        </div>
-                    }
-                    controls={
-                        <LayoutSizeControl
-                            widthValue={block.colSpan || 12}
-                            heightValue={block.rowSpan || 1}
-                            minHeightValue={minRowSpan}
-                            onWidthChange={(value) =>
-                                store.actions.setCustomComplexBlockSpan(sectionId, itemId, block.id, value, layoutItemsOverride)
-                            }
-                            onHeightChange={(value) =>
-                                store.actions.setCustomComplexBlockRowSpan(sectionId, itemId, block.id, value, layoutItemsOverride)
-                            }
-                            compact
-                        />
-                    }
-                    actions={
-                        <div className="profile-block-actions">
-                            {toolbarActions}
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    store.actions.removeCustomComplexBlock(sectionId, itemId, block.id);
-                                }}
-                            >
-                                제거
-                            </button>
-                        </div>
-                    }
-                />
-            ) : null}
-
-            {showTapOverlay ? (
-                <button type="button" className="tap-reorder-overlay active" onClick={handleTapReorder}>
-                    여기로 이동
-                </button>
-            ) : null}
-
-            <div className="layout-item-body">
-                {measureNode ? (
-                    <div
-                        className="layout-item-measure-probe"
-                        ref={measureRef}
-                        data-layout-measure-bias={measureBias || undefined}
-                        aria-hidden="true"
-                    >
-                        {measureNode}
-                    </div>
-                ) : null}
-                <div
-                    className={`layout-item-measure${fillBody ? ' fill-height' : ''}`}
-                    ref={measureNode ? null : measureRef}
-                    data-layout-measure-bias={measureBias || undefined}
-                >
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ComplexTextBlock({ store, sectionId, itemId, block, editable }) {
-    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
-    const contentKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.content`;
-
-    return (
-        <div className="project-inner-card project-image-block-card">
-            {editable ? (
-                <>
-                    <input
-                        value={block.title}
-                        {...selectableInputProps(store, titleKey, '복합 텍스트 블록 제목')}
-                        onChange={(e) =>
-                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
-                        }
-                        className="custom-input title"
-                    />
-                    <textarea
-                        value={block.content || ''}
-                        {...selectableInputProps(store, contentKey, '복합 텍스트 블록 본문')}
-                        onChange={(e) =>
-                            store.actions.updateCustomComplexBlock(
-                                sectionId,
-                                itemId,
-                                block.id,
-                                'content',
-                                e.target.value
-                            )
-                        }
-                        className="custom-input description"
-                    />
-                </>
-            ) : (
-                <>
-                    <h4 {...selectableViewProps(store, titleKey, '복합 텍스트 블록 제목')}>{block.title}</h4>
-                    <p {...selectableViewProps(store, contentKey, '복합 텍스트 블록 본문')}>{block.content}</p>
-                </>
-            )}
-        </div>
-    );
-}
-
-function ComplexListBlock({ store, sectionId, itemId, block, editable }) {
-    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
-
-    return (
-        <div className="project-inner-card project-image-block-card">
-            {editable ? (
-                <>
-                    <input
-                        value={block.title}
-                        {...selectableInputProps(store, titleKey, '복합 리스트 블록 제목')}
-                        onChange={(e) =>
-                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
-                        }
-                        className="custom-input title"
-                    />
-                    <div className="project-list-edit">
-                        {(block.items || []).map((entry, index) => {
-                            const itemKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.items.${index}`;
-                            return (
-                                <div key={`${block.id}-${index}`} className="project-list-edit-row">
-                                    <input
-                                        value={entry}
-                                        {...selectableInputProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
-                                        onChange={(e) =>
-                                            store.actions.updateCustomComplexListItem(
-                                                sectionId,
-                                                itemId,
-                                                block.id,
-                                                index,
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-                                    <button
-                                        type="button"
-                                        className="ghost danger small"
-                                        onClick={() =>
-                                            store.actions.removeCustomComplexListItem(
-                                                sectionId,
-                                                itemId,
-                                                block.id,
-                                                index
-                                            )
-                                        }
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </>
-            ) : (
-                <>
-                    <h4 {...selectableViewProps(store, titleKey, '복합 리스트 블록 제목')}>{block.title}</h4>
-                    <ul className="project-list-view">
-                        {(block.items || []).map((entry, index) => {
-                            const itemKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.items.${index}`;
-                            return (
-                                <li
-                                    key={`${block.id}-${index}`}
-                                    {...selectableViewProps(store, itemKey, `복합 리스트 항목 ${index + 1}`)}
-                                >
-                                    {entry}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </>
-            )}
-        </div>
-    );
-}
-
-function ComplexImageBlock({store, sectionId, itemId, block, editable, fillHeight = false, measureOnly = false}) {
-    const titleKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.title`;
-    const captionKey = `custom.${sectionId}.${itemId}.blocks.${block.id}.caption`;
-    const imageGridStyle = useMemo(() => getImageGridLayoutStyle(block), [block.colSpan, block.images]);
-    const imageFrame = useMemo(() => getImageFrameProps(block), [block.imageAspectRatio, block.imageCustomRatioWidth, block.imageCustomRatioHeight]);
-
-    const imageGrid = (mode = 'edit') => (
-        <div
-            className={`project-image-frame${imageFrame.hasFixedRatio ? ' has-fixed-ratio' : ''}${mode === 'measure' ? ' is-measure' : ''}`}
-            style={imageFrame.style}
-        >
-            <div className="project-image-grid" style={imageGridStyle}>
-                {(block.images || []).map((image, index) => {
-                    if (mode === 'preview') {
-                        if (!image) return null;
-                        return (
-                            <div key={`${block.id}-img-${index}`} className="project-image-slot">
-                                <img src={image} alt={block.title || 'custom'} />
-                            </div>
-                        );
-                    }
-
-                    if (mode === 'measure') {
-                        return (
-                            <div key={`${block.id}-probe-img-${index}`} className="project-image-editor-slot">
-                                <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                    {image ? (
-                                        <img src={image} alt={block.title || 'custom'} />
-                                    ) : (
-                                        <div className="project-image-placeholder">IMAGE</div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    }
-
-                    const inputId = `custom-image-${sectionId}-${itemId}-${block.id}-${index}`;
-                    return (
-                        <div key={`${block.id}-img-${index}`} className="project-image-editor-slot">
-                            <div className={`project-image-slot ${image ? 'has-image' : 'is-empty'}`}>
-                                {image ? (
-                                    <img src={image} alt={block.title || 'custom'} />
-                                ) : (
-                                    <div className="project-image-placeholder">IMAGE</div>
-                                )}
-                                <div className="project-image-slot-actions inside">
-                                    <label
-                                        htmlFor={inputId}
-                                        className="ghost small upload-label"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        {image ? '이미지 변경' : '이미지 업로드'}
-                                    </label>
-                                    <input
-                                        id={inputId}
-                                        type="file"
-                                        hidden
-                                        accept="image/*"
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => {
-                                            e.stopPropagation();
-                                            const file = e.target.files?.[0];
-                                            readFileAsDataUrl(file, (value) =>
-                                                store.actions.updateCustomComplexImage(
-                                                    sectionId,
-                                                    itemId,
-                                                    block.id,
-                                                    index,
-                                                    value
-                                                )
-                                            );
-                                            e.target.value = '';
-                                        }}
-                                    />
-                                    {image ? (
-                                        <button
-                                            type="button"
-                                            className="ghost small project-image-clear-button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                store.actions.updateCustomComplexImage(sectionId, itemId, block.id, index, '');
-                                            }}
-                                        >
-                                            이미지 삭제
-                                        </button>
-                                    ) : null}
-                                    <button
-                                        type="button"
-                                        className="ghost danger small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            store.actions.removeCustomComplexImage(sectionId, itemId, block.id, index);
-                                        }}
-                                    >
-                                        슬롯 제거
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-
-    if (measureOnly) {
-        return (
-            <div className="project-inner-card project-image-block-card">
-                {editable ? (
-                    <>
-                        <div className="custom-input title">{block.title || ' '}</div>
-                        {imageGrid('measure')}
-                        <div className="custom-input subtitle">{block.caption || ' '}</div>
-                    </>
-                ) : (
-                    <>
-                        <h4>{block.title}</h4>
-                        {imageGrid('preview')}
-                        {block.caption ? <p className="project-caption">{block.caption}</p> : null}
-                    </>
-                )}
-            </div>
-        );
-    }
-
-    return (
-        <div className={`project-inner-card project-image-block-card${fillHeight ? ' fill-height' : ''}${imageFrame.hasFixedRatio ? ' fixed-image-ratio' : ''}`}>
-            {editable ? (
-                <>
-                    <input
-                        value={block.title}
-                        {...selectableInputProps(store, titleKey, '복합 이미지 블록 제목')}
-                        onChange={(e) =>
-                            store.actions.updateCustomComplexBlock(sectionId, itemId, block.id, 'title', e.target.value)
-                        }
-                        className="custom-input title"
-                    />
-                    {imageGrid('edit')}
-                    <AutoGrowTextarea
-                        value={block.caption || ''}
-                        placeholder="이미지 캡션"
-                        inputMeta={selectableInputProps(store, captionKey, '복합 이미지 블록 캡션')}
-                        onChange={(value) =>
-                            store.actions.updateCustomComplexBlock(
-                                sectionId,
-                                itemId,
-                                block.id,
-                                'caption',
-                                value
-                            )
-                        }
-                        className="custom-input subtitle project-image-caption-input"
-                    />
-                </>
-            ) : (
-                <>
-                    <h4 {...selectableViewProps(store, titleKey, '복합 이미지 블록 제목')}>{block.title}</h4>
-                    {imageGrid('preview')}
-                    {block.caption ? (
-                        <p {...selectableViewProps(store, captionKey, '복합 이미지 블록 캡션')} className="project-caption">
-                            {block.caption}
-                        </p>
-                    ) : null}
-                </>
-            )}
-        </div>
+            {children}
+        </EditableGridBlockShell>
     );
 }
 

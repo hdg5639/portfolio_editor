@@ -90,9 +90,38 @@ export function usePortfolioStore() {
     syncEditorViewport();
     if (typeof window === 'undefined') return undefined;
 
-    const handleResize = () => syncEditorViewport();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const handleViewportChange = () => syncEditorViewport();
+    const mediaQueries = [
+      window.matchMedia?.('(pointer: coarse)'),
+      window.matchMedia?.('(hover: none)'),
+      window.matchMedia?.('(max-width: 920px)'),
+    ].filter(Boolean);
+
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    window.visualViewport?.addEventListener?.('resize', handleViewportChange);
+
+    mediaQueries.forEach((mediaQuery) => {
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleViewportChange);
+      } else if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handleViewportChange);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+      window.visualViewport?.removeEventListener?.('resize', handleViewportChange);
+
+      mediaQueries.forEach((mediaQuery) => {
+        if (typeof mediaQuery.removeEventListener === 'function') {
+          mediaQuery.removeEventListener('change', handleViewportChange);
+        } else if (typeof mediaQuery.removeListener === 'function') {
+          mediaQuery.removeListener(handleViewportChange);
+        }
+      });
+    };
   }, []);
 
   const uiActions = useUiActions(
